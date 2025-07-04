@@ -328,3 +328,5 @@ export function AssistantsPage() {
     </div>
   )
 }
+
+export default AssistantsPage

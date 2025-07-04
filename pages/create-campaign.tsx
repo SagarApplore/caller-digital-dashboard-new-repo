@@ -155,3 +155,5 @@ export function CreateCampaignPage() {
     </div>
   )
 }
+
+export default CreateCampaignPage

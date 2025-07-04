@@ -162,3 +162,5 @@ export function ClientsPage({ onPageChange }: ClientsPageProps) {
     </div>
   )
 }
+
+export default ClientsPage

@@ -249,3 +249,5 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
     </div>
   )
 }
+
+export default AddClientPage

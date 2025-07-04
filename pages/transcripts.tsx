@@ -212,3 +212,5 @@ export function TranscriptsPage() {
     </div>
   )
 }
+
+export default TranscriptsPage

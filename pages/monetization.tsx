@@ -368,3 +368,5 @@ export function MonetizationPage() {
     </div>
   )
 }
+
+export default MonetizationPage

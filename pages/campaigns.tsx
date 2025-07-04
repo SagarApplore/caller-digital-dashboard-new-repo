@@ -196,3 +196,5 @@ export function CampaignsPage() {
     </div>
   )
 }
+
+export default CampaignsPage
