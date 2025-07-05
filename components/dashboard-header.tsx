@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/atoms/input"
 import { Badge } from "@/components/ui/badge"
 import { Search, RefreshCw, Bell, AlertTriangle } from "lucide-react"
 

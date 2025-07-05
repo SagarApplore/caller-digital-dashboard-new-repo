@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   BarChart3,
   MessageSquare,
@@ -9,14 +9,17 @@ import {
   TrendingUp,
   FileText,
   DollarSign,
-} from "lucide-react"
+  LogOut,
+} from "lucide-react";
+import { useAuth } from "./providers/auth-provider";
 
 interface SidebarProps {
-  currentPage: string
-  onPageChange: (page: string) => void
+  currentPage: string;
+  onPageChange: (page: string) => void;
 }
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+  const { logout, user } = useAuth();
   const sidebarItems = [
     { id: "campaigns", icon: BarChart3, label: "Campaigns" },
     { id: "clients", icon: Users, label: "Clients" },
@@ -25,17 +28,23 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     { id: "transcripts", icon: FileText, label: "Transcripts" },
     { id: "llm-config", icon: Settings, label: "LLM Config" },
     { id: "monetization", icon: DollarSign, label: "Monetization" },
-  ]
+  ];
 
   const getActiveState = (itemId: string) => {
-    if (itemId === "campaigns" && (currentPage === "campaigns" || currentPage === "create-campaign")) {
-      return true
+    if (
+      itemId === "campaigns" &&
+      (currentPage === "campaigns" || currentPage === "create-campaign")
+    ) {
+      return true;
     }
-    if (itemId === "clients" && (currentPage === "clients" || currentPage === "add-client")) {
-      return true
+    if (
+      itemId === "clients" &&
+      (currentPage === "clients" || currentPage === "add-client")
+    ) {
+      return true;
     }
-    return currentPage === itemId
-  }
+    return currentPage === itemId;
+  };
 
   return (
     <div className="w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-4">
@@ -68,10 +77,17 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
         <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50">
           <HelpCircle className="w-5 h-5" />
         </button>
+        <button
+          onClick={logout}
+          className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
         <button className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
           <User className="w-4 h-4 text-purple-600" />
         </button>
       </div>
     </div>
-  )
+  );
 }

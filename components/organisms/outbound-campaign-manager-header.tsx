@@ -1,14 +1,17 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Plus, ArrowLeft } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Plus, ArrowLeft } from "lucide-react";
 
 interface HeaderProps {
-  currentPage: string
-  onPageChange: (page: string) => void
+  currentPage: string;
+  onPageChange: (page: string) => void;
 }
 
-export function Header({ currentPage, onPageChange }: HeaderProps) {
+export function OutboundCampaignManagerHeader({
+  currentPage,
+  onPageChange,
+}: HeaderProps) {
   // Define page configurations
   const pageConfigs = {
     campaigns: {
@@ -65,9 +68,11 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
       title: "SKU & Monetization Manager",
       subtitle: "Manage pricing plans and revenue",
     },
-  }
+  };
 
-  const config = pageConfigs[currentPage] || pageConfigs.campaigns
+  const config =
+    pageConfigs[currentPage as keyof typeof pageConfigs] ||
+    pageConfigs.campaigns;
 
   const tabs = [
     { name: "Campaign List", id: "campaigns" },
@@ -75,12 +80,12 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
     { name: "Assistant & Numbers", id: "assistants" },
     { name: "Analytics", id: "analytics" },
     { name: "Transcripts", id: "transcripts" },
-  ]
+  ];
 
   const getActiveTab = () => {
-    if (currentPage === "create-campaign") return "create-campaign"
-    return currentPage
-  }
+    if (currentPage === "create-campaign") return "create-campaign";
+    return currentPage;
+  };
 
   return (
     <div className="bg-white border-b border-gray-200">
@@ -88,10 +93,15 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
             {/* Back button for certain pages */}
-            {(currentPage === "add-client" || currentPage === "create-campaign") && (
+            {(currentPage === "add-client" ||
+              currentPage === "create-campaign") && (
               <Button
                 variant="ghost"
-                onClick={() => onPageChange(currentPage === "add-client" ? "clients" : "campaigns")}
+                onClick={() =>
+                  onPageChange(
+                    currentPage === "add-client" ? "clients" : "campaigns"
+                  )
+                }
                 className="mr-4"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -106,7 +116,9 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
                 </div>
               )}
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{config.title}</h1>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  {config.title}
+                </h1>
                 <p className="text-sm text-blue-600">{config.subtitle}</p>
               </div>
             </div>
@@ -115,7 +127,11 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
           {/* Show create button only on relevant pages */}
           {(currentPage === "campaigns" || currentPage === "clients") && (
             <Button
-              onClick={() => onPageChange(currentPage === "campaigns" ? "create-campaign" : "add-client")}
+              onClick={() =>
+                onPageChange(
+                  currentPage === "campaigns" ? "create-campaign" : "add-client"
+                )
+              }
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -146,5 +162,5 @@ export function Header({ currentPage, onPageChange }: HeaderProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
