@@ -1,4 +1,5 @@
 "use client";
+import { useRouter, usePathname } from "next/navigation";
 import {
   BarChart3,
   MessageSquare,
@@ -12,38 +13,18 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
+import { sidebarRoutes, updateActiveRoute } from "@/lib/sidebar-routes";
 
-interface SidebarProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
-}
-
-export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
+export function Sidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { logout, user } = useAuth();
-  const sidebarItems = [
-    { id: "campaigns", icon: BarChart3, label: "Campaigns" },
-    { id: "clients", icon: Users, label: "Clients" },
-    { id: "assistants", icon: MessageSquare, label: "Assistants" },
-    { id: "analytics", icon: TrendingUp, label: "Analytics" },
-    { id: "transcripts", icon: FileText, label: "Transcripts" },
-    { id: "llm-config", icon: Settings, label: "LLM Config" },
-    { id: "monetization", icon: DollarSign, label: "Monetization" },
-  ];
 
-  const getActiveState = (itemId: string) => {
-    if (
-      itemId === "campaigns" &&
-      (currentPage === "campaigns" || currentPage === "create-campaign")
-    ) {
-      return true;
-    }
-    if (
-      itemId === "clients" &&
-      (currentPage === "clients" || currentPage === "add-client")
-    ) {
-      return true;
-    }
-    return currentPage === itemId;
+  // Update routes with active state based on current path
+  const activeRoutes = updateActiveRoute(pathname || "/");
+
+  const handleNavigation = (path: string) => {
+    router.push(path);
   };
 
   return (
@@ -55,18 +36,18 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
 
       {/* Navigation Items */}
       <div className="flex flex-col space-y-2">
-        {sidebarItems.map((item) => (
+        {activeRoutes.map((route) => (
           <button
-            key={item.id}
-            onClick={() => onPageChange(item.id)}
+            key={route.id}
+            onClick={() => handleNavigation(route.path)}
             className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              getActiveState(item.id)
+              route.isActive
                 ? "bg-blue-50 text-blue-600"
                 : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
             }`}
-            title={item.label}
+            title={route.name}
           >
-            <item.icon className="w-5 h-5" />
+            <route.icon className="w-5 h-5" />
           </button>
         ))}
       </div>

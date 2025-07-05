@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "../organisms/card";
+import { Card, CardContent } from "./card";
 
 export default function OutboundCampaign() {
   const [currentTime, setCurrentTime] = useState(new Date());

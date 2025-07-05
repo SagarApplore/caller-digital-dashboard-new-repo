@@ -5,3 +5,10 @@ export interface Config {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface IRoute {
+  id: string;
+  name: string;
+  path: string;
+  component: React.ReactNode;
+}

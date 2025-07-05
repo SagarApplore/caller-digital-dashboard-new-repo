@@ -1,5 +1,5 @@
-import OutboundCampaignManager from "@/components/templates/outbound-campaign-manager";
+import PromotionCampaign from "@/components/organisms/outbound-campaign";
 
 export default function OutboundCampaignManagerPage() {
-  return <OutboundCampaignManager />;
+  return <PromotionCampaign />;
 }

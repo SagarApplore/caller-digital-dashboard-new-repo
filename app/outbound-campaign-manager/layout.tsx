@@ -1,13 +1,14 @@
 import Dashboard from "@/components/templates/dashboard";
 import { ProtectedRoute } from "@/components/protected-route";
-import AnalyticsDashboard from "@/components/organisms/analytics-dashboard";
 
-export default function Page() {
+export default function OutboundCampaignManagerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <ProtectedRoute>
-      <Dashboard>
-        <AnalyticsDashboard />
-      </Dashboard>
+      <Dashboard>{children}</Dashboard>
     </ProtectedRoute>
   );
 }

@@ -1,10 +1,16 @@
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/atoms/input"
-import { Badge } from "@/components/ui/badge"
-import { Search, RefreshCw, Bell, AlertTriangle } from "lucide-react"
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/atoms/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, RefreshCw, Bell, AlertTriangle } from "lucide-react";
+import { getActiveRoute } from "@/lib/sidebar-routes";
 
 export function DashboardHeader() {
+  const pathname = usePathname();
+  const activeRoute = getActiveRoute(pathname || "/");
+
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-3">
       <div className="flex items-center justify-between">
@@ -14,8 +20,13 @@ export function DashboardHeader() {
             <div className="w-5 h-5 bg-white transform rotate-45 rounded-sm"></div>
           </div>
           <div className="flex items-center space-x-2">
-            <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-            <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5">
+            <h1 className="text-xl font-semibold text-gray-900">
+              {activeRoute?.name || "Dashboard"}
+            </h1>
+            <Badge
+              variant="secondary"
+              className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5"
+            >
               Beta
             </Badge>
           </div>
@@ -51,5 +62,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </div>
-  )
+  );
 }
