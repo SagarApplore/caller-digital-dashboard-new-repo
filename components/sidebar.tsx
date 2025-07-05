@@ -1,24 +1,13 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import {
-  BarChart3,
-  MessageSquare,
-  Users,
-  Settings,
-  HelpCircle,
-  User,
-  TrendingUp,
-  FileText,
-  DollarSign,
-  LogOut,
-} from "lucide-react";
+import { HelpCircle, User, LogOut } from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
-import { sidebarRoutes, updateActiveRoute } from "@/lib/sidebar-routes";
+import { updateActiveRoute } from "@/lib/sidebar-routes";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   // Update routes with active state based on current path
   const activeRoutes = updateActiveRoute(pathname || "/");

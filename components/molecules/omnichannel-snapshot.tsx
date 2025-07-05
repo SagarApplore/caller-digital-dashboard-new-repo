@@ -1,11 +1,16 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/organisms/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Phone, MessageSquare, Mail } from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/organisms/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Phone, MessageSquare, Mail } from "lucide-react";
 
 export function OmnichannelSnapshot() {
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-4">
+    <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
+      <CardHeader className="p-0 pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center">
             <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
@@ -14,13 +19,18 @@ export function OmnichannelSnapshot() {
           <span className="text-xs text-gray-500">Updated 5 min ago</span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 p-0">
         {/* Channel-wise Usage */}
-        <div>
-          <span className="text-sm text-gray-600 mb-3 block">Channel-wise Usage</span>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <span className="text-sm text-gray-600 mb-3 block">
+            Channel-wise Usage
+          </span>
           <div className="flex items-center space-x-4">
             <div className="relative w-20 h-20">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+              <svg
+                className="w-20 h-20 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
@@ -90,14 +100,22 @@ export function OmnichannelSnapshot() {
         </div>
 
         {/* CSAT Trendline */}
-        <div>
+        <div className="bg-gray-100 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">CSAT Trendline</span>
             <span className="text-xs text-gray-500">Last 7 days</span>
           </div>
           <div className="h-12 bg-gray-50 rounded-lg relative overflow-hidden mb-2">
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 48">
-              <path d="M5,35 L20,30 L35,25 L50,22 L65,20 L80,18 L95,15" stroke="#8b5cf6" strokeWidth="2" fill="none" />
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 100 48"
+            >
+              <path
+                d="M5,35 L20,30 L35,25 L50,22 L65,20 L80,18 L95,15"
+                stroke="#8b5cf6"
+                strokeWidth="2"
+                fill="none"
+              />
               {[5, 20, 35, 50, 65, 80, 95].map((x, i) => (
                 <circle key={i} cx={x} cy={35 - i * 3} r="2" fill="#8b5cf6" />
               ))}
@@ -123,19 +141,25 @@ export function OmnichannelSnapshot() {
         </div>
 
         {/* Top Assistant */}
-        <div>
-          <span className="text-sm text-gray-600 mb-3 block">Top Assistant</span>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <span className="text-sm text-gray-600 mb-3 block">
+            Top Assistant
+          </span>
           <div className="flex items-center space-x-3">
             <div className="relative">
               <Avatar className="w-12 h-12">
                 <AvatarImage src="/placeholder.svg?height=48&width=48" />
-                <AvatarFallback className="bg-purple-100 text-purple-600">SA</AvatarFallback>
+                <AvatarFallback className="bg-purple-100 text-purple-600">
+                  SA
+                </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
             <div className="flex-1">
               <div className="font-medium text-gray-900">Sophia AI</div>
-              <div className="text-sm text-gray-600">CSAT 98% • Last active: Now</div>
+              <div className="text-sm text-gray-600">
+                CSAT 98% • Last active: Now
+              </div>
               <div className="flex space-x-1 mt-1">
                 <Phone className="w-3 h-3 text-gray-400" />
                 <MessageSquare className="w-3 h-3 text-gray-400" />
@@ -146,13 +170,18 @@ export function OmnichannelSnapshot() {
         </div>
 
         {/* AI System Summary */}
-        <div>
-          <span className="text-sm text-gray-600 mb-3 block">AI System Summary</span>
+        <div className="bg-gray-100 p-4 rounded-lg">
+          <span className="text-sm text-gray-600 mb-3 block">
+            AI System Summary
+          </span>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-xs text-gray-600 mb-2">Confidence Score</div>
               <div className="relative w-12 h-12 mx-auto mb-1">
-                <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                <svg
+                  className="w-12 h-12 transform -rotate-90"
+                  viewBox="0 0 36 36"
+                >
                   <path
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     fill="none"
@@ -167,11 +196,15 @@ export function OmnichannelSnapshot() {
                     strokeDasharray="86, 100"
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">86%</div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">
+                  86%
+                </div>
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-600 mb-2">Avg. Interruptions</div>
+              <div className="text-xs text-gray-600 mb-2">
+                Avg. Interruptions
+              </div>
               <div className="text-xl font-bold text-gray-900">0.8</div>
               <div className="text-xs text-gray-500">per call</div>
             </div>
@@ -179,7 +212,11 @@ export function OmnichannelSnapshot() {
               <div className="text-xs text-gray-600 mb-2">Fallback Rate</div>
               <div className="h-6 flex items-end justify-center space-x-0.5 mb-1">
                 {[60, 80, 70, 90, 85].map((height, i) => (
-                  <div key={i} className="w-1.5 bg-green-400 rounded-t" style={{ height: `${height}%` }}></div>
+                  <div
+                    key={i}
+                    className="w-1.5 bg-green-400 rounded-t"
+                    style={{ height: `${height}%` }}
+                  ></div>
                 ))}
               </div>
               <div className="text-xl font-bold text-gray-900">4.2%</div>
@@ -188,5 +225,5 @@ export function OmnichannelSnapshot() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

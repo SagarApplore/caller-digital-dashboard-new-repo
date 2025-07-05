@@ -2,14 +2,12 @@ import {
   BarChart3,
   Home,
   MessageSquare,
-  Mail,
   Settings,
   Users,
   TrendingUp,
   FileText,
   DollarSign,
   Plus,
-  Phone,
 } from "lucide-react";
 
 export interface SidebarRoute {
