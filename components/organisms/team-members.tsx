@@ -122,7 +122,11 @@ const TeamMembers = () => {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <Button className="bg-gray-100 text-gray-700">Bulk Actions</Button>
+          <Button className="bg-gray-100 text-gray-700 hover:bg-gray-200">
+            Bulk Actions{" "}
+            {filteredMembers.filter((item) => item.selected).length > 0 &&
+              `(${filteredMembers.filter((item) => item.selected).length})`}
+          </Button>
           <div className="flex items-center bg-gray-100 rounded-md p-1 gap-1">
             <Button
               className={`h-8 w-8 text-gray-700 hover:bg-white rounded-md ${
