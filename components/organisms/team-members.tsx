@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Input } from "../atoms/input";
 import {
   Select,
@@ -74,6 +74,30 @@ const TeamMembers = () => {
     setView(view);
   };
 
+  const [filteredMembers, setFilteredMembers] = useState<any[]>(mockData);
+
+  useEffect(() => {
+    const filtered = mockData.filter((item) => ({
+      ...item,
+      selected: false,
+    }));
+    setFilteredMembers(filtered);
+  }, []);
+
+  const handleSelectAll = (checked: boolean) => {
+    setFilteredMembers(
+      filteredMembers.map((item) => ({ ...item, selected: checked }))
+    );
+  };
+
+  const handleSelectItem = (id: number, checked: boolean) => {
+    setFilteredMembers(
+      filteredMembers.map((item) =>
+        item.id === id ? { ...item, selected: checked } : item
+      )
+    );
+  };
+
   return (
     <>
       {/* Header */}
@@ -127,7 +151,10 @@ const TeamMembers = () => {
             <TableHeader>
               <TableRow className="bg-gray-100">
                 <TableHead>
-                  <Checkbox />
+                  <Checkbox
+                    checked={filteredMembers.every((item) => item.selected)}
+                    onCheckedChange={handleSelectAll}
+                  />
                 </TableHead>
                 <TableHead>Member</TableHead>
                 <TableHead>Role</TableHead>
@@ -138,10 +165,13 @@ const TeamMembers = () => {
               </TableRow>
             </TableHeader>
             <TableBody className="bg-white">
-              {mockData.map((item: any) => (
+              {filteredMembers.map((item: any) => (
                 <TableRow key={item.id}>
                   <TableCell>
-                    <Checkbox />
+                    <Checkbox
+                      checked={item.selected}
+                      onClick={() => handleSelectItem(item.id, !item.selected)}
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
