@@ -13,11 +13,6 @@ import {
   ExternalLink,
   Pause,
   Square,
-  BarChart3,
-  Users,
-  MessageCircle,
-  Mail,
-  Settings,
   Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,46 +83,6 @@ export default function OutboundCampaign() {
       <div>
         {/* Header */}
         <div className="py-4 gap-4 bg-white flex flex-col">
-          <div className="bg-white px-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Holiday Promotion Campaign
-                </h1>
-                <div className="flex items-center space-x-2 bg-[#DCFCE7] rounded-full px-4 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-green-600 font-medium">
-                    Running
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>Started: 2:14 PM</span>
-                  <span>Duration: 1h 23m</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100"
-                  >
-                    <Pause className="w-4 h-4 mr-1" />
-                    Pause
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-                  >
-                    <Square className="w-4 h-4 mr-1" />
-                    Stop
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Campaign Info */}
           <div className="bg-white px-6">
             <div className="flex items-center justify-between bg-[#F9FAFB] px-6 py-4">

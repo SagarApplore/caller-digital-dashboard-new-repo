@@ -12,6 +12,7 @@ interface DashboardProps {
       text: string;
       className?: string;
     };
+    backRoute?: string;
     children?: React.ReactNode;
   };
   children: React.ReactNode;
@@ -26,6 +27,7 @@ export default function Dashboard({ children, header }: DashboardProps) {
         <DashboardHeader
           title={header.title}
           subtitle={header.subtitle}
+          backRoute={header.backRoute}
           children={header.children}
         />
         <div className="flex-1 overflow-hidden transition-all duration-200">

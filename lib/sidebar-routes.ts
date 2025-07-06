@@ -35,7 +35,7 @@ export const sidebarRoutes: SidebarRouteItem[] = [
   {
     id: "clients",
     name: "Clients",
-    path: "/outbound-campaign-manager/clients",
+    path: "/clients",
     icon: Users,
     isActive: false,
   },

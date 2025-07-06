@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import utils from "@/utils/index.util";
 import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 const data = [
   {
@@ -132,6 +133,8 @@ export function CampaignsPage() {
     // Refresh functionality can be implemented here
     console.log("Refresh clicked");
   }, []);
+
+  const router = useRouter();
 
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
@@ -306,6 +309,11 @@ export function CampaignsPage() {
                           variant="ghost"
                           size="sm"
                           className="text-blue-600 hover:text-blue-700"
+                          onClick={() =>
+                            router.push(
+                              `/outbound-campaign-manager/${campaign.id}`
+                            )
+                          }
                         >
                           View
                         </Button>
