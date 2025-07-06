@@ -12,7 +12,21 @@ import {
 
 // Example of a protected page component
 function ProtectedExampleContent() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  // Show loading state while auth is initializing
+  if (isLoading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Protected Page Example
+          </h1>
+          <p className="text-gray-600">Loading authentication status...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

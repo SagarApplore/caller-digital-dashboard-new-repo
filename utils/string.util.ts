@@ -6,6 +6,12 @@ const string = {
       style: "currency",
       currency: "USD",
     }).format(number),
+  joinStrings: (strings: string[]) => {
+    if (strings.length === 1) {
+      return strings[0];
+    }
+    return strings.join(", ");
+  },
 };
 
 export default string;

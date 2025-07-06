@@ -40,10 +40,10 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     isActive: false,
   },
   {
-    id: "assistants",
-    name: "Assistants",
-    path: "/outbound-campaign-manager/assistants",
-    icon: MessageSquare,
+    id: "team-members",
+    name: "Team Members",
+    path: "/team-members",
+    icon: Users,
     isActive: false,
   },
   {

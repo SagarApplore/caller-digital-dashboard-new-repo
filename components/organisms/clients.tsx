@@ -138,16 +138,6 @@ const getHealthColor = (health: number) => {
   }
 };
 
-const getStatusColor = (status: string) => {
-  if (status === "Active") {
-    return "text-green-700 bg-green-100";
-  } else if (status === "At Risk") {
-    return "text-orange-700 bg-orange-100";
-  } else {
-    return "text-red-700 bg-red-100";
-  }
-};
-
 const getIndustryColor = (industry: string) => {
   if (industry === "BFSI") {
     return "text-blue-700 bg-blue-100";
@@ -299,7 +289,7 @@ export function ClientsPage() {
                   </TableCell>
                   <TableCell>
                     <div
-                      className={`text-xs w-fit font-semibold flex items-center gap-1 rounded-full px-2 py-1 ${getStatusColor(
+                      className={`text-xs w-fit font-semibold flex items-center gap-1 rounded-full px-2 py-1 ${utils.colors.getStatusColor(
                         client.status
                       )}`}
                     >
