@@ -20,45 +20,59 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Building, Mail, Phone, Calendar } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Building,
+  Mail,
+  Phone,
+  Calendar,
+  MessageSquare,
+  Instagram,
+  Facebook,
+  Circle,
+} from "lucide-react";
 import utils from "@/utils/index.util";
 
 const clients = [
   {
     id: 1,
     name: "Acme Corporation",
-    contact: "John Smith",
+    am: "John Smith",
     email: "john@acme.com",
     status: "Active",
     assistants: 5,
-    lastActivity: "2 hours ago",
     plan: "Enterprise",
     industry: "BFSI",
     mrr: 100000,
+    channels: ["Email", "WhatsApp", "SMS", "Instagram", "Facebook"],
+    health: 92,
   },
   {
     id: 2,
     name: "TechStart Inc",
-    contact: "Sarah Johnson",
+    am: "Sarah Johnson",
     email: "sarah@techstart.com",
-    status: "Active",
+    status: "At Risk",
     assistants: 3,
-    lastActivity: "1 day ago",
     plan: "Professional",
     industry: "D2C",
     mrr: 50000,
+    channels: ["Email", "WhatsApp", "SMS", "Instagram"],
+    health: 72,
   },
   {
     id: 3,
     name: "Global Solutions",
-    contact: "Mike Wilson",
+    am: "Mike Wilson",
     email: "mike@globalsol.com",
     status: "Inactive",
     assistants: 1,
-    lastActivity: "1 week ago",
     plan: "Basic",
     industry: "D2C",
     mrr: 20000,
+    channels: ["Email", "WhatsApp", "SMS"],
+    health: 68,
   },
 ];
 
@@ -72,6 +86,75 @@ const getPlanColor = (plan: string) => {
       return "bg-purple-200 text-purple-700";
     default:
       return "bg-gray-500 text-white";
+  }
+};
+
+const getChannelIconAndColor = (channel: string) => {
+  switch (channel.toLowerCase()) {
+    case "email":
+      return {
+        icon: <Mail className="w-4 h-4" />,
+        color: "bg-blue-200 text-blue-700",
+      };
+    case "whatsapp":
+      return {
+        icon: <Phone className="w-4 h-4" />,
+        color: "bg-green-200 text-green-700",
+      };
+    case "sms":
+      return {
+        icon: <MessageSquare className="w-4 h-4" />,
+        color: "bg-red-200 text-red-700",
+      };
+    case "instagram":
+      return {
+        icon: <Instagram className="w-4 h-4" />,
+        color: "bg-purple-200 text-purple-700",
+      };
+    case "facebook":
+      return {
+        icon: <Facebook className="w-4 h-4" />,
+        color: "bg-orange-200 text-orange-700",
+      };
+    default:
+      return {
+        icon: <Mail className="w-4 h-4" />,
+        color: "bg-gray-200 text-gray-700",
+      };
+  }
+};
+
+const getHealthColor = (health: number) => {
+  if (health >= 90) {
+    return "text-green-700";
+  } else if (health >= 70) {
+    return "text-yellow-700";
+  } else if (health >= 50) {
+    return "text-orange-700";
+  } else if (health >= 30) {
+    return "text-red-700";
+  } else {
+    return "text-gray-700";
+  }
+};
+
+const getStatusColor = (status: string) => {
+  if (status === "Active") {
+    return "text-green-700 bg-green-100";
+  } else if (status === "At Risk") {
+    return "text-orange-700 bg-orange-100";
+  } else {
+    return "text-red-700 bg-red-100";
+  }
+};
+
+const getIndustryColor = (industry: string) => {
+  if (industry === "BFSI") {
+    return "text-blue-700 bg-blue-100";
+  } else if (industry === "D2C") {
+    return "text-green-700 bg-green-100";
+  } else {
+    return "text-gray-700 bg-gray-100";
   }
 };
 
@@ -153,16 +236,18 @@ export function ClientsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {client.industry}
-                      </div>
+                    <div
+                      className={`text-xs w-fit font-medium rounded-full px-2 py-1 ${getIndustryColor(
+                        client.industry
+                      )}`}
+                    >
+                      {client.industry}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium text-gray-900">
-                        {client.contact}
+                        {client.am}
                       </div>
                     </div>
                   </TableCell>
@@ -190,21 +275,40 @@ export function ClientsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span>{client.lastActivity}</span>
+                    <div className="flex items-center space-x-2">
+                      {client.channels.map((channel) => {
+                        const { icon, color } = getChannelIconAndColor(channel);
+                        return (
+                          <div
+                            className={`flex items-center ${color} rounded-full px-2 py-2`}
+                          >
+                            {icon}
+                          </div>
+                        );
+                      })}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span>{client.lastActivity}</span>
+                    <div
+                      className={`text-xs w-fit font-semibold ${getHealthColor(
+                        client.health
+                      )}`}
+                    >
+                      {client.health}%
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span>{client.lastActivity}</span>
+                    <div
+                      className={`text-xs w-fit font-semibold flex items-center gap-1 rounded-full px-2 py-1 ${getStatusColor(
+                        client.status
+                      )}`}
+                    >
+                      <Circle
+                        className="w-2 h-2"
+                        fill="currentColor"
+                        stroke="currentColor"
+                      />
+                      {client.status}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
