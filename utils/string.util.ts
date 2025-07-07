@@ -12,6 +12,21 @@ const string = {
     }
     return strings.join(", ");
   },
+  formatNumberAccToType: (
+    number: number,
+    type: "number" | "percentage" | "ratio"
+  ) => {
+    switch (type) {
+      case "number":
+        return number.toLocaleString();
+      case "percentage":
+        return `${number.toFixed(2)}%`;
+      case "ratio":
+        return number;
+      default:
+        return number;
+    }
+  },
 };
 
 export default string;
