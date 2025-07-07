@@ -11,15 +11,12 @@ import {
 } from "../ui/select";
 import { Button } from "../ui/button";
 import {
-  Circle,
   Code,
   Crown,
-  EllipsisVerticalIcon,
   Grid2X2Icon,
   GridIcon,
   ChartBar,
   Edit,
-  Settings,
   UserCog,
   UserRoundX,
 } from "lucide-react";

@@ -46,34 +46,6 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     icon: Users,
     isActive: false,
   },
-  {
-    id: "analytics",
-    name: "Analytics",
-    path: "/outbound-campaign-manager/analytics",
-    icon: TrendingUp,
-    isActive: false,
-  },
-  {
-    id: "transcripts",
-    name: "Transcripts",
-    path: "/outbound-campaign-manager/transcripts",
-    icon: FileText,
-    isActive: false,
-  },
-  {
-    id: "llm-config",
-    name: "LLM Config",
-    path: "/outbound-campaign-manager/llm-config",
-    icon: Settings,
-    isActive: false,
-  },
-  {
-    id: "monetization",
-    name: "Monetization",
-    path: "/outbound-campaign-manager/monetization",
-    icon: DollarSign,
-    isActive: false,
-  },
 ];
 
 // Helper function to update active state

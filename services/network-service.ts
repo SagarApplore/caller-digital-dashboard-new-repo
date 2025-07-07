@@ -1,3 +1,10 @@
+import axios, {
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  AxiosError,
+} from "axios";
+
 interface RequestConfig {
   headers?: Record<string, string>;
   timeout?: number;
@@ -8,7 +15,7 @@ interface ApiResponse<T = any> {
   data: T;
   status: number;
   statusText: string;
-  headers: Headers;
+  headers: any;
 }
 
 interface ApiError {
@@ -19,24 +26,56 @@ interface ApiError {
 }
 
 class NetworkService {
-  private baseUrl: string;
-  private defaultHeaders: Record<string, string>;
-  private defaultTimeout: number;
+  private static instance: NetworkService | null = null;
+  private axiosInstance: AxiosInstance;
   private authToken: string | null = null;
 
-  constructor(
+  private constructor(
     baseUrl: string,
     config?: {
       defaultHeaders?: Record<string, string>;
       defaultTimeout?: number;
     }
   ) {
-    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-    this.defaultHeaders = {
-      "Content-Type": "application/json",
-      ...config?.defaultHeaders,
-    };
-    this.defaultTimeout = config?.defaultTimeout || 10000; // 10 seconds
+    this.axiosInstance = axios.create({
+      baseURL: baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl,
+      timeout: config?.defaultTimeout || 10000, // 10 seconds
+      headers: {
+        "Content-Type": "application/json",
+        ...config?.defaultHeaders,
+      },
+      withCredentials: false,
+    });
+
+    // Add request interceptor for auth token
+    this.axiosInstance.interceptors.request.use(
+      (config: any) => {
+        if (this.authToken) {
+          config.headers.Authorization = `Bearer ${this.authToken}`;
+        }
+        return config;
+      },
+      (error: any) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor for error handling
+    this.axiosInstance.interceptors.response.use(
+      (response: any) => response,
+      (error: AxiosError) => {
+        const apiError: ApiError = {
+          message:
+            (error.response?.data as any)?.message ||
+            error.message ||
+            "Network error",
+          status: error.response?.status || 0,
+          statusText: error.response?.statusText || "",
+          data: error.response?.data,
+        };
+        return Promise.reject(apiError);
+      }
+    );
   }
 
   // Set authentication token
@@ -44,117 +83,23 @@ class NetworkService {
     this.authToken = token;
   }
 
-  // Get authentication headers
-  private getAuthHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
-    if (this.authToken) {
-      headers["Authorization"] = `Bearer ${this.authToken}`;
-    }
-    return headers;
-  }
-
-  // Create request configuration
-  private createRequestConfig(config?: RequestConfig): RequestConfig {
+  // Create axios config from RequestConfig
+  private createAxiosConfig(config?: RequestConfig): AxiosRequestConfig {
     return {
-      headers: {
-        ...this.defaultHeaders,
-        ...this.getAuthHeaders(),
-        ...config?.headers,
-      },
-      timeout: config?.timeout || this.defaultTimeout,
-      withCredentials: config?.withCredentials || false,
+      headers: config?.headers,
+      timeout: config?.timeout,
+      withCredentials: config?.withCredentials,
     };
   }
 
-  // Handle response
-  private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    if (!response.ok) {
-      const errorData = await this.parseResponse(response);
-      throw {
-        message:
-          (errorData as any)?.message ||
-          `HTTP ${response.status}: ${response.statusText}`,
-        status: response.status,
-        statusText: response.statusText,
-        data: errorData,
-      } as ApiError;
-    }
-
-    const data = await this.parseResponse<T>(response);
+  // Transform axios response to ApiResponse
+  private transformResponse<T>(response: AxiosResponse<T>): ApiResponse<T> {
     return {
-      data,
+      data: response.data,
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     };
-  }
-
-  // Parse response based on content type
-  private async parseResponse<T>(response: Response): Promise<T> {
-    const contentType = response.headers.get("content-type");
-
-    if (contentType?.includes("application/json")) {
-      return response.json();
-    }
-
-    if (contentType?.includes("text/")) {
-      const text = await response.text();
-      return text as T;
-    }
-
-    return response.blob() as T;
-  }
-
-  // Create timeout promise
-  private createTimeoutPromise(timeout: number): Promise<never> {
-    return new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`Request timeout after ${timeout}ms`));
-      }, timeout);
-    });
-  }
-
-  // Generic request method
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit & { timeout?: number } = {}
-  ): Promise<ApiResponse<T>> {
-    const url = `${this.baseUrl}${
-      endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-    }`;
-    const config = this.createRequestConfig({ timeout: options.timeout });
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), config.timeout);
-
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          ...config.headers,
-          ...options.headers,
-        },
-        signal: controller.signal,
-        credentials: config.withCredentials ? "include" : "same-origin",
-      });
-
-      clearTimeout(timeoutId);
-      return this.handleResponse<T>(response);
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          throw {
-            message: `Request timeout after ${config.timeout}ms`,
-            status: 408,
-          } as ApiError;
-        }
-        throw { message: error.message, status: 0 } as ApiError;
-      }
-
-      throw error;
-    }
   }
 
   // GET request
@@ -162,10 +107,11 @@ class NetworkService {
     endpoint: string,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: "GET",
-      timeout: config?.timeout,
-    });
+    const response = await this.axiosInstance.get<T>(
+      endpoint,
+      this.createAxiosConfig(config)
+    );
+    return this.transformResponse(response);
   }
 
   // POST request
@@ -174,11 +120,12 @@ class NetworkService {
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
-      timeout: config?.timeout,
-    });
+    const response = await this.axiosInstance.post<T>(
+      endpoint,
+      data,
+      this.createAxiosConfig(config)
+    );
+    return this.transformResponse(response);
   }
 
   // PUT request
@@ -187,11 +134,12 @@ class NetworkService {
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: "PUT",
-      body: data ? JSON.stringify(data) : undefined,
-      timeout: config?.timeout,
-    });
+    const response = await this.axiosInstance.put<T>(
+      endpoint,
+      data,
+      this.createAxiosConfig(config)
+    );
+    return this.transformResponse(response);
   }
 
   // PATCH request
@@ -200,11 +148,12 @@ class NetworkService {
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: "PATCH",
-      body: data ? JSON.stringify(data) : undefined,
-      timeout: config?.timeout,
-    });
+    const response = await this.axiosInstance.patch<T>(
+      endpoint,
+      data,
+      this.createAxiosConfig(config)
+    );
+    return this.transformResponse(response);
   }
 
   // DELETE request
@@ -212,10 +161,11 @@ class NetworkService {
     endpoint: string,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: "DELETE",
-      timeout: config?.timeout,
-    });
+    const response = await this.axiosInstance.delete<T>(
+      endpoint,
+      this.createAxiosConfig(config)
+    );
+    return this.transformResponse(response);
   }
 
   // Upload file
@@ -228,78 +178,26 @@ class NetworkService {
     const formData = new FormData();
     formData.append("file", file);
 
-    const url = `${this.baseUrl}${
-      endpoint.startsWith("/") ? endpoint : `/${endpoint}`
-    }`;
-    const requestConfig = this.createRequestConfig(config);
-
-    // Remove Content-Type header for FormData
-    if (requestConfig.headers) {
-      delete requestConfig.headers["Content-Type"];
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      requestConfig.timeout
-    );
-
-    try {
-      const xhr = new XMLHttpRequest();
-
-      return new Promise((resolve, reject) => {
-        xhr.upload.addEventListener("progress", (event) => {
-          if (event.lengthComputable && onProgress) {
-            const progress = (event.loaded / event.total) * 100;
-            onProgress(progress);
-          }
-        });
-
-        xhr.addEventListener("load", () => {
-          clearTimeout(timeoutId);
-
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
-            resolve({
-              data,
-              status: xhr.status,
-              statusText: xhr.statusText,
-              headers: new Headers(),
-            });
-          } else {
-            reject({
-              message: `HTTP ${xhr.status}: ${xhr.statusText}`,
-              status: xhr.status,
-              statusText: xhr.statusText,
-            } as ApiError);
-          }
-        });
-
-        xhr.addEventListener("error", () => {
-          clearTimeout(timeoutId);
-          reject({ message: "Network error", status: 0 } as ApiError);
-        });
-
-        xhr.addEventListener("abort", () => {
-          clearTimeout(timeoutId);
-          reject({ message: "Request aborted", status: 0 } as ApiError);
-        });
-
-        xhr.open("POST", url);
-
-        // Set headers
-        if (requestConfig.headers) {
-          Object.entries(requestConfig.headers).forEach(([key, value]) => {
-            xhr.setRequestHeader(key, value);
-          });
+    const axiosConfig: AxiosRequestConfig = {
+      ...this.createAxiosConfig(config),
+      headers: {
+        ...this.createAxiosConfig(config).headers,
+        "Content-Type": "multipart/form-data",
+      },
+      onUploadProgress: (progressEvent: any) => {
+        if (progressEvent.total && onProgress) {
+          const progress = (progressEvent.loaded / progressEvent.total) * 100;
+          onProgress(progress);
         }
+      },
+    };
 
-        xhr.send(formData);
-      });
-    } catch (error) {
-      clearTimeout(timeoutId);
-      throw error;
-    }
+    const response = await this.axiosInstance.post<T>(
+      endpoint,
+      formData,
+      axiosConfig
+    );
+    return this.transformResponse(response);
   }
 
   // Download file
@@ -308,9 +206,9 @@ class NetworkService {
     filename?: string,
     config?: RequestConfig
   ): Promise<void> {
-    const response = await this.request<Blob>(endpoint, {
-      method: "GET",
-      timeout: config?.timeout,
+    const response = await this.axiosInstance.get(endpoint, {
+      ...this.createAxiosConfig(config),
+      responseType: "blob",
     });
 
     const blob = response.data;
@@ -324,27 +222,68 @@ class NetworkService {
     window.URL.revokeObjectURL(url);
   }
 
-  // Create a new instance with different base URL
-  createInstance(
-    baseUrl: string,
+  // Get singleton instance
+  static getInstance(
+    baseUrl?: string,
     config?: {
       defaultHeaders?: Record<string, string>;
       defaultTimeout?: number;
     }
   ): NetworkService {
-    return new NetworkService(baseUrl, config);
+    if (!NetworkService.instance) {
+      if (!baseUrl) {
+        throw new Error("Base URL is required for first instance creation");
+      }
+      NetworkService.instance = new NetworkService(baseUrl, config);
+    }
+    return NetworkService.instance;
+  }
+
+  // Reset singleton instance (useful for testing or reconfiguration)
+  static resetInstance(): void {
+    NetworkService.instance = null;
   }
 
   // Get current base URL
   getBaseUrl(): string {
-    return this.baseUrl;
+    return this.axiosInstance.defaults.baseURL || "";
   }
 
   // Update base URL
   setBaseUrl(baseUrl: string): void {
-    this.baseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    this.axiosInstance.defaults.baseURL = baseUrl.endsWith("/")
+      ? baseUrl.slice(0, -1)
+      : baseUrl;
+  }
+
+  // Get the underlying axios instance
+  getAxiosInstance(): AxiosInstance {
+    return this.axiosInstance;
   }
 }
 
-export default NetworkService;
+// Create default instance with base URL from environment
+const getBaseUrl = (): string => {
+  // Check for different environment variables
+  const envBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.REACT_APP_API_URL ||
+    process.env.VITE_API_URL ||
+    process.env.API_URL;
+
+  if (!envBaseUrl) {
+    console.warn(
+      "No API base URL found in environment variables. Using fallback URL."
+    );
+    return "http://localhost:3000/api";
+  }
+
+  return envBaseUrl;
+};
+
+// Create and export default singleton instance
+const networkService = NetworkService.getInstance(getBaseUrl());
+
+export default networkService;
+export { NetworkService };
 export type { RequestConfig, ApiResponse, ApiError };

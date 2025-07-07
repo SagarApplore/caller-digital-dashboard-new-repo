@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import { OutboundCampaignManagerHeader } from "../molecules/outbound-campaign-manager-header";
 import Campaigns from "../molecules/campaigns";
-import CreateCampaign from "@/app/outbound-campaign-manager/create-campaign/page";
+
+import Analytics from "@/pages/analytics";
+import CreateCampaign from "@/pages/create-campaign";
 
 export default function OutboundCampaignManager() {
   const [currentTab, setCurrentTab] = useState<number>(0);
@@ -20,9 +22,9 @@ export default function OutboundCampaignManager() {
       component: <CreateCampaign />,
     },
     {
-      id: "assistants",
-      label: "Assistants & Numbers",
-      component: <Campaigns />,
+      id: "analytics",
+      label: "Analytics",
+      component: <Analytics />,
     },
   ];
 

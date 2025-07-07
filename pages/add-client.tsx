@@ -1,25 +1,35 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/atoms/input"
-import { Label } from "@/components/atoms/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/organisms/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Building, User, CreditCard, Settings } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/organisms/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building, User, CreditCard, Settings } from "lucide-react";
 
-interface AddClientPageProps {
-  onPageChange: (page: string) => void
-}
-
-export function AddClientPage({ onPageChange }: AddClientPageProps) {
+export function AddClientPage() {
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Client Setup</h1>
-          <p className="text-gray-600">Create a new client account and configure their settings</p>
+          <p className="text-gray-600">
+            Create a new client account and configure their settings
+          </p>
         </div>
 
         <Tabs defaultValue="company" className="space-y-6">
@@ -37,13 +47,18 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   <Building className="w-5 h-5 mr-2" />
                   Company Information
                 </CardTitle>
-                <CardDescription>Basic information about the client company</CardDescription>
+                <CardDescription>
+                  Basic information about the client company
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="company-name">Company Name *</Label>
-                    <Input id="company-name" placeholder="e.g., Acme Corporation" />
+                    <Input
+                      id="company-name"
+                      placeholder="e.g., Acme Corporation"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="industry">Industry</Label>
@@ -56,7 +71,9 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                         <SelectItem value="healthcare">Healthcare</SelectItem>
                         <SelectItem value="finance">Finance</SelectItem>
                         <SelectItem value="retail">Retail</SelectItem>
-                        <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                        <SelectItem value="manufacturing">
+                          Manufacturing
+                        </SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -73,7 +90,9 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                         <SelectItem value="1-10">1-10 employees</SelectItem>
                         <SelectItem value="11-50">11-50 employees</SelectItem>
                         <SelectItem value="51-200">51-200 employees</SelectItem>
-                        <SelectItem value="201-1000">201-1000 employees</SelectItem>
+                        <SelectItem value="201-1000">
+                          201-1000 employees
+                        </SelectItem>
                         <SelectItem value="1000+">1000+ employees</SelectItem>
                       </SelectContent>
                     </Select>
@@ -98,7 +117,9 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   <User className="w-5 h-5 mr-2" />
                   Primary Contact
                 </CardTitle>
-                <CardDescription>Main point of contact for this client</CardDescription>
+                <CardDescription>
+                  Main point of contact for this client
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -114,7 +135,11 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" placeholder="john@company.com" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="john@company.com"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
@@ -136,7 +161,9 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   <CreditCard className="w-5 h-5 mr-2" />
                   Billing & Subscription
                 </CardTitle>
-                <CardDescription>Configure billing and subscription plan</CardDescription>
+                <CardDescription>
+                  Configure billing and subscription plan
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -146,22 +173,39 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                       {
                         name: "Basic",
                         price: "$99/month",
-                        features: ["Up to 1,000 calls", "Basic analytics", "Email support"],
+                        features: [
+                          "Up to 1,000 calls",
+                          "Basic analytics",
+                          "Email support",
+                        ],
                       },
                       {
                         name: "Professional",
                         price: "$299/month",
-                        features: ["Up to 5,000 calls", "Advanced analytics", "Priority support"],
+                        features: [
+                          "Up to 5,000 calls",
+                          "Advanced analytics",
+                          "Priority support",
+                        ],
                       },
                       {
                         name: "Enterprise",
                         price: "$599/month",
-                        features: ["Unlimited calls", "Custom analytics", "Dedicated support"],
+                        features: [
+                          "Unlimited calls",
+                          "Custom analytics",
+                          "Dedicated support",
+                        ],
                       },
                     ].map((plan) => (
-                      <div key={plan.name} className="border rounded-lg p-4 cursor-pointer hover:border-purple-500">
+                      <div
+                        key={plan.name}
+                        className="border rounded-lg p-4 cursor-pointer hover:border-purple-500"
+                      >
                         <h3 className="font-medium">{plan.name}</h3>
-                        <p className="text-lg font-bold text-purple-600">{plan.price}</p>
+                        <p className="text-lg font-bold text-purple-600">
+                          {plan.price}
+                        </p>
                         <ul className="text-sm text-gray-600 mt-2 space-y-1">
                           {plan.features.map((feature, idx) => (
                             <li key={idx}>• {feature}</li>
@@ -174,7 +218,11 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="billing-email">Billing Email</Label>
-                    <Input id="billing-email" type="email" placeholder="billing@company.com" />
+                    <Input
+                      id="billing-email"
+                      type="email"
+                      placeholder="billing@company.com"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="billing-cycle">Billing Cycle</Label>
@@ -201,7 +249,9 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   <Settings className="w-5 h-5 mr-2" />
                   Account Settings
                 </CardTitle>
-                <CardDescription>Configure account permissions and settings</CardDescription>
+                <CardDescription>
+                  Configure account permissions and settings
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -222,11 +272,19 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   <Label>Permissions</Label>
                   <div className="space-y-2">
                     <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        defaultChecked
+                      />
                       <span className="text-sm">Can create campaigns</span>
                     </label>
                     <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        defaultChecked
+                      />
                       <span className="text-sm">Can view analytics</span>
                     </label>
                     <label className="flex items-center space-x-2">
@@ -236,10 +294,15 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
                   </div>
                 </div>
                 <div className="flex justify-end space-x-4 pt-6">
-                  <Button variant="outline" onClick={() => onPageChange("clients")}>
+                  <Button
+                    variant="outline"
+                    // onClick={() => onPageChange("clients")}
+                  >
                     Cancel
                   </Button>
-                  <Button className="bg-purple-600 hover:bg-purple-700">Create Client</Button>
+                  <Button className="bg-purple-600 hover:bg-purple-700">
+                    Create Client
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -247,7 +310,7 @@ export function AddClientPage({ onPageChange }: AddClientPageProps) {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
 
-export default AddClientPage
+export default AddClientPage;

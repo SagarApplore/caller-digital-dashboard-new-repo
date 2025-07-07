@@ -1,11 +1,15 @@
+"use client";
+
 import { Input } from "@/components/atoms/input";
 import ClientsPage from "@/components/organisms/clients";
 import { ProtectedRoute } from "@/components/protected-route";
 import Dashboard from "@/components/templates/dashboard";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { Download, Plus } from "lucide-react";
 
 export default function Clients() {
+  const router = useRouter();
   return (
     <ProtectedRoute>
       <Dashboard
@@ -21,7 +25,12 @@ export default function Clients() {
                 placeholder="Search by name or email"
                 className="w-full max-w-[400px] bg-white"
               />
-              <Button className="bg-purple-600 hover:bg-purple-700">
+              <Button
+                className="bg-purple-600 hover:bg-purple-700"
+                onClick={() => {
+                  router.push("/clients/client");
+                }}
+              >
                 <Plus className="w-4 h-4" />
                 <span className="text-sm">Add New Client</span>
               </Button>
