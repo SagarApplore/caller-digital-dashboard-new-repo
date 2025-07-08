@@ -32,7 +32,7 @@ export default function OutboundCampaignManager() {
         tabs={tabs}
         onPageChange={handleTabChange}
       />
-      <div className="h-[calc(100vh-100px)] overflow-y-auto">
+      <div className="h-[calc(100vh-120px)] overflow-y-auto">
         {tabs[currentTab].component}
       </div>
     </div>

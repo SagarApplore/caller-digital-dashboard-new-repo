@@ -1,13 +1,4 @@
-import {
-  BarChart3,
-  Home,
-  MessageSquare,
-  Users,
-  TrendingUp,
-  FileText,
-  Settings,
-  DollarSign,
-} from "lucide-react";
+import { Home, Users, Megaphone } from "lucide-react";
 
 export interface SidebarRouteItem {
   id: string;
@@ -29,7 +20,7 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     id: "campaigns",
     name: "Campaigns",
     path: "/outbound-campaign-manager",
-    icon: BarChart3,
+    icon: Megaphone,
     isActive: false,
   },
   {
