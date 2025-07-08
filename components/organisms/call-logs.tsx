@@ -94,13 +94,13 @@ const CallLogs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateInputs, setDateInputs] = useState({
-    startDate: '',
-    endDate: ''
+    startDate: "",
+    endDate: "",
   });
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [tempDateFilter, setTempDateFilter] = useState({
-    startDate: '',
-    endDate: ''
+    startDate: "",
+    endDate: "",
   });
   const [filters, setFilters] = useState<FilterState>({
     channel: "all-channels",
@@ -117,10 +117,14 @@ const CallLogs = () => {
   });
 
   // Fetch call logs data from API
-  const fetchCallLogs = async (assistantId?: string, startDate?: string, endDate?: string) => {
+  const fetchCallLogs = async (
+    assistantId?: string,
+    startDate?: string,
+    endDate?: string
+  ) => {
     try {
       const params: any = {};
-      if (assistantId && assistantId !== 'all-assistants') {
+      if (assistantId && assistantId !== "all-assistants") {
         params.assistantId = assistantId;
       }
       if (startDate) {
@@ -129,25 +133,28 @@ const CallLogs = () => {
       if (endDate) {
         params.createdAtLe = endDate;
       }
-      
-      const response = await apiRequest('/vapi/call-logs/getData', 'GET', {}, params);
-      console.log("call logs response", response.data.data);
+
+      const response = await apiRequest(
+        "/vapi/call-logs/getData",
+        "GET",
+        {},
+        params
+      );
       setApiData(response.data.data || []);
       setTotalCount(response.data.totalCount || 0);
     } catch (err: any) {
-      console.error('Error fetching call logs:', err);
-      setError(err.message || 'Failed to fetch call logs');
+      console.error("Error fetching call logs:", err);
+      setError(err.message || "Failed to fetch call logs");
     }
   };
 
   // Fetch agents data from API
   const fetchAgents = async () => {
     try {
-      const response = await apiRequest('/agents', 'GET');
-      console.log("agents response", response.data.data);
+      const response = await apiRequest("/agents", "GET");
       setAgentsData(response.data.data || []);
     } catch (err: any) {
-      console.error('Error fetching agents:', err);
+      console.error("Error fetching agents:", err);
       // Don't set error for agents as it's not critical for main functionality
     }
   };
@@ -157,9 +164,12 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      await Promise.all([fetchCallLogs(filters.assistant, filters.startDate, filters.endDate), fetchAgents()]);
+      await Promise.all([
+        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate),
+        fetchAgents(),
+      ]);
     } catch (err: any) {
-      console.error('Error fetching data:', err);
+      console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }
@@ -172,7 +182,7 @@ const CallLogs = () => {
       setError(null);
       await fetchCallLogs(assistantId, filters.startDate, filters.endDate);
     } catch (err: any) {
-      console.error('Error fetching call logs with filter:', err);
+      console.error("Error fetching call logs with filter:", err);
     } finally {
       setLoading(false);
     }
@@ -183,9 +193,13 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate);
+      await fetchCallLogs(
+        filters.assistant,
+        dateInputs.startDate,
+        dateInputs.endDate
+      );
     } catch (err: any) {
-      console.error('Error applying date filter:', err);
+      console.error("Error applying date filter:", err);
     } finally {
       setLoading(false);
     }
@@ -193,15 +207,19 @@ const CallLogs = () => {
 
   // Format date for chip display
   const formatDateForChip = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
   };
 
   // Handle clear date filter
   const handleClearDateFilter = () => {
-    setDateInputs({ startDate: '', endDate: '' });
-    setTempDateFilter({ startDate: '', endDate: '' });
+    setDateInputs({ startDate: "", endDate: "" });
+    setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     // Refetch data without date filter
     fetchCallLogs(filters.assistant);
@@ -214,9 +232,13 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      await fetchCallLogs(filters.assistant, tempDateFilter.startDate, tempDateFilter.endDate);
+      await fetchCallLogs(
+        filters.assistant,
+        tempDateFilter.startDate,
+        tempDateFilter.endDate
+      );
     } catch (err: any) {
-      console.error('Error applying date filter:', err);
+      console.error("Error applying date filter:", err);
     } finally {
       setLoading(false);
     }
@@ -237,14 +259,14 @@ const CallLogs = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      if (showDateFilter && !target.closest('.date-filter-container')) {
+      if (showDateFilter && !target.closest(".date-filter-container")) {
         setShowDateFilter(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showDateFilter]);
 
@@ -258,8 +280,9 @@ const CallLogs = () => {
 
     if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes} min ago`;
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    if (diffInHours < 24)
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   };
 
   // Transform API data to match the Conversation interface
@@ -270,12 +293,14 @@ const CallLogs = () => {
       const durationInSeconds = item.call_duration || 0;
       const durationMinutes = Math.floor(durationInSeconds / 60);
       const durationSeconds = durationInSeconds % 60;
-      
+
       return {
         id: item._id || `temp-${index}`,
         contact: {
           name: item.clientId?.name || `Customer ${index + 1}`,
-          identifier: item.customer_phone_number || `+1 555-${String(index + 1).padStart(4, '0')}`,
+          identifier:
+            item.customer_phone_number ||
+            `+1 555-${String(index + 1).padStart(4, "0")}`,
           avatar: "/placeholder.svg?height=32&width=32",
         },
         channel: "voice", // API data is for voice calls
@@ -288,8 +313,8 @@ const CallLogs = () => {
         duration: `${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
         status: item.hand_off ? "escalated" : "resolved", // Use hand_off to determine status
-        csat: 4.2 + (Math.random() * 0.8), // Hardcoded CSAT score
-        confidence: 75 + (Math.random() * 20), // Hardcoded confidence score
+        csat: 4.2 + Math.random() * 0.8, // Hardcoded CSAT score
+        confidence: 75 + Math.random() * 20, // Hardcoded confidence score
         language: "english", // Hardcoded language
         // Additional API-specific fields
         transcriptUri: item.transcript_uri,
@@ -479,12 +504,12 @@ const CallLogs = () => {
       },
     });
     setDateInputs({
-      startDate: '',
-      endDate: ''
+      startDate: "",
+      endDate: "",
     });
     setTempDateFilter({
-      startDate: '',
-      endDate: ''
+      startDate: "",
+      endDate: "",
     });
     setSelectedConversations([]);
   };
@@ -623,7 +648,10 @@ const CallLogs = () => {
             <SelectContent>
               <SelectItem value="all-assistants">All Assistants</SelectItem>
               {agentsData.map((agent) => (
-                <SelectItem key={agent._id || agent.id} value={agent._id || agent.id}>
+                <SelectItem
+                  key={agent._id || agent.id}
+                  value={agent._id || agent.id}
+                >
                   {agent.agentName || agent.name || `Agent ${agent._id}`}
                 </SelectItem>
               ))}
@@ -649,7 +677,8 @@ const CallLogs = () => {
                       <span className="text-gray-600 mr-2">Date Range</span>
                       <div className="w-px h-4 bg-gray-300 mx-2"></div>
                       <span className="text-blue-600 font-medium">
-                        {formatDateForChip(dateInputs.startDate)} - {formatDateForChip(dateInputs.endDate)}
+                        {formatDateForChip(dateInputs.startDate)} -{" "}
+                        {formatDateForChip(dateInputs.endDate)}
                       </span>
                     </span>
                   ) : (
@@ -661,7 +690,7 @@ const CallLogs = () => {
                     type="button"
                     className="ml-2 p-1 rounded-full hover:bg-red-100 focus:outline-none"
                     tabIndex={0}
-                    onClick={e => {
+                    onClick={(e) => {
                       e.stopPropagation();
                       handleClearDateFilter();
                     }}
@@ -679,20 +708,34 @@ const CallLogs = () => {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-gray-600 text-xs mb-1 font-medium">Start Date</label>
+                    <label className="block text-gray-600 text-xs mb-1 font-medium">
+                      Start Date
+                    </label>
                     <Input
                       type="date"
                       value={tempDateFilter.startDate}
-                      onChange={(e) => setTempDateFilter(prev => ({ ...prev, startDate: e.target.value }))}
+                      onChange={(e) =>
+                        setTempDateFilter((prev) => ({
+                          ...prev,
+                          startDate: e.target.value,
+                        }))
+                      }
                       className="w-full bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-600 text-xs mb-1 font-medium">End Date</label>
+                    <label className="block text-gray-600 text-xs mb-1 font-medium">
+                      End Date
+                    </label>
                     <Input
                       type="date"
                       value={tempDateFilter.endDate}
-                      onChange={(e) => setTempDateFilter(prev => ({ ...prev, endDate: e.target.value }))}
+                      onChange={(e) =>
+                        setTempDateFilter((prev) => ({
+                          ...prev,
+                          endDate: e.target.value,
+                        }))
+                      }
                       className="w-full bg-white border-gray-300 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
@@ -700,7 +743,9 @@ const CallLogs = () => {
                 <Button
                   className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                   onClick={handleApplyDateFilter}
-                  disabled={!tempDateFilter.startDate || !tempDateFilter.endDate}
+                  disabled={
+                    !tempDateFilter.startDate || !tempDateFilter.endDate
+                  }
                 >
                   Apply
                 </Button>
@@ -812,12 +857,10 @@ const CallLogs = () => {
       {error && !loading && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-red-800">
-              Error: {error}
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <p className="text-sm text-red-800">Error: {error}</p>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={fetchAllData}
               className="text-red-600 border-red-300 hover:bg-red-50"
             >
@@ -831,8 +874,7 @@ const CallLogs = () => {
       {hasActiveFilters() && !loading && !error && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p className="text-sm text-blue-800">
-            Showing {filteredConversations.length} of {totalCount}{" "}
-            conversations
+            Showing {filteredConversations.length} of {totalCount} conversations
             {filters.searchQuery && ` matching "${filters.searchQuery}"`}
           </p>
         </div>
@@ -950,10 +992,9 @@ const CallLogs = () => {
                       colSpan={10}
                       className="p-8 text-center text-gray-500"
                     >
-                      {apiData.length === 0 
+                      {apiData.length === 0
                         ? "No call logs found. Start making calls to see data here."
-                        : "No conversations found matching your filters."
-                      }
+                        : "No conversations found matching your filters."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -978,7 +1019,8 @@ const CallLogs = () => {
                           <Avatar className="w-8 h-8">
                             <AvatarImage
                               src={
-                                conversation.contact.avatar || "/placeholder.svg"
+                                conversation.contact.avatar ||
+                                "/placeholder.svg"
                               }
                             />
                             <AvatarFallback>
@@ -1052,6 +1094,9 @@ const CallLogs = () => {
                           variant="link"
                           size="sm"
                           className="text-blue-600 hover:text-blue-800 p-0"
+                          onClick={() =>
+                            router.push(`/call-logs/${conversation.id}`)
+                          }
                         >
                           <Play className="w-4 h-4 mr-1" />
                           View Details
@@ -1105,7 +1150,10 @@ const CallLogs = () => {
               </TableHeader>
               <TableBody className="bg-white">
                 {Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="hover:bg-gray-50 border-gray-50">
+                  <TableRow
+                    key={index}
+                    className="hover:bg-gray-50 border-gray-50"
+                  >
                     <TableCell className="p-4">
                       <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
                     </TableCell>

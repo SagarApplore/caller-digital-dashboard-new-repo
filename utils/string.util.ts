@@ -36,6 +36,12 @@ const string = {
     const nameParts = name.split(" ");
     return nameParts.map((part) => part[0]).join("");
   },
+
+  formatDuration: (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.round(seconds % 60);
+    return `${mins}m ${secs}s`;
+  },
 };
 
 export default string;

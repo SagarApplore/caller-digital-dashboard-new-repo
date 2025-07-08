@@ -6,8 +6,10 @@ import {
 } from "@/components/organisms/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Phone, MessageSquare, Mail } from "lucide-react";
+import { Cell, Pie, PieChart } from "recharts";
 
-export function OmnichannelSnapshot() {
+export function OmnichannelSnapshot({ data }: { data: any }) {
+  console.log("data", data);
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
       <CardHeader className="p-0 pb-4">
@@ -27,72 +29,98 @@ export function OmnichannelSnapshot() {
           </span>
           <div className="flex items-center space-x-4">
             <div className="relative w-20 h-20">
-              <svg
-                className="w-20 h-20 transform -rotate-90"
-                viewBox="0 0 36 36"
-              >
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#e5e7eb"
-                  strokeWidth="3"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#3b82f6"
-                  strokeWidth="3"
-                  strokeDasharray="42, 100"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#8b5cf6"
-                  strokeWidth="3"
-                  strokeDasharray="31, 100"
-                  strokeDashoffset="-42"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="3"
-                  strokeDasharray="18, 100"
-                  strokeDashoffset="-73"
-                />
-                <path
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#22c55e"
-                  strokeWidth="3"
-                  strokeDasharray="9, 100"
-                  strokeDashoffset="-91"
-                />
-              </svg>
+              {/* Pie chart using recharts */}
+              {(() => {
+                // Prepare data for recharts PieChart
+                const channelData = [
+                  {
+                    name: "Voice",
+                    value: data?.channelWise?.voicePercentage ?? 0,
+                    color: "#3b82f6",
+                  },
+                  {
+                    name: "Chat",
+                    value: data?.channelWise?.chatPercentage ?? 0,
+                    color: "#8b5cf6",
+                  },
+                  {
+                    name: "Email",
+                    value: data?.channelWise?.emailPercentage ?? 0,
+                    color: "#10b981",
+                  },
+                  {
+                    name: "WhatsApp",
+                    value: data?.channelWise?.whatsappPercentage ?? 0,
+                    color: "#22c55e",
+                  },
+                ];
+
+                // Only show if at least one value is > 0
+                const hasData = channelData.some((c) => c.value > 0);
+
+                // Lazy load recharts to avoid SSR issues if needed
+                // But for now, just import at top:
+                // import { PieChart, Pie, Cell, Tooltip } from "recharts";
+                // (If not already imported, add to file imports.)
+
+                return (
+                  <div className="w-20 h-20 flex items-center justify-center">
+                    {hasData ? (
+                      <PieChart width={80} height={80}>
+                        <Pie
+                          data={channelData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={22}
+                          outerRadius={36}
+                          paddingAngle={2}
+                          stroke="none"
+                        >
+                          {channelData.map((entry, idx) => (
+                            <Cell key={`cell-${idx}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        {/* Optionally, add a tooltip */}
+                        {/* <Tooltip /> */}
+                      </PieChart>
+                    ) : (
+                      <div className="w-20 h-20 flex items-center justify-center text-xs text-gray-400">
+                        No Data
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 <span className="text-sm">
-                  Voice: <strong>42%</strong>
+                  Voice:{" "}
+                  <strong>{data?.channelWise?.voicePercentage ?? 0}%</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                 <span className="text-sm">
-                  Chat: <strong>31%</strong>
+                  Chat:{" "}
+                  <strong>{data?.channelWise?.chatPercentage ?? 0}%</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <span className="text-sm">
-                  Email: <strong>18%</strong>
+                  Email:{" "}
+                  <strong>{data?.channelWise?.emailPercentage ?? 0}%</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                 <span className="text-sm">
-                  WhatsApp: <strong>9%</strong>
+                  WhatsApp:{" "}
+                  <strong>{data?.channelWise?.whatsappPercentage ?? 0}%</strong>
                 </span>
               </div>
             </div>
@@ -156,9 +184,11 @@ export function OmnichannelSnapshot() {
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
             <div className="flex-1">
-              <div className="font-medium text-gray-900">Sophia AI</div>
+              <div className="font-medium text-gray-900">
+                {data?.topAgent?.agentName ?? "Sophia AI"}
+              </div>
               <div className="text-sm text-gray-600">
-                CSAT 98% • Last active: Now
+                CSAT {data?.topAgent?.csat ?? 0}% • Last active: Now
               </div>
               <div className="flex space-x-1 mt-1">
                 <Phone className="w-3 h-3 text-gray-400" />
