@@ -37,6 +37,7 @@ import {
 } from "../ui/table";
 import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
+import { useRouter } from "next/navigation";
 
 export interface Conversation {
   id: string;
@@ -588,6 +589,7 @@ const CallLogs = () => {
     );
   };
 
+  const router = useRouter();
   return (
     <>
       {/* Filter Bar */}

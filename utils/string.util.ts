@@ -27,6 +27,15 @@ const string = {
         return number;
     }
   },
+  formatTime: (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  },
+  getInitials: (name: string) => {
+    const nameParts = name.split(" ");
+    return nameParts.map((part) => part[0]).join("");
+  },
 };
 
 export default string;

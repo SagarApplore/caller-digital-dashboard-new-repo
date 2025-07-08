@@ -1,3 +1,12 @@
+const availableColors = [
+  "bg-green-200 text-green-700",
+  "bg-yellow-200 text-yellow-700",
+  "bg-red-200 text-red-700",
+  "bg-blue-200 text-blue-700",
+  "bg-purple-200 text-purple-700",
+  "bg-pink-200 text-pink-700",
+];
+
 const colors = {
   getStatusColor: (status: string) => {
     switch (status) {
@@ -34,6 +43,10 @@ const colors = {
     } else {
       return "bg-red-500";
     }
+  },
+
+  getRandomColor: () => {
+    return availableColors[Math.floor(Math.random() * availableColors.length)];
   },
 };
 
