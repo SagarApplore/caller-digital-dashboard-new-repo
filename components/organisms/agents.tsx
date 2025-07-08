@@ -1,0 +1,460 @@
+"use client";
+
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Phone,
+  MessageCircle,
+  Mail,
+  Settings,
+  ArrowUpDown,
+  BarChart3,
+  ChevronDown,
+  Globe,
+  Languages,
+} from "lucide-react";
+import { Card, CardContent } from "@/components/organisms/card";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@radix-ui/react-dropdown-menu";
+import { useState } from "react";
+
+export interface AssistantStats {
+  conversations: number;
+  csatScore: number;
+  resolutionRate: number;
+  lastActive: string;
+}
+
+export interface AssistantCard {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  status: "Live" | "Test" | "Offline";
+  phoneNumbers?: string[];
+  languages: string[];
+  contactMethods: ("phone" | "chat" | "email" | "whatsapp")[];
+  stats: AssistantStats;
+  showManage?: boolean;
+}
+
+interface FilterState {
+  status: string;
+  channels: string;
+  languages: string;
+  regions: string;
+  sortBy: string;
+}
+
+const ContactMethodIcon = ({ method }: { method: string }) => {
+  switch (method) {
+    case "phone":
+      return <Phone className="w-4 h-4 text-blue-600" />;
+    case "chat":
+      return <MessageCircle className="w-4 h-4 text-purple-600" />;
+    case "email":
+      return <Mail className="w-4 h-4 text-green-600" />;
+    case "whatsapp":
+      return <MessageCircle className="w-4 h-4 text-green-600" />;
+    default:
+      return null;
+  }
+};
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Live":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "Test":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "Offline":
+        return "bg-gray-100 text-gray-800 border-gray-300";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300";
+    }
+  };
+
+  return (
+    <Badge className={`${getStatusColor(status)} font-medium`}>{status}</Badge>
+  );
+};
+
+const formatNumber = (num: number) => {
+  return num.toLocaleString();
+};
+
+const getScoreColor = (score: number) => {
+  if (score >= 95) return "text-green-600";
+  if (score >= 90) return "text-yellow-600";
+  return "text-red-600";
+};
+
+const getActiveColor = (lastActive: string) => {
+  if (lastActive === "Now") return "text-green-600";
+  if (lastActive.includes("m ago")) return "text-green-600";
+  return "text-gray-600";
+};
+
+export default function Agents({
+  assistants,
+}: {
+  assistants: AssistantCard[];
+}) {
+  const [filters, setFilters] = useState<FilterState>({
+    status: "All Status",
+    channels: "All Channels",
+    languages: "All Languages",
+    regions: "All Regions",
+    sortBy: "Sort by Usage",
+  });
+
+  const updateFilter = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const statusOptions = [
+    { value: "all", label: "All Status" },
+    { value: "live", label: "Live" },
+    { value: "test", label: "Test" },
+    { value: "offline", label: "Offline" },
+  ];
+
+  const channelOptions = [
+    { value: "all", label: "All Channels" },
+    { value: "phone", label: "Phone" },
+    { value: "chat", label: "Chat" },
+    { value: "email", label: "Email" },
+    { value: "whatsapp", label: "WhatsApp" },
+  ];
+
+  const languageOptions = [
+    { value: "all", label: "All Languages" },
+    { value: "en", label: "English" },
+    { value: "es", label: "Spanish" },
+    { value: "fr", label: "French" },
+    { value: "de", label: "German" },
+  ];
+
+  const regionOptions = [
+    { value: "all", label: "All Regions" },
+    { value: "us", label: "United States" },
+    { value: "eu", label: "Europe" },
+    { value: "asia", label: "Asia Pacific" },
+    { value: "global", label: "Global" },
+  ];
+
+  const sortOptions = [
+    { value: "usage", label: "Sort by Usage" },
+    { value: "conversations", label: "Sort by Conversations" },
+    { value: "csat", label: "Sort by CSAT Score" },
+    { value: "resolution", label: "Sort by Resolution Rate" },
+    { value: "name", label: "Sort by Name" },
+  ];
+
+  return (
+    <div>
+      {/* Filters */}
+      <div className="flex items-center space-x-4 px-4 pb-4 pt-2 bg-white">
+        {/* Status Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 bg-white border-gray-300 hover:bg-gray-50"
+            >
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-gray-700">{filters.status}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-48 p-4 bg-white z-20 translate-x-[-20px] shadow-lg rounded-sm shadow-gray-200"
+          >
+            {statusOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => updateFilter("status", option.label)}
+                className="flex items-center space-x-2"
+              >
+                {option.value !== "all" && (
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      option.value === "live"
+                        ? "bg-green-500"
+                        : option.value === "test"
+                        ? "bg-yellow-500"
+                        : "bg-gray-400"
+                    }`}
+                  ></div>
+                )}
+                <span>{option.label}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Channels Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 bg-white border-gray-300 hover:bg-gray-50"
+            >
+              <BarChart3 className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">{filters.channels}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-48 p-4 bg-white z-20 translate-x-[-20px] shadow-lg rounded-sm shadow-gray-200"
+          >
+            {channelOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => updateFilter("channels", option.label)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Languages Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 bg-white border-gray-300 hover:bg-gray-50"
+            >
+              <Languages className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">{filters.languages}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-48 p-4 bg-white z-20 translate-x-[-20px] shadow-lg rounded-sm shadow-gray-200"
+          >
+            {languageOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => updateFilter("languages", option.label)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Regions Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 bg-white border-gray-300 hover:bg-gray-50"
+            >
+              <Globe className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">{filters.regions}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-48 p-4 bg-white z-20 translate-x-[-20px] shadow-lg rounded-sm shadow-gray-200"
+          >
+            {regionOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => updateFilter("regions", option.label)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Sort Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="flex items-center space-x-2 bg-white border-gray-300 hover:bg-gray-50"
+            >
+              <ArrowUpDown className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-700">{filters.sortBy}</span>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="w-56 p-4 bg-white z-20 translate-x-[-20px] shadow-lg rounded-sm shadow-gray-200"
+          >
+            {sortOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => updateFilter("sortBy", option.label)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Agents */}
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+          {assistants.map((assistant) => (
+            <Card
+              key={assistant.id}
+              className="bg-white shadow-lg shadow-gray-200 hover:shadow-md transition-shadow border-none"
+            >
+              <CardContent className="p-6">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage
+                          src={assistant.avatar || "/placeholder.svg"}
+                          alt={assistant.name}
+                        />
+                        <AvatarFallback>
+                          {assistant.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-lg">
+                        {assistant.name}
+                      </h3>
+                      <p className="text-gray-600 text-sm">{assistant.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <StatusBadge status={assistant.status} />
+                    {assistant.showManage && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-purple-600 hover:text-purple-700 p-1"
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phone Numbers (if available) */}
+                {assistant.phoneNumbers && (
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Phone Numbers
+                      </span>
+                      {assistant.showManage && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="text-purple-600 hover:text-purple-700 p-0 h-auto"
+                        >
+                          Manage
+                        </Button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {assistant.phoneNumbers.map((number) => (
+                        <Badge
+                          key={number}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {number}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Methods & Languages */}
+                <div className="mb-6">
+                  <div className="flex items-center space-x-3">
+                    {assistant.contactMethods.map((method) => (
+                      <ContactMethodIcon key={method} method={method} />
+                    ))}
+                    <div className="flex items-center space-x-1 ml-auto">
+                      {assistant.languages.map((lang, index) => (
+                        <span key={lang} className="text-sm text-gray-600">
+                          {lang}
+                          {index < assistant.languages.length - 1 ? ", " : ""}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Conversations
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {formatNumber(assistant.stats.conversations)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">CSAT Score</div>
+                    <div
+                      className={`text-2xl font-bold ${getScoreColor(
+                        assistant.stats.csatScore
+                      )}`}
+                    >
+                      {assistant.stats.csatScore}%
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Resolution Rate
+                    </div>
+                    <div
+                      className={`text-2xl font-bold ${getScoreColor(
+                        assistant.stats.resolutionRate
+                      )}`}
+                    >
+                      {assistant.stats.resolutionRate}%
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">
+                      Last Active
+                    </div>
+                    <div
+                      className={`text-2xl font-bold ${getActiveColor(
+                        assistant.stats.lastActive
+                      )}`}
+                    >
+                      {assistant.stats.lastActive}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
