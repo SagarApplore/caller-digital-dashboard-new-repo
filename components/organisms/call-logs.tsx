@@ -313,8 +313,8 @@ const CallLogs = () => {
         duration: `${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
         status: item.hand_off ? "escalated" : "resolved", // Use hand_off to determine status
-        csat: 4.2 + Math.random() * 0.8, // Hardcoded CSAT score
-        confidence: 75 + Math.random() * 20, // Hardcoded confidence score
+        csat: Number((4.2 + Math.random() * 0.8).toFixed(2)), // Hardcoded CSAT score
+        confidence: Number((75 + Math.random() * 20).toFixed(2)), // Hardcoded confidence score
         language: "english", // Hardcoded language
         // Additional API-specific fields
         transcriptUri: item.transcript_uri,

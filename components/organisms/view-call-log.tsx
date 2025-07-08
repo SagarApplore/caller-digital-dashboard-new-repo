@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import WaveSurfer from "wavesurfer.js";
 import utils from "@/utils/index.util";
+import apiRequest from "@/utils/api";
 
 interface SenderDetails {
   name: string;
@@ -79,6 +80,21 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const [audioUrl, setAudioUrl] = useState("");
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCallLog = async () => {
+    try {
+      const response = await apiRequest(`/vapi/call-logs/${id}`, "GET");
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching call log:", err);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCallLog();
+  }, [id]);
 
   const renderStars = (rating: number) => {
     return (
