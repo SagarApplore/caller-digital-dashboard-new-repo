@@ -22,11 +22,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
-import { Checkbox } from "@radix-ui/react-checkbox";
-import { Progress } from "@radix-ui/react-progress";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Checkbox } from "../ui/checkbox";
+import { Progress } from "../ui/progress";
 import { Input } from "../atoms/input";
 import { Button } from "../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import utils from "@/utils/index.util";
 
 export interface Conversation {
   id: string;
@@ -388,27 +397,27 @@ const CallLogs = () => {
     switch (status) {
       case "resolved":
         return (
-          <Badge className="bg-green-100 text-green-800 border-green-300">
+          <div className="bg-green-100 text-green-800 border-green-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
             Resolved
-          </Badge>
+          </div>
         );
       case "escalated":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          <div className="bg-yellow-100 text-yellow-800 border-yellow-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
             Escalated
-          </Badge>
+          </div>
         );
       case "pending":
         return (
-          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+          <div className="bg-blue-100 text-blue-800 border-blue-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
             Pending
-          </Badge>
+          </div>
         );
       default:
         return (
-          <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+          <div className="bg-gray-100 text-gray-800 border-gray-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
             {status}
-          </Badge>
+          </div>
         );
     }
   };
@@ -417,34 +426,34 @@ const CallLogs = () => {
     switch (channel) {
       case "voice":
         return (
-          <div className="flex items-center space-x-1 text-blue-600">
-            <Phone className="w-4 h-4" />
-            <span className="text-sm">Voice</span>
+          <div className="flex items-center space-x-1 text-blue-600 bg-blue-100 rounded-full px-2 py-1 w-fit">
+            <Phone className="w-3 h-3" />
+            <span className="text-xs font-semibold">Voice</span>
           </div>
         );
       case "chat":
         return (
-          <div className="flex items-center space-x-1 text-purple-600">
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm">Chat</span>
+          <div className="flex items-center space-x-1 text-purple-600 bg-purple-100 rounded-full px-2 py-1 w-fit">
+            <MessageCircle className="w-3 h-3" />
+            <span className="text-xs font-semibold">Chat</span>
           </div>
         );
       case "whatsapp":
         return (
-          <div className="flex items-center space-x-1 text-green-600">
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm">WhatsApp</span>
+          <div className="flex items-center space-x-1 text-green-600 bg-green-100 rounded-full px-2 py-1 w-fit">
+            <MessageCircle className="w-3 h-3" />
+            <span className="text-xs font-semibold">WhatsApp</span>
           </div>
         );
       case "email":
         return (
-          <div className="flex items-center space-x-1 text-gray-600">
-            <MessageCircle className="w-4 h-4" />
-            <span className="text-sm">Email</span>
+          <div className="flex items-center space-x-1 text-gray-600 bg-gray-100 rounded-full px-2 py-1 w-fit">
+            <MessageCircle className="w-3 h-3" />
+            <span className="text-xs font-semibold">Email</span>
           </div>
         );
       default:
-        return <span className="text-sm">{channel}</span>;
+        return <span className="text-xs">{channel}</span>;
     }
   };
 
@@ -624,7 +633,7 @@ const CallLogs = () => {
         </div>
       )}
 
-      <div className="m-6 space-y-6">
+      <div className="m-6 space-y-6 h-full">
         {/* Metrics Cards */}
         <div className="grid grid-cols-6 gap-4">
           {metrics.map((metric, index) => (
@@ -661,165 +670,168 @@ const CallLogs = () => {
         </div>
 
         {/* Data Table */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="text-left p-4 w-12">
+        <div className="overflow-scroll rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+          <Table className="w-full">
+            <TableHeader className="bg-gray-50">
+              <TableRow>
+                <TableHead className="text-left py-2 px-4 w-12">
+                  <Checkbox
+                    className="border-gray-300 border h-4 w-4 bg-white"
+                    checked={
+                      filteredConversations.length > 0 &&
+                      selectedConversations.length ===
+                        filteredConversations.length
+                    }
+                    onCheckedChange={toggleAllConversations}
+                  />
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Contact
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Channel
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Assistant
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Timestamp
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Duration
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Status
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  CSAT
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Confidence
+                </TableHead>
+                <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  Actions
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody className="bg-white">
+              {filteredConversations.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={10}
+                    className="p-8 text-center text-gray-500"
+                  >
+                    No conversations found matching your filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredConversations.map((conversation) => (
+                  <TableRow
+                    key={conversation.id}
+                    className="hover:bg-gray-50 border-gray-50"
+                  >
+                    <TableCell className="p-4">
                       <Checkbox
-                        checked={
-                          filteredConversations.length > 0 &&
-                          selectedConversations.length ===
-                            filteredConversations.length
+                        className="border-gray-300 border h-4 w-4 bg-white"
+                        checked={selectedConversations.includes(
+                          conversation.id
+                        )}
+                        onCheckedChange={() =>
+                          toggleConversationSelection(conversation.id)
                         }
-                        onCheckedChange={toggleAllConversations}
                       />
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Channel
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Assistant
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Timestamp
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      CSAT
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Confidence
-                    </th>
-                    <th className="text-left p-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredConversations.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={10}
-                        className="p-8 text-center text-gray-500"
-                      >
-                        No conversations found matching your filters.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredConversations.map((conversation) => (
-                      <tr key={conversation.id} className="hover:bg-gray-50">
-                        <td className="p-4">
-                          <Checkbox
-                            checked={selectedConversations.includes(
-                              conversation.id
-                            )}
-                            onCheckedChange={() =>
-                              toggleConversationSelection(conversation.id)
+                    </TableCell>
+                    <TableCell className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage
+                            src={
+                              conversation.contact.avatar || "/placeholder.svg"
                             }
                           />
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage
-                                src={
-                                  conversation.contact.avatar ||
-                                  "/placeholder.svg"
-                                }
-                              />
-                              <AvatarFallback>
-                                {conversation.contact.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-gray-900">
-                                {conversation.contact.name}
-                              </div>
-                              <div className="text-sm text-gray-600">
-                                {conversation.contact.identifier}
-                              </div>
-                            </div>
+                          <AvatarFallback>
+                            {conversation.contact.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {conversation.contact.name}
                           </div>
-                        </td>
-                        <td className="p-4">
-                          {getChannelIcon(conversation.channel)}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2">
-                            <Avatar className="w-6 h-6">
-                              <AvatarImage
-                                src={
-                                  conversation.assistant.avatar ||
-                                  "/placeholder.svg"
-                                }
-                              />
-                              <AvatarFallback>
-                                {conversation.assistant.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium">
-                              {conversation.assistant.name}
-                            </span>
+                          <div className="text-sm text-gray-600">
+                            {conversation.contact.identifier}
                           </div>
-                        </td>
-                        <td className="p-4 text-sm text-gray-600">
-                          {conversation.timestamp}
-                        </td>
-                        <td className="p-4 text-sm font-medium">
-                          {conversation.duration}
-                        </td>
-                        <td className="p-4">
-                          {getStatusBadge(conversation.status)}
-                        </td>
-                        <td className="p-4">
-                          {renderStars(conversation.csat)}
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2">
-                            <Progress
-                              value={conversation.confidence}
-                              className="w-16 h-2"
-                            />
-                            <span className="text-sm text-gray-600">
-                              {conversation.confidence}%
-                            </span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <Button
-                            variant="link"
-                            size="sm"
-                            className="text-blue-600 hover:text-blue-800 p-0"
-                          >
-                            <Play className="w-4 h-4 mr-1" />
-                            View Details
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4">
+                      {getChannelIcon(conversation.channel)}
+                    </TableCell>
+                    <TableCell className="p-4">
+                      <div className="flex items-center space-x-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarImage
+                            src={
+                              conversation.assistant.avatar ||
+                              "/placeholder.svg"
+                            }
+                          />
+                          <AvatarFallback>
+                            {conversation.assistant.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">
+                          {conversation.assistant.name}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4 text-sm text-gray-600">
+                      {conversation.timestamp}
+                    </TableCell>
+                    <TableCell className="p-4 text-sm font-medium">
+                      {conversation.duration}
+                    </TableCell>
+                    <TableCell className="p-4">
+                      {getStatusBadge(conversation.status)}
+                    </TableCell>
+                    <TableCell className="p-4">
+                      {renderStars(conversation.csat)}
+                    </TableCell>
+                    <TableCell className="p-4">
+                      <div className="flex flex-col items-start space-y-2">
+                        <Progress
+                          value={conversation.confidence}
+                          className={`h-2 ${utils.colors.getStatusColorByNumber(
+                            conversation.confidence
+                          )}`}
+                        />
+                        <span className="text-xs text-gray-600">
+                          {conversation.confidence}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="p-4">
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-800 p-0"
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </>
   );

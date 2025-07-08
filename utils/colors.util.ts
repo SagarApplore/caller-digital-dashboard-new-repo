@@ -25,6 +25,16 @@ const colors = {
         return "text-gray-700 bg-gray-100";
     }
   },
+
+  getStatusColorByNumber: (number: number) => {
+    if (number >= 90) {
+      return "bg-green-500";
+    } else if (number >= 70) {
+      return "bg-yellow-500";
+    } else {
+      return "bg-red-500";
+    }
+  },
 };
 
 export default colors;
