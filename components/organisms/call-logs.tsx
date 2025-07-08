@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "../ui/table";
 import utils from "@/utils/index.util";
+import { useRouter } from "next/navigation";
 
 export interface Conversation {
   id: string;
@@ -476,6 +477,8 @@ const CallLogs = () => {
       Object.values(filters.quickFilters).some(Boolean)
     );
   };
+
+  const router = useRouter();
   return (
     <>
       {/* Filter Bar */}
@@ -821,6 +824,9 @@ const CallLogs = () => {
                         variant="link"
                         size="sm"
                         className="text-blue-600 hover:text-blue-800 p-0"
+                        onClick={() =>
+                          router.push(`/call-logs/${conversation.id}`)
+                        }
                       >
                         <Play className="w-4 h-4 mr-1" />
                         View Details
