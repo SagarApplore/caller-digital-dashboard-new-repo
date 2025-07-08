@@ -1,6 +1,6 @@
+import CallLogs from "@/components/organisms/call-logs";
 import { ProtectedRoute } from "@/components/protected-route";
 import Dashboard from "@/components/templates/dashboard";
-import React from "react";
 
 const CallLogsPage = () => {
   return (
@@ -11,9 +11,7 @@ const CallLogsPage = () => {
           subtitle: { text: "Call Logs" },
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div></div>
-        </div>
+        <CallLogs />
       </Dashboard>
     </ProtectedRoute>
   );
