@@ -27,7 +27,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
           <div className="bg-gray-100 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-gray-600">Total Calls</span>
-              <span
+              {/* <span
                 className={`text-sm font-medium ${
                   data.percentageChange >= 0 ? "text-green-600" : "text-red-600"
                 }`}
@@ -35,7 +35,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
                 {data.percentageChange >= 0
                   ? `+${data.percentageChange}%`
                   : `${data.percentageChange}%`}
-              </span>
+              </span> */}
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-2">
               {utils.string.formatNumber(data.totalCalls)}
@@ -50,7 +50,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
           <div className="bg-gray-100 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-gray-600">Resolution Rate</span>
-              <span className="text-sm text-green-600 font-medium">+2.1%</span>
+              {/* <span className="text-sm text-green-600 font-medium">+2.1%</span> */}
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-2">92.4%</div>
             <div className="w-full bg-purple-100 rounded-lg h-8 relative overflow-hidden">
