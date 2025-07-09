@@ -7,8 +7,8 @@ const CallLogsPage = () => {
     <ProtectedRoute>
       <Dashboard
         header={{
-          title: "Call Logs",
-          subtitle: { text: "Call Logs" },
+          title: "Conversation Logs",
+          subtitle: { text: "Live", className: "text-gray-700 bg-green-200" },
         }}
       >
         <CallLogs />

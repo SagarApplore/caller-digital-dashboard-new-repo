@@ -154,21 +154,21 @@ export function ClientsPage() {
       </Card>
 
       {/* Client Table */}
-      <div className="p-4">
+      <div className="p-4 max-h-[calc(100vh-140px)] overflow-y-scroll">
         <div className="rounded-lg shadow-lg shadow-gray-200">
           <Table className="border-none">
             <TableHeader className="bg-gray-100">
               <TableRow className="border-gray-100">
                 <TableHead>Company</TableHead>
-                <TableHead>Industry</TableHead>
-                <TableHead>AM</TableHead>
-                <TableHead>MRR</TableHead>
-                <TableHead>Plan</TableHead>
+                {/* <TableHead>Industry</TableHead> */}
+                {/* <TableHead>AM</TableHead> */}
+                {/* <TableHead>MRR</TableHead> */}
+                {/* <TableHead>Plan</TableHead> */}
                 <TableHead>Assistants</TableHead>
                 <TableHead>Channels</TableHead>
-                <TableHead>Health</TableHead>
+                {/* <TableHead>Health</TableHead> */}
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {/* <TableHead className="text-right">Actions</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody className="bg-white">
@@ -198,7 +198,7 @@ export function ClientsPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div
                       className={`text-xs w-fit font-medium rounded-full px-2 py-1 ${getIndustryColor(
                         client.industry
@@ -229,7 +229,7 @@ export function ClientsPage() {
                     >
                       {client.plan}
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <div>
                       <div className="font-medium text-gray-900">
@@ -239,7 +239,7 @@ export function ClientsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      {client.channels?.map((channel: string) => {
+                      {/* {client.channels?.map((channel: string) => {
                         const { icon, color } = getChannelIconAndColor(channel);
                         return (
                           <div
@@ -248,10 +248,22 @@ export function ClientsPage() {
                             {icon}
                           </div>
                         );
+                      })} */}
+                      {/* Hardcoded channels for demonstration */}
+                      {["email", "whatsapp", "sms"].map((channel, idx) => {
+                        const { icon, color } = getChannelIconAndColor(channel);
+                        return (
+                          <div
+                            key={channel + idx}
+                            className={`flex items-center ${color} rounded-full px-2 py-2`}
+                          >
+                            {icon}
+                          </div>
+                        );
                       })}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div
                       className={`text-xs w-fit font-semibold ${getHealthColor(
                         client.health
@@ -259,11 +271,11 @@ export function ClientsPage() {
                     >
                       {client.health}%
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell>
                     <div
                       className={`text-xs w-fit font-semibold flex items-center gap-1 rounded-full px-2 py-1 ${utils.colors.getStatusColor(
-                        client.status
+                        client.active
                       )}`}
                     >
                       <Circle
@@ -271,10 +283,14 @@ export function ClientsPage() {
                         fill="currentColor"
                         stroke="currentColor"
                       />
-                      {client.status}
+                      {typeof client.active === "boolean"
+                        ? client.active
+                          ? "Active"
+                          : "Inactive"
+                        : client.active}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  {/* <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button variant="outline" size="sm">
                         View
@@ -290,7 +306,7 @@ export function ClientsPage() {
                         Deactivate
                       </Button>
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>

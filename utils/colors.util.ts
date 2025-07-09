@@ -8,17 +8,21 @@ const availableColors = [
 ];
 
 const colors = {
-  getStatusColor: (status: string) => {
-    switch (status) {
-      case "Active":
-      case "processed":
-        return "text-green-700 bg-green-100";
-      case "At Risk":
-      case "Pending":
-      case "processing":
-        return "text-orange-700 bg-orange-100";
-      default:
-        return "text-red-700 bg-red-100";
+  getStatusColor: (status: string | boolean) => {
+    if (typeof status === "boolean") {
+      return status ? "text-green-700 bg-green-100" : "text-red-700 bg-red-100";
+    } else {
+      switch (status) {
+        case "Active":
+        case "processed":
+          return "text-green-700 bg-green-100";
+        case "At Risk":
+        case "Pending":
+        case "processing":
+          return "text-orange-700 bg-orange-100";
+        default:
+          return "text-red-700 bg-red-100";
+      }
     }
   },
 

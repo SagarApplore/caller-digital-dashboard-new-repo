@@ -2,6 +2,7 @@
 
 import {
   Copy,
+  Frown,
   Loader2,
   Pause,
   Play,
@@ -18,6 +19,12 @@ import WaveSurfer from "wavesurfer.js";
 import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import axios from "axios";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  analyzeText,
+  generateShortSummary,
+  TextAnalysisResult,
+} from "@/utils/openai.util";
 
 interface SenderDetails {
   name: string;
@@ -34,7 +41,6 @@ const Transcript = ({
   transcript: any;
   callLog: any;
 }) => {
-  console.log(callLog);
   return (
     <div className="flex w-full gap-2 items-start">
       {transcript.sender?.img ? (
@@ -98,11 +104,20 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const [loading, setLoading] = useState(true);
   const [apiData, setApiData] = useState<any>({});
   const [transcripts, setTranscripts] = useState<any[]>([]);
+  const [summary, setSummary] = useState<string>("");
+  const [shortSummary, setShortSummary] = useState<string>("");
+  const [analysis, setAnalysis] = useState<TextAnalysisResult>({
+    sentiment: "positive",
+    intent: "",
+    keywords: [],
+    aiAnalysis: "",
+  });
 
   const fetchCallLog = async () => {
     try {
       const response = await apiRequest(`/vapi/call-logs/${id}`, "GET");
       await fetchTranscript(response.data?.data?.transcript_uri);
+      await fetchSummary(response.data?.data?.summary_uri);
       setApiData(response.data?.data);
       setLoading(false);
     } catch (err) {
@@ -114,11 +129,23 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const fetchTranscript = async (transcriptUri: string) => {
     try {
       const response = await axios.get(transcriptUri);
-      console.log(response.data?.items);
       setTranscripts(response.data?.items);
     } catch (err) {
       console.error("Error fetching transcript:", err);
       setTranscripts([]);
+    }
+  };
+
+  const fetchSummary = async (summaryUri: string) => {
+    try {
+      const response = await axios.get(summaryUri);
+      const shortSummary = await generateShortSummary(response.data, 100);
+      const analysis = await analyzeText(response.data);
+      setAnalysis(analysis);
+      setShortSummary(shortSummary);
+      setSummary(response.data);
+    } catch (err) {
+      console.error("Error fetching summary:", err);
     }
   };
 
@@ -243,7 +270,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Location</span>
-                <span className="text-sm font-bold">New York, USA</span>
+                <span className="text-sm font-bold">Delhi, India</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Language</span>
@@ -327,27 +354,23 @@ const ViewCallLog = ({ id }: { id: string }) => {
               <h2 className="text-lg font-bold">Call Summary</h2>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Intent</span>
-                <span className="text-sm font-bold">Billing Inquiry</span>
+                <span className="text-sm font-bold">{analysis.intent}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Resolution</span>
-                <span className="text-sm font-bold">
-                  Account balance clarified, payment plan adjusted
-                </span>
+                <span className="text-sm font-bold">{shortSummary}</span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-sm  text-gray-500">Tags</span>
                 <div className="">
                   <ul className="flex flex-wrap gap-2">
-                    <li className="text-xs font-bold bg-blue-100 px-2 py-1 rounded-full text-blue-700">
-                      Billing
-                    </li>
-                    <li className="text-xs font-bold bg-green-100 px-2 py-1 rounded-full text-green-700">
-                      Payment
-                    </li>
-                    <li className="text-xs font-bold bg-purple-100 px-2 py-1 rounded-full text-purple-700">
-                      Account
-                    </li>
+                    {analysis?.keywords?.map((keyword: string) => (
+                      <li
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${utils.colors.getRandomColor()}`}
+                      >
+                        {keyword}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -404,10 +427,42 @@ const ViewCallLog = ({ id }: { id: string }) => {
 
             <div className="flex flex-col gap-4 bg-white p-6">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold">
+                {/* <span className="text-lg font-bold">
                   Conversation Transcript
-                </span>
-                <div className="flex items-center gap-4">
+                </span> */}
+                <Tabs defaultValue="transcript" className="space-y-6 w-full">
+                  <TabsList className="bg-transparent">
+                    <TabsTrigger
+                      value="transcript"
+                      className="text-lg font-bold data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 border-b-2 border-transparent rounded-none"
+                    >
+                      Transcript
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="summary"
+                      className="text-lg font-bold data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 border-b-2 border-transparent rounded-none"
+                    >
+                      Summary
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="transcript" className="w-full">
+                    <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll w-full">
+                      {transcripts.map((item: any) => (
+                        <Transcript
+                          key={item.id}
+                          transcript={item}
+                          callLog={apiData}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="summary">
+                    <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
+                      <div className="text-sm text-gray-500">{summary}</div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                {/* <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1 cursor-pointer">
                     <Search className="w-3 h-3" />
                     <span className="text-sm">Search</span>
@@ -416,25 +471,25 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     <Copy className="w-3 h-3" />
                     <span className="text-sm">Copy</span>
                   </div>
-                </div>
+                </div> */}
               </div>
-              <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
-                {transcripts.map((item: any) => (
-                  <Transcript
-                    key={item.id}
-                    transcript={item}
-                    callLog={apiData}
-                  />
-                ))}
-              </div>
+
               <div className="p-2 bg-gray-100 rounded-md text-sm text-gray-600">
-                AI analysis: Customer happy
+                AI analysis: {analysis.aiAnalysis}
               </div>
               <div className="flex flex-col items-center space-y-4 p-4 bg-gray-100 rounded-md w-fit">
                 <div className="text-lg font-bold">Sentiment Analysis</div>
                 <div className="flex flex-col gap-2 items-center">
-                  <Smile />
-                  <span>Positive</span>
+                  {analysis.sentiment === "positive" && (
+                    <Smile className="text-green-500 w-10 h-10" />
+                  )}
+                  {analysis.sentiment === "neutral" && (
+                    <Smile className="text-gray-400 w-10 h-10" />
+                  )}
+                  {analysis.sentiment === "negative" && (
+                    <Frown className="text-red-500 -scale-x-100 w-10 h-10" />
+                  )}
+                  <span>{analysis.sentiment}</span>
                 </div>
               </div>
             </div>

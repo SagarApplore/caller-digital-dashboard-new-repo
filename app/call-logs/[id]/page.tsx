@@ -8,8 +8,9 @@ const CallLogsPage = ({ params }: { params: { id: string } }) => {
     <ProtectedRoute>
       <Dashboard
         header={{
-          title: "Call Logs",
-          subtitle: { text: "Call Logs" },
+          title: "Conversation Details",
+          subtitle: { text: "" },
+          backRoute: "/call-logs",
         }}
       >
         <ViewCallLog id={params.id} />

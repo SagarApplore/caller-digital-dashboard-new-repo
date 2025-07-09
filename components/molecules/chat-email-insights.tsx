@@ -278,14 +278,14 @@ export function ChatEmailInsights({
           </div>
 
           {/* SLA Metrics */}
-          <div className="flex justify-between text-sm">
+          {/* <div className="flex justify-between text-sm">
             <span>
               Within SLA: <strong className="text-green-600">92%</strong>
             </span>
             <span>
               Outside SLA: <strong className="text-red-600">8%</strong>
             </span>
-          </div>
+          </div> */}
         </div>
 
         {/* CSAT Summary */}
