@@ -1,12 +1,23 @@
 "use client";
 
-import { Copy, Pause, Play, Search, Smile, Star, Volume2 } from "lucide-react";
+import {
+  Copy,
+  Loader2,
+  Pause,
+  Play,
+  Search,
+  Smile,
+  Star,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import WaveSurfer from "wavesurfer.js";
 import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
+import axios from "axios";
 
 interface SenderDetails {
   name: string;
@@ -17,31 +28,45 @@ interface SenderDetails {
 }
 
 const Transcript = ({
-  user,
-  senderDetails,
+  transcript,
+  callLog,
 }: {
-  user: string;
-  senderDetails: SenderDetails;
+  transcript: any;
+  callLog: any;
 }) => {
+  console.log(callLog);
   return (
     <div className="flex w-full gap-2 items-start">
-      {senderDetails.img ? (
-        <Image src={senderDetails.img} alt="avatar" width={30} height={30} />
+      {transcript.sender?.img ? (
+        <Image
+          src={transcript.sender?.img}
+          alt="avatar"
+          width={30}
+          height={30}
+        />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-          <span className="text-sm font-bold text-gray-500">
-            {utils.string.getInitials(senderDetails.name).toUpperCase()}
-          </span>
+        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-500">
+          {utils.string
+            .getInitials(
+              transcript.role?.toLowerCase() === "user"
+                ? callLog?.clientId?.name
+                : callLog?.agentId?.agentName
+            )
+            .toUpperCase()}
         </div>
       )}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-700">
-            {senderDetails.name}
+            {transcript.role?.toLowerCase() === "user"
+              ? callLog?.clientId?.name
+              : callLog?.agentId?.agentName}
           </span>
-          <span className="text-xs text-gray-500">{senderDetails.time}</span>
-          <div className="flex items-center gap-2">
-            {senderDetails.tags.map((tag, index) => (
+          {/* <span className="text-xs text-gray-500">
+            {transcript.sender?.time}
+          </span> */}
+          {/* <div className="flex items-center gap-2">
+            {transcript.sender?.tags?.map((tag: string, index: number) => (
               <span
                 key={index}
                 className={`text-xs ${utils.colors.getRandomColor()} px-2 py-1 rounded-full font-semibold`}
@@ -49,46 +74,51 @@ const Transcript = ({
                 {tag}
               </span>
             ))}
-          </div>
+          </div> */}
         </div>
         <span
           className={`text-sm p-2 rounded-lg ${
-            user === "user" ? "bg-gray-100" : "bg-purple-100"
+            transcript.role?.toLowerCase() === "user"
+              ? "bg-gray-100"
+              : "bg-purple-100"
           } text-left`}
         >
-          {senderDetails.message}
+          {transcript.content?.[0] ?? ""}
         </span>
       </div>
     </div>
   );
 };
 
-const transcript = [
-  {
-    id: 1,
-    name: "John Smith",
-    phone: "+1234567890",
-    time: "00:35",
-    message:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quos.",
-    tags: ["Billing", "Payment", "Account"],
-  },
-];
-
 const ViewCallLog = ({ id }: { id: string }) => {
   const [play, setPlay] = useState(false);
-  const [audioUrl, setAudioUrl] = useState("");
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [muted, setMuted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [apiData, setApiData] = useState<any>({});
+  const [transcripts, setTranscripts] = useState<any[]>([]);
 
   const fetchCallLog = async () => {
     try {
       const response = await apiRequest(`/vapi/call-logs/${id}`, "GET");
+      await fetchTranscript(response.data?.data?.transcript_uri);
+      setApiData(response.data?.data);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching call log:", err);
       setLoading(false);
+    }
+  };
+
+  const fetchTranscript = async (transcriptUri: string) => {
+    try {
+      const response = await axios.get(transcriptUri);
+      console.log(response.data?.items);
+      setTranscripts(response.data?.items);
+    } catch (err) {
+      console.error("Error fetching transcript:", err);
+      setTranscripts([]);
     }
   };
 
@@ -104,54 +134,59 @@ const ViewCallLog = ({ id }: { id: string }) => {
       </div>
     );
   };
-  useEffect(() => {
-    setAudioUrl(
-      "https://caller-recordings.s3.ap-south-1.amazonaws.com/recording/91fa171e-f401-462f-9603-58afbe84d8df/recording_20250708_124907.ogg"
-    );
-  }, []);
 
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurfer = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
-    if (!waveformRef.current) return;
+    if (apiData?.recording_uri) {
+      if (!waveformRef.current) return;
 
-    wavesurfer.current = WaveSurfer.create({
-      container: waveformRef.current,
-      waveColor: "#ddd",
-      progressColor: "#4f46e5", // Indigo
-      height: 30,
-      barWidth: 2,
-    });
-
-    wavesurfer.current.load(audioUrl).then(() => {
-      // Get duration after audio is ready
-      wavesurfer.current?.on("ready", () => {
-        const dur = wavesurfer.current?.getDuration() ?? 0;
-        setDuration(dur); // duration in seconds
-        setCurrentTime(0);
-      });
-      // Update currentTime during playback
-      wavesurfer.current?.on("audioprocess", () => {
-        setCurrentTime(wavesurfer.current?.getCurrentTime() ?? 0);
+      wavesurfer.current = WaveSurfer.create({
+        container: waveformRef.current,
+        waveColor: "#ddd",
+        progressColor: "#4f46e5", // Indigo
+        height: 30,
+        barWidth: 2,
       });
 
-      // On pause or end, update one last time
-      wavesurfer.current?.on("pause", () => {
-        setCurrentTime(wavesurfer.current?.getCurrentTime() ?? 0);
-      });
-      wavesurfer.current?.on("finish", () => {
-        setCurrentTime(wavesurfer.current?.getDuration() ?? 0);
-      });
-    });
+      wavesurfer.current.load(apiData?.recording_uri).then(() => {
+        // Get duration after audio is ready
+        wavesurfer.current?.on("ready", () => {
+          const dur = wavesurfer.current?.getDuration() ?? 0;
+          setDuration(dur); // duration in seconds
+          setCurrentTime(0);
+        });
+        // Update currentTime during playback
+        wavesurfer.current?.on("audioprocess", () => {
+          setCurrentTime(wavesurfer.current?.getCurrentTime() ?? 0);
+        });
 
-    return () => wavesurfer.current?.destroy();
-  }, [audioUrl]);
+        // On pause or end, update one last time
+        wavesurfer.current?.on("pause", () => {
+          setCurrentTime(wavesurfer.current?.getCurrentTime() ?? 0);
+        });
+        wavesurfer.current?.on("finish", () => {
+          setCurrentTime(wavesurfer.current?.getDuration() ?? 0);
+        });
+      });
+
+      return () => wavesurfer.current?.destroy();
+    }
+  }, [apiData?.recording_uri]);
 
   const handlePlayPause = () => {
     if (wavesurfer.current) {
       wavesurfer.current?.playPause();
     }
+    setPlay(!play);
+  };
+
+  const handleMute = () => {
+    if (wavesurfer.current) {
+      wavesurfer.current?.setMuted(!muted);
+    }
+    setMuted(!muted);
   };
 
   const formatTime = (s: number) => {
@@ -164,180 +199,248 @@ const ViewCallLog = ({ id }: { id: string }) => {
 
   return (
     <div className="m-6 space-y-6 max-h-[calc(100vh-100px)] overflow-y-scroll">
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Customer Information</h2>
-          <div className="flex items-center gap-2">
-            <Image
-              src="/call.svg"
-              alt="avatar"
-              width={50}
-              height={50}
-              className="rounded-full"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm  text-gray-500">John Smith</span>
-              <span className="text-sm font-bold">+1234567890</span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Customer ID</span>
-            <span className="text-sm font-bold">1234567890</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Location</span>
-            <span className="text-sm font-bold">New York, USA</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Language</span>
-            <span className="text-sm font-bold">English</span>
-          </div>
+      {loading ? (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="w-4 h-4 animate-spin" />
         </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Conversation Metrics</h2>
-          <div className="flex items-center justify-between">
-            <span className="text-sm  text-gray-500">Duration</span>
-            <span className="text-sm font-bold">4m 32s</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm  text-gray-500">CSAT Score</span>
-            <span className="text-sm font-bold">{renderStars(4)}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm  text-gray-500">AI Confidence</span>
-            <span className="text-sm font-bold">92%</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm  text-gray-500">Interruptions</span>
-            <span className="text-sm font-bold">2</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Assistant Details</h2>
-          <div className="flex items-center gap-2">
-            <Image
-              src="/call.svg"
-              alt="avatar"
-              width={50}
-              height={50}
-              className="rounded-full"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm  text-gray-500">John Smith</span>
-              <span className="text-sm font-bold">+1234567890</span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Model Version</span>
-            <span className="text-sm font-bold">v2.4.1</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Specialization</span>
-            <span className="text-sm font-bold">Customer Support</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Resolution Rate</span>
-            <span className="text-sm font-bold">89.3%</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Call Summary</h2>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Intent</span>
-            <span className="text-sm font-bold">Billing Inquiry</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm  text-gray-500">Resolution</span>
-            <span className="text-sm font-bold">
-              Account balance clarified, payment plan adjusted
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm  text-gray-500">Tags</span>
-            <div className="">
-              <ul className="flex flex-wrap gap-2">
-                <li className="text-xs font-bold bg-blue-100 px-2 py-1 rounded-full text-blue-700">
-                  Billing
-                </li>
-                <li className="text-xs font-bold bg-green-100 px-2 py-1 rounded-full text-green-700">
-                  Payment
-                </li>
-                <li className="text-xs font-bold bg-purple-100 px-2 py-1 rounded-full text-purple-700">
-                  Account
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg">
-        <div className="p-6 space-y-4 bg-gradient-to-r from-cyan-100 to-purple-100">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold">Audio Recording</span>
-            <span className="text-sm text-gray-500">
-              March 15, 2025 2:18 pm
-            </span>
-          </div>
-
-          <div className="flex flex-col bg-white p-4 rounded-lg gap-4">
-            <div className="flex items-center justify-between">
-              <Button
-                className="bg-blue-500 text-white"
-                onClick={handlePlayPause}
-              >
-                {play ? (
-                  <Pause className="w-4 h-4" />
-                ) : (
-                  <Play className="w-4 h-4" />
-                )}
-                Play Audio
-              </Button>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
+              <h2 className="text-lg font-bold">Customer Information</h2>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">
-                  {formatTime(currentTime)} / {formatTime(duration)}
+                {apiData?.clientId?.image ? (
+                  <Image
+                    src={apiData?.clientId?.image}
+                    alt="avatar"
+                    width={50}
+                    height={50}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-sm font-bold text-gray-500">
+                      {utils.string
+                        .getInitials(apiData?.clientId?.name)
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm  text-gray-500">
+                    {apiData?.clientId?.name}
+                  </span>
+                  <span className="text-sm font-bold">
+                    {apiData?.customer_phone_number}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Customer ID</span>
+                <span className="text-sm font-bold">
+                  {apiData?.clientId?._id}
                 </span>
-                <Volume2 className="w-4 h-4 text-gray-500" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Location</span>
+                <span className="text-sm font-bold">New York, USA</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Language</span>
+                <span className="text-sm font-bold">English</span>
               </div>
             </div>
-            <div ref={waveformRef} />
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-4 bg-white p-6">
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold">Conversation Transcript</span>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1 cursor-pointer">
-                <Search className="w-3 h-3" />
-                <span className="text-sm">Search</span>
+            <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
+              <h2 className="text-lg font-bold">Conversation Metrics</h2>
+              <div className="flex items-center justify-between">
+                <span className="text-sm  text-gray-500">Duration</span>
+                <span className="text-sm font-bold">
+                  {utils.string.formatDuration(apiData?.call_duration)}
+                </span>
               </div>
-              <div className="flex items-center gap-1 cursor-pointer">
-                <Copy className="w-3 h-3" />
-                <span className="text-sm">Copy</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm  text-gray-500">CSAT Score</span>
+                <span className="text-sm font-bold">{renderStars(4)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm  text-gray-500">AI Confidence</span>
+                <span className="text-sm font-bold">92%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm  text-gray-500">Interruptions</span>
+                <span className="text-sm font-bold">
+                  {transcripts.reduce((acc: number, item: any) => {
+                    if (item.interruption === true) {
+                      return acc + 1;
+                    }
+                    return acc;
+                  }, 0)}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
+              <h2 className="text-lg font-bold">Assistant Details</h2>
+              <div className="flex items-center gap-2">
+                {apiData?.agentId?.image ? (
+                  <Image
+                    src={apiData?.agentId?.image}
+                    alt="avatar"
+                    width={50}
+                    height={50}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-sm font-bold text-gray-500">
+                      {utils.string
+                        .getInitials(apiData?.agentId?.agentName)
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm  text-gray-500">
+                    {apiData?.agentId?.agentName}
+                  </span>
+                  <span className="text-sm font-bold">
+                    {apiData?.agent_phone_number}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Model Version</span>
+                <span className="text-sm font-bold">v2.4.1</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Specialization</span>
+                <span className="text-sm font-bold">Customer Support</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Resolution Rate</span>
+                <span className="text-sm font-bold">89.3%</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">
+              <h2 className="text-lg font-bold">Call Summary</h2>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Intent</span>
+                <span className="text-sm font-bold">Billing Inquiry</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Resolution</span>
+                <span className="text-sm font-bold">
+                  Account balance clarified, payment plan adjusted
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm  text-gray-500">Tags</span>
+                <div className="">
+                  <ul className="flex flex-wrap gap-2">
+                    <li className="text-xs font-bold bg-blue-100 px-2 py-1 rounded-full text-blue-700">
+                      Billing
+                    </li>
+                    <li className="text-xs font-bold bg-green-100 px-2 py-1 rounded-full text-green-700">
+                      Payment
+                    </li>
+                    <li className="text-xs font-bold bg-purple-100 px-2 py-1 rounded-full text-purple-700">
+                      Account
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
-            {transcript.map((item) => (
-              <Transcript key={item.id} user="user" senderDetails={item} />
-            ))}
-          </div>
-          <div className="p-2 bg-gray-100 rounded-md text-sm text-gray-600">
-            AI analysis: Customer happy
-          </div>
-          <div className="flex flex-col items-center space-y-4 p-4 bg-gray-100 rounded-md w-fit">
-            <div className="text-lg font-bold">Sentiment Analysis</div>
-            <div className="flex flex-col gap-2 items-center">
-              <Smile />
-              <span>Positive</span>
+
+          <div className="rounded-lg">
+            <div className="p-6 space-y-4 bg-gradient-to-r from-cyan-100 to-purple-100">
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold">Audio Recording</span>
+                <span className="text-sm text-gray-500">
+                  {utils.string.formatDateTime(apiData?.createdAt)}
+                </span>
+              </div>
+
+              <div className="flex flex-col bg-white p-4 rounded-lg gap-4">
+                <div className="flex items-center justify-between">
+                  <Button
+                    className="bg-blue-500 text-white hover:bg-blue-600"
+                    onClick={handlePlayPause}
+                  >
+                    {play ? (
+                      <>
+                        <Pause className="w-4 h-4" />
+                        Pause Audio
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4" />
+                        Play Audio
+                      </>
+                    )}
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    {/* <span className="text-sm text-gray-500">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span> */}
+                    {muted ? (
+                      <VolumeX
+                        className="w-6 h-6 text-gray-500 cursor-pointer"
+                        onClick={handleMute}
+                      />
+                    ) : (
+                      <Volume2
+                        className="w-6 h-6 text-gray-500 cursor-pointer"
+                        onClick={handleMute}
+                      />
+                    )}
+                  </div>
+                </div>
+                <div ref={waveformRef} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 bg-white p-6">
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-bold">
+                  Conversation Transcript
+                </span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1 cursor-pointer">
+                    <Search className="w-3 h-3" />
+                    <span className="text-sm">Search</span>
+                  </div>
+                  <div className="flex items-center gap-1 cursor-pointer">
+                    <Copy className="w-3 h-3" />
+                    <span className="text-sm">Copy</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
+                {transcripts.map((item: any) => (
+                  <Transcript
+                    key={item.id}
+                    transcript={item}
+                    callLog={apiData}
+                  />
+                ))}
+              </div>
+              <div className="p-2 bg-gray-100 rounded-md text-sm text-gray-600">
+                AI analysis: Customer happy
+              </div>
+              <div className="flex flex-col items-center space-y-4 p-4 bg-gray-100 rounded-md w-fit">
+                <div className="text-lg font-bold">Sentiment Analysis</div>
+                <div className="flex flex-col gap-2 items-center">
+                  <Smile />
+                  <span>Positive</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

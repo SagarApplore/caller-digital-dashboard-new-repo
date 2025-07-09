@@ -20,9 +20,11 @@ import {
 export function ChatEmailInsights({
   data,
   handleDaysChange,
+  days,
 }: {
   data: any;
   handleDaysChange: (days: number) => void;
+  days: number;
 }) {
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
@@ -34,14 +36,21 @@ export function ChatEmailInsights({
           </CardTitle>
           <div className="flex space-x-2">
             <Badge
-              className="bg-purple-100 text-purple-700 text-xs"
+              className={`text-xs ${
+                days === 7
+                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  : "bg-transparent text-gray-700 border border-purple-200 hover:bg-purple-200"
+              }`}
               onClick={() => handleDaysChange(7)}
             >
               7 Days
             </Badge>
             <Badge
-              variant="outline"
-              className="text-xs"
+              className={`text-xs ${
+                days === 30
+                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  : "bg-transparent text-gray-700 border border-purple-200 hover:bg-purple-200"
+              }`}
               onClick={() => handleDaysChange(30)}
             >
               30 Days

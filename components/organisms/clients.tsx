@@ -33,48 +33,9 @@ import {
   Circle,
 } from "lucide-react";
 import utils from "@/utils/index.util";
-
-const clients = [
-  {
-    id: 1,
-    name: "Acme Corporation",
-    am: "John Smith",
-    email: "john@acme.com",
-    status: "Active",
-    assistants: 5,
-    plan: "Enterprise",
-    industry: "BFSI",
-    mrr: 100000,
-    channels: ["Email", "WhatsApp", "SMS", "Instagram", "Facebook"],
-    health: 92,
-  },
-  {
-    id: 2,
-    name: "TechStart Inc",
-    am: "Sarah Johnson",
-    email: "sarah@techstart.com",
-    status: "At Risk",
-    assistants: 3,
-    plan: "Professional",
-    industry: "D2C",
-    mrr: 50000,
-    channels: ["Email", "WhatsApp", "SMS", "Instagram"],
-    health: 72,
-  },
-  {
-    id: 3,
-    name: "Global Solutions",
-    am: "Mike Wilson",
-    email: "mike@globalsol.com",
-    status: "Inactive",
-    assistants: 1,
-    plan: "Basic",
-    industry: "D2C",
-    mrr: 20000,
-    channels: ["Email", "WhatsApp", "SMS"],
-    health: 68,
-  },
-];
+import { useState } from "react";
+import { useEffect } from "react";
+import apiRequest from "@/utils/api";
 
 const getPlanColor = (plan: string) => {
   switch (plan) {
@@ -149,6 +110,18 @@ const getIndustryColor = (industry: string) => {
 };
 
 export function ClientsPage() {
+  const [clients, setClients] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      const response = await apiRequest("/users/getClients", "GET");
+      console.log(response.data);
+
+      setClients(response.data);
+    };
+    fetchClients();
+  }, []);
+
   return (
     <div className="">
       {/* Filters */}
@@ -201,7 +174,7 @@ export function ClientsPage() {
             <TableBody className="bg-white">
               {clients.map((client) => (
                 <TableRow
-                  key={client.id}
+                  key={client._id}
                   className="hover:bg-gray-50 border-gray-50"
                 >
                   <TableCell>
@@ -210,7 +183,7 @@ export function ClientsPage() {
                         <AvatarFallback className="bg-purple-100 text-purple-600 text-sm">
                           {client.name
                             .split(" ")
-                            .map((n) => n[0])
+                            .map((n: string) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
@@ -260,13 +233,13 @@ export function ClientsPage() {
                   <TableCell>
                     <div>
                       <div className="font-medium text-gray-900">
-                        {client.assistants}
+                        {client.assistant?.length || 0}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      {client.channels.map((channel) => {
+                      {client.channels?.map((channel: string) => {
                         const { icon, color } = getChannelIconAndColor(channel);
                         return (
                           <div

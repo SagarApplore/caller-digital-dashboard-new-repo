@@ -1,3 +1,5 @@
+import moment from "moment";
+
 const string = {
   formatNumber: (number: number) => number.toLocaleString(),
   formatPercentage: (number: number) => `${number.toFixed(2)}%`,
@@ -41,6 +43,11 @@ const string = {
     const mins = Math.floor(seconds / 60);
     const secs = Math.round(seconds % 60);
     return `${mins}m ${secs}s`;
+  },
+  formatDateTime: (date: string) => {
+    // Assumes moment is installed and imported elsewhere in the project
+    // If not, add: import moment from "moment";
+    return moment(date).format("MMMM D, YYYY h:mm a");
   },
 };
 

@@ -46,6 +46,7 @@ export default function AnalyticsDashboard() {
           <ChatEmailInsights
             data={apiData.chatEmailInsights}
             handleDaysChange={handleDaysChange}
+            days={days}
           />
           <OmnichannelSnapshot data={apiData.omnichannelInsights} />
         </div>

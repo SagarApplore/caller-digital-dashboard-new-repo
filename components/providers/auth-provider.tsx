@@ -12,6 +12,7 @@ import {
   removeAuthToken,
   removeUserData,
 } from "@/lib/auth";
+import apiRequest from "@/utils/api";
 
 interface AuthContextType {
   user: User | null;
@@ -82,36 +83,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       // TODO: Replace with your actual backend API call
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password, rememberMe })
-      // });
+      const response = await apiRequest("/auth/login", "POST", {
+        email,
+        password,
+      });
 
-      // For demo purposes, simulate a successful login
-      // Remove this when you implement actual backend integration
-      const mockUser: User = {
-        id: "1",
-        email: email,
-        name: "Demo User",
-        role: "admin",
+      const user: User = {
+        id: response?.data?._id,
+        email: response?.data?.email,
+        name: response?.data?.name,
+        role: response?.data?.role,
       };
 
-      const mockToken: AuthToken = {
-        accessToken: "mock-access-token-" + Date.now(),
-        refreshToken: "mock-refresh-token-" + Date.now(),
+      const token: AuthToken = {
+        accessToken: response?.data?.token,
+        refreshToken: response?.data?.token,
         expiresAt: rememberMe
           ? Date.now() + 30 * 24 * 60 * 60 * 1000
           : Date.now() + 24 * 60 * 60 * 1000, // 30 days or 1 day
       };
 
       // Store auth data
-      setAuthToken(mockToken);
-      setUserData(mockUser);
+      setAuthToken(token);
+      setUserData(user);
 
-      // Update state
-      setUser(mockUser);
-      setToken(mockToken);
+      // // Update state
+      setUser(user);
+      setToken(token);
 
       return true;
     } catch (error) {
