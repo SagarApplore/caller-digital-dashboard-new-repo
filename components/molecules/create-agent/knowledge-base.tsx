@@ -73,6 +73,11 @@ const KnowledgeBase = ({
     file: File,
     type: "voice" | "email" | "chat"
   ) => {
+    // 5MB size limit
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit. Please upload a smaller PDF file.");
+      return;
+    }
     setUploading(type);
 
     try {
@@ -254,7 +259,7 @@ const KnowledgeBase = ({
                   type="file"
                   id="voice-upload"
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.mp3,.wav,.m4a"
+                  accept=".pdf"
                   onChange={(e) => handleFileInput(e, "voice")}
                 />
                 <label htmlFor="voice-upload" className="cursor-pointer">
@@ -271,7 +276,9 @@ const KnowledgeBase = ({
                   <p className="text-gray-600 text-sm">
                     Drag & drop or click to browse
                   </p>
-                  <p className="text-gray-600 text-sm">Max limit: 10MB</p>
+                  <p className="text-gray-600 text-sm">
+                    PDF only • Max limit: 5MB
+                  </p>
                 </label>
               </CardContent>
             </Card>
@@ -288,7 +295,7 @@ const KnowledgeBase = ({
                   type="file"
                   id="email-upload"
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.eml"
+                  accept=".pdf"
                   onChange={(e) => handleFileInput(e, "email")}
                 />
                 <label htmlFor="email-upload" className="cursor-pointer">
@@ -305,7 +312,9 @@ const KnowledgeBase = ({
                   <p className="text-gray-600 text-sm">
                     Drag & drop or click to browse
                   </p>
-                  <p className="text-gray-600 text-sm">Max limit: 5MB</p>
+                  <p className="text-gray-600 text-sm">
+                    PDF only • Max limit: 5MB
+                  </p>
                 </label>
               </CardContent>
             </Card>
@@ -322,7 +331,7 @@ const KnowledgeBase = ({
                   type="file"
                   id="chat-upload"
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.json,.csv"
+                  accept=".pdf"
                   onChange={(e) => handleFileInput(e, "chat")}
                 />
                 <label htmlFor="chat-upload" className="cursor-pointer">
@@ -339,7 +348,9 @@ const KnowledgeBase = ({
                   <p className="text-gray-600 text-sm">
                     Drag & drop or click to browse
                   </p>
-                  <p className="text-gray-600 text-sm">Max limit: 5MB</p>
+                  <p className="text-gray-600 text-sm">
+                    PDF only • Max limit: 5MB
+                  </p>
                 </label>
               </CardContent>
             </Card>
@@ -548,7 +559,7 @@ const KnowledgeBase = ({
       )}
 
       {/* Knowledge Sources */}
-      <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
+      {/* <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">Knowledge Sources</h2>
           <div className="flex items-center space-x-2">
@@ -619,7 +630,7 @@ const KnowledgeBase = ({
             </Card>
           ))}
         </div>
-      </div>
+      </div> */}
     </>
   );
 };

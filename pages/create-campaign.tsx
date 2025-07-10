@@ -260,13 +260,13 @@ export function CreateCampaignPage() {
       <div className="flex items-center justify-center bg-white p-4 mb-6">
         <div className="flex items-center space-x-8">
           {/* Step 1 - Active */}
-          {Stepper("Lead Source", 1, step, 3)}
+          {Stepper("Lead Source", 1, step, 2)}
 
           {/* Step 2 - Inactive */}
-          {Stepper("Configuration", 2, step, 3)}
+          {Stepper("Configuration", 2, step, 2)}
 
-          {/* Step 3 - Inactive */}
-          {Stepper("Review & Launch", 3, step, 3)}
+          {/* Step 3 - Commented out */}
+          {/* {Stepper("Review & Launch", 3, step, 3)} */}
         </div>
       </div>
 
@@ -733,7 +733,7 @@ export function CreateCampaignPage() {
               </Card>
 
               {/* Outbound Number */}
-              <Card className="border-none bg-gray-50">
+              {/* <Card className="border-none bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <Phone className="w-5 h-5 text-purple-600" />
@@ -778,13 +778,13 @@ export function CreateCampaignPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
 
             {/* Right Column */}
             <div className="space-y-6">
               {/* Calling Schedule */}
-              <Card className="border-none bg-gray-50">
+              {/* <Card className="border-none bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <Clock className="w-5 h-5 text-purple-600" />
@@ -894,10 +894,10 @@ export function CreateCampaignPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Retry Settings */}
-              <Card className="border-none bg-gray-50">
+              {/* <Card className="border-none bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <RotateCcw className="w-5 h-5 text-purple-600" />
@@ -964,7 +964,7 @@ export function CreateCampaignPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Human Handoff */}
               <Card className="border-none bg-gray-50">
@@ -1066,24 +1066,36 @@ export function CreateCampaignPage() {
 
             <Button
               className={`px-8 py-2 ${
-                !selectedAssistant || !campaignName.trim()
+                !selectedAssistant || !campaignName.trim() || campaignCreating
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-purple-600 hover:bg-purple-700 text-white"
               }`}
-              onClick={() => setStep(step + 1)}
-              disabled={!selectedAssistant || !campaignName.trim()}
+              onClick={createCampaign}
+              disabled={
+                !selectedAssistant || !campaignName.trim() || campaignCreating
+              }
             >
-              Review & Launch Campaign
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {campaignCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating Campaign...
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 mr-2" />
+                  Launch Campaign
+                </>
+              )}
             </Button>
           </div>
         </div>
       )}
 
-      {step === 3 && (
+      {/* Step 3 - Commented out */}
+      {/* {step === 3 && (
         <div className="max-w-5xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto">
           {/* Header */}
-          <div className="text-center mb-8">
+      {/* <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
               Review & Launch Campaign
             </h1>
@@ -1094,9 +1106,9 @@ export function CreateCampaignPage() {
 
           <div>
             {/* Summary Cards */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+      {/* <div className="grid md:grid-cols-3 gap-6 mb-8">
               {/* Campaign Overview */}
-              <Card className="border-purple-200 bg-purple-50">
+      {/* <Card className="border-purple-200 bg-purple-50">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-900">
@@ -1130,7 +1142,7 @@ export function CreateCampaignPage() {
               </Card>
 
               {/* AI Assistant */}
-              <Card className="border-blue-200 bg-blue-50">
+      {/* <Card className="border-blue-200 bg-blue-50">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-900">
@@ -1168,7 +1180,7 @@ export function CreateCampaignPage() {
               </Card>
 
               {/* Schedule */}
-              <Card className="border-green-200 bg-green-50">
+      {/* <Card className="border-green-200 bg-green-50">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-gray-900">Schedule</h3>
@@ -1202,9 +1214,9 @@ export function CreateCampaignPage() {
 
             <div className="grid lg:grid-cols-2 gap-8">
               {/* Left Column */}
-              <div className="space-y-6">
+      {/* <div className="space-y-6">
                 {/* Lead Information */}
-                <Card className="border-none bg-gray-50">
+      {/* <Card className="border-none bg-gray-50">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-2 mb-6">
                       <Users className="w-5 h-5 text-gray-600" />
@@ -1245,7 +1257,7 @@ export function CreateCampaignPage() {
                 </Card>
 
                 {/* Compliance Status */}
-                <Card className="border-none bg-gray-50">
+      {/* <Card className="border-none bg-gray-50">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-2 mb-6">
                       <Shield className="w-5 h-5 text-gray-600" />
@@ -1296,9 +1308,9 @@ export function CreateCampaignPage() {
               </div>
 
               {/* Right Column */}
-              <div className="space-y-6">
+      {/* <div className="space-y-6">
                 {/* Estimated Performance */}
-                <Card className="border-none bg-gray-50">
+      {/* <Card className="border-none bg-gray-50">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-2 mb-6">
                       <TrendingUp className="w-5 h-5 text-gray-600" />
@@ -1344,7 +1356,7 @@ export function CreateCampaignPage() {
                 </Card>
 
                 {/* Cost Breakdown */}
-                <Card className="border-none bg-gray-50">
+      {/* <Card className="border-none bg-gray-50">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-2 mb-6">
                       <DollarSign className="w-5 h-5 text-gray-600" />
@@ -1390,7 +1402,7 @@ export function CreateCampaignPage() {
             </div>
 
             {/* Bottom Navigation */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t">
+      {/* <div className="flex items-center justify-between mt-8 pt-6 border-t">
               <Button
                 variant="ghost"
                 className="text-gray-600 hover:text-gray-800"
@@ -1434,7 +1446,7 @@ export function CreateCampaignPage() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }
