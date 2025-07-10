@@ -10,6 +10,8 @@ const endpoints = {
   assistants: {
     list: "/agents",
     create: "/agents/createAgents",
+    get: "/agents",
+    update: "/agents",
   },
 };
 

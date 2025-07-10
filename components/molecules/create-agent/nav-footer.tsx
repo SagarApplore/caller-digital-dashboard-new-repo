@@ -7,11 +7,13 @@ const NavFooter = ({
   handleStepChange,
   totalSteps,
   handleCreateAgent,
+  mode = "create",
 }: {
   activeStep: number;
   handleStepChange: (step: number) => void;
   totalSteps: number;
   handleCreateAgent: () => void;
+  mode?: "create" | "edit";
 }) => {
   return (
     <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow-lg shadow-gray-200">
@@ -23,17 +25,22 @@ const NavFooter = ({
         <ArrowLeft className="w-4 h-4" />
         Previous
       </Button>
-      <Button
-        className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
-        onClick={() => handleStepChange(activeStep + 1)}
-      >
-        {activeStep === totalSteps ? (
-          <Button onClick={handleCreateAgent}>Create Agent</Button>
-        ) : (
-          "Next"
-        )}
-        {activeStep !== totalSteps && <ArrowRight className="w-4 h-4" />}
-      </Button>
+      {activeStep === totalSteps ? (
+        <Button
+          className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+          onClick={handleCreateAgent}
+        >
+          {mode === "edit" ? "Update Agent" : "Create Agent"}
+        </Button>
+      ) : (
+        <Button
+          className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+          onClick={() => handleStepChange(activeStep + 1)}
+        >
+          Next
+          <ArrowRight className="w-4 h-4" />
+        </Button>
+      )}
     </div>
   );
 };

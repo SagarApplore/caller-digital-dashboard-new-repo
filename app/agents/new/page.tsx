@@ -13,7 +13,7 @@ export default function NewAgentPage() {
           backRoute: "/agents",
         }}
       >
-        <CreateAgent />
+        <CreateAgent mode="create" />
       </Dashboard>
     </ProtectedRoute>
   );

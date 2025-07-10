@@ -17,8 +17,6 @@ export default function AgentsPage() {
   useEffect(() => {
     const fetchAssistants = async () => {
       const response = await apiRequest(endpoints.assistants.list, "GET");
-      console.log(response?.data?.data);
-
       setAssistants(response?.data?.data);
     };
     fetchAssistants();

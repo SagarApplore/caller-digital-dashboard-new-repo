@@ -96,8 +96,23 @@ const rawTones = [
 interface PersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
-  systemPrompt: string;
+  voicePrompt: string;
+  emailPrompt: string;
+  chatPrompt: string;
   allowedCharacters: number;
+  agentName: string;
+}
+
+interface KnowledgeBaseItem {
+  file: string;
+  prompt: string;
+  _id: string;
+}
+
+interface KnowledgeBaseData {
+  voiceDocuments: KnowledgeBaseItem[];
+  emailDocuments: KnowledgeBaseItem[];
+  chatDocuments: KnowledgeBaseItem[];
 }
 
 const crmIntegrations: Integration[] = [
@@ -170,7 +185,17 @@ const communicationIntegrations: Integration[] = [
   },
 ];
 
-const CreateAgent = () => {
+interface CreateAgentProps {
+  mode?: "create" | "edit";
+  agentId?: string;
+  initialData?: any;
+}
+
+const CreateAgent = ({
+  mode = "create",
+  agentId,
+  initialData,
+}: CreateAgentProps) => {
   const [activeStep, setActiveStep] = useState(1);
 
   const handleStepChange = (step: number) => {
@@ -181,9 +206,18 @@ const CreateAgent = () => {
     useState<PersonaAndBehavior>({
       languages: [],
       tones: [],
-      systemPrompt: "",
+      voicePrompt: initialData?.voice?.agentPrompt || "",
+      emailPrompt: initialData?.email?.agentPrompt || "",
+      chatPrompt: initialData?.chats?.agentPrompt || "",
       allowedCharacters: 2000,
+      agentName: initialData?.agentName || "",
     });
+
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>({
+    voiceDocuments: initialData?.voice?.knowledgeBase || [],
+    emailDocuments: initialData?.email?.knowledgeBase || [],
+    chatDocuments: initialData?.chats?.knowledgeBase || [],
+  });
 
   const [channels, setChannels] = useState<Channel[]>([
     {
@@ -269,7 +303,7 @@ const CreateAgent = () => {
         ...prev,
         languages: response.map((language) => ({
           ...language,
-          selected: false,
+          selected: initialData?.languages?.includes(language.name) || false,
         })),
       }));
     };
@@ -280,9 +314,38 @@ const CreateAgent = () => {
         tones: response,
       }));
     };
+
+    const fetchAgentData = async () => {
+      if (mode === "edit" && agentId && !initialData) {
+        try {
+          const response = await apiRequest(
+            `${endpoints.assistants.get}/${agentId}`,
+            "GET"
+          );
+          const agentData = response.data?.data;
+
+          setPersonaAndBehavior((prev) => ({
+            ...prev,
+            voicePrompt: agentData?.voice?.agentPrompt || "",
+            emailPrompt: agentData?.email?.agentPrompt || "",
+            chatPrompt: agentData?.chats?.agentPrompt || "",
+          }));
+
+          setKnowledgeBase({
+            voiceDocuments: agentData?.voice?.knowledgeBase || [],
+            emailDocuments: agentData?.email?.knowledgeBase || [],
+            chatDocuments: agentData?.chats?.knowledgeBase || [],
+          });
+        } catch (error) {
+          console.error("Error fetching agent data:", error);
+        }
+      }
+    };
+
     fetchLanguages();
     fetchTones();
-  }, []);
+    fetchAgentData();
+  }, [mode, agentId, initialData]);
 
   const handleLanguageClick = (id: number) => {
     setPersonaAndBehavior((prev) => ({
@@ -315,10 +378,41 @@ const CreateAgent = () => {
   };
 
   async function handleCreateAgent(): Promise<void> {
-    const response = await apiRequest(endpoints.assistants.create, "POST", {
-      name: "Test Agent",
-      description: "Test Description",
-    });
+    const agentData = {
+      agentName: personaAndBehavior.agentName || "New Agent",
+      description: "Agent Description",
+      voice: {
+        agentPrompt: personaAndBehavior.voicePrompt,
+        knowledgeBase: knowledgeBase.voiceDocuments,
+      },
+      email: {
+        agentPrompt: personaAndBehavior.emailPrompt,
+        knowledgeBase: knowledgeBase.emailDocuments,
+      },
+      chats: {
+        agentPrompt: personaAndBehavior.chatPrompt,
+        knowledgeBase: knowledgeBase.chatDocuments,
+      },
+      languages: personaAndBehavior.languages
+        .filter((lang) => lang.selected)
+        .map((lang) => lang.name),
+    };
+
+    if (mode === "edit" && agentId) {
+      // Update existing agent - merge with existing data
+      const updateData = {
+        ...initialData,
+        ...agentData,
+      };
+      await apiRequest(
+        `${endpoints.assistants.update}/${agentId}`,
+        "PUT",
+        updateData
+      );
+    } else {
+      // Create new agent
+      await apiRequest(endpoints.assistants.create, "POST", agentData);
+    }
   }
 
   return (
@@ -351,12 +445,33 @@ const CreateAgent = () => {
             handleLanguageClick={handleLanguageClick}
             tones={personaAndBehavior.tones}
             handleToneClick={handleToneClick}
-            systemPrompt={personaAndBehavior.systemPrompt}
+            voicePrompt={personaAndBehavior.voicePrompt}
+            emailPrompt={personaAndBehavior.emailPrompt}
+            chatPrompt={personaAndBehavior.chatPrompt}
             allowedCharacters={personaAndBehavior.allowedCharacters}
-            setSystemPrompt={(systemPrompt) =>
+            agentName={personaAndBehavior.agentName}
+            setVoicePrompt={(voicePrompt) =>
               setPersonaAndBehavior((prev) => ({
                 ...prev,
-                systemPrompt,
+                voicePrompt,
+              }))
+            }
+            setEmailPrompt={(emailPrompt) =>
+              setPersonaAndBehavior((prev) => ({
+                ...prev,
+                emailPrompt,
+              }))
+            }
+            setChatPrompt={(chatPrompt) =>
+              setPersonaAndBehavior((prev) => ({
+                ...prev,
+                chatPrompt,
+              }))
+            }
+            setAgentName={(agentName) =>
+              setPersonaAndBehavior((prev) => ({
+                ...prev,
+                agentName,
               }))
             }
           />
@@ -369,7 +484,12 @@ const CreateAgent = () => {
           />
         )} */}
 
-        {activeStep === 2 && <KnowledgeBase />}
+        {activeStep === 2 && (
+          <KnowledgeBase
+            knowledgeBase={knowledgeBase}
+            setKnowledgeBase={setKnowledgeBase}
+          />
+        )}
 
         {/* {activeStep === 3 && (
           <Integrations
@@ -394,6 +514,7 @@ const CreateAgent = () => {
           handleStepChange={handleStepChange}
           totalSteps={agentSteps.length}
           handleCreateAgent={handleCreateAgent}
+          mode={mode}
         />
       </div>
     </div>

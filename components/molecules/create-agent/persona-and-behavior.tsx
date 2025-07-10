@@ -29,17 +29,29 @@ export const PersonaAndBehavior = ({
   handleLanguageClick,
   tones,
   handleToneClick,
-  systemPrompt,
+  voicePrompt,
+  emailPrompt,
+  chatPrompt,
   allowedCharacters,
-  setSystemPrompt,
+  agentName,
+  setVoicePrompt,
+  setEmailPrompt,
+  setChatPrompt,
+  setAgentName,
 }: {
   languages: Language[];
   handleLanguageClick: (id: number) => void;
   tones: Tone[];
   handleToneClick: (id: number) => void;
-  systemPrompt: string;
+  voicePrompt: string;
+  emailPrompt: string;
+  chatPrompt: string;
   allowedCharacters: number;
-  setSystemPrompt: (prompt: string) => void;
+  agentName: string;
+  setVoicePrompt: (prompt: string) => void;
+  setEmailPrompt: (prompt: string) => void;
+  setChatPrompt: (prompt: string) => void;
+  setAgentName: (name: string) => void;
 }) => {
   return (
     <>
@@ -51,7 +63,12 @@ export const PersonaAndBehavior = ({
             <Label htmlFor="name" className="text-sm font-medium">
               Assistant Name
             </Label>
-            <Input id="name" placeholder="Enter name" />
+            <Input
+              id="name"
+              placeholder="Enter name"
+              value={agentName}
+              onChange={(e) => setAgentName(e.target.value)}
+            />
           </div>
           <div className="flex flex-col gap-2 flex-1">
             <Label htmlFor="role" className="text-sm font-medium">
@@ -176,30 +193,64 @@ export const PersonaAndBehavior = ({
         </div>
       </div> */}
 
-      {/* System Prompt */}
-      <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">System Prompt</h3>
-          <div className="flex items-center gap-2">
+      {/* System Prompts */}
+      <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-6 shadow-lg shadow-gray-200">
+        <h3 className="text-lg font-semibold">System Prompts</h3>
+
+        {/* Voice Prompt */}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="voice-instructions" className="text-sm font-medium">
+              Voice Instructions
+            </Label>
             <span className="text-xs text-gray-500">
-              Characters: {systemPrompt.length}/{allowedCharacters}
+              Characters: {voicePrompt.length}/{allowedCharacters}
             </span>
-            {/* <Button className="flex items-center gap-2 bg-cyan-200 text-cyan-700 px-2 h-6 rounded-sm text-xs font-semibold hover:bg-cyan-300">
-              <Wand className="size-2" />
-              AI Optimize
-            </Button> */}
           </div>
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <Label htmlFor="instructions" className="text-sm font-medium">
-            Custom Instructions
-          </Label>
           <Textarea
-            id="instructions"
-            placeholder="Enter custom instructions"
-            className="h-40"
-            value={systemPrompt}
-            onChange={(e) => setSystemPrompt(e.target.value)}
+            id="voice-instructions"
+            placeholder="Enter voice-specific instructions for phone calls..."
+            className="h-32"
+            value={voicePrompt}
+            onChange={(e) => setVoicePrompt(e.target.value)}
+          />
+        </div>
+
+        {/* Email Prompt */}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="email-instructions" className="text-sm font-medium">
+              Email Instructions
+            </Label>
+            <span className="text-xs text-gray-500">
+              Characters: {emailPrompt.length}/{allowedCharacters}
+            </span>
+          </div>
+          <Textarea
+            id="email-instructions"
+            placeholder="Enter email-specific instructions for written communication..."
+            className="h-32"
+            value={emailPrompt}
+            onChange={(e) => setEmailPrompt(e.target.value)}
+          />
+        </div>
+
+        {/* Chat Prompt */}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center">
+            <Label htmlFor="chat-instructions" className="text-sm font-medium">
+              Chat Instructions
+            </Label>
+            <span className="text-xs text-gray-500">
+              Characters: {chatPrompt.length}/{allowedCharacters}
+            </span>
+          </div>
+          <Textarea
+            id="chat-instructions"
+            placeholder="Enter chat-specific instructions for messaging platforms..."
+            className="h-32"
+            value={chatPrompt}
+            onChange={(e) => setChatPrompt(e.target.value)}
           />
         </div>
 

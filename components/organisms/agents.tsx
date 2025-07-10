@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
 } from "@radix-ui/react-dropdown-menu";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export interface AssistantStats {
   conversations: number;
@@ -110,6 +111,7 @@ const getActiveColor = (lastActive: string) => {
 };
 
 export default function Agents({ assistants }: { assistants: any[] }) {
+  const router = useRouter();
   const [filters, setFilters] = useState<FilterState>({
     status: "All Status",
     channels: "All Channels",
@@ -349,6 +351,15 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                       </p>
                     </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/agents/edit/${assistant._id}`)}
+                    className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Edit
+                  </Button>
                 </div>
 
                 {/* Phone Numbers (if available) */}
@@ -416,7 +427,8 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                         assistant?.stats?.csatScore ?? 0
                       )}`}
                     >
-                      {assistant?.stats?.csatScore ?? 0}%
+                      {/* {assistant?.stats?.csatScore ?? 0}% */}
+                      N/A
                     </div>
                   </div>
                   <div>
@@ -428,7 +440,8 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                         assistant?.stats?.resolutionRate ?? 0
                       )}`}
                     >
-                      {assistant?.stats?.resolutionRate ?? 0}%
+                      {/* {assistant?.stats?.resolutionRate ?? 0}% */}
+                      N/A
                     </div>
                   </div>
                   <div>
@@ -440,7 +453,8 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                         assistant?.stats?.lastActive ?? ""
                       )}`}
                     >
-                      {assistant?.stats?.lastActive ?? ""}
+                      {/* {assistant?.stats?.lastActive ?? ""} */}
+                      N/A
                     </div>
                   </div>
                 </div>
