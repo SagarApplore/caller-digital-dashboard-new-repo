@@ -52,6 +52,9 @@ const string = {
   formatDate: (date: string) => {
     return moment(date).format("MMM D, YYYY");
   },
+  capitalizeFirstLetter: (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  },
 };
 
 export default string;

@@ -9,6 +9,7 @@ const endpoints = {
   },
   assistants: {
     list: "/agents",
+    create: "/agents/createAgents",
   },
 };
 

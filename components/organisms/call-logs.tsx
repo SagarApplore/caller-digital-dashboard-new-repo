@@ -447,28 +447,26 @@ const CallLogs = () => {
         // value: `${(
         //   (resolvedConversations / totalConversations) * 100 || 0
         // ).toFixed(1)}%`,
-        value: "92.4%",
-        change: "+3.5%",
+        value: "N/A",
+        change: "N/A",
         trend: "up" as const,
       },
       {
         label: "Escalation Rate",
-        value: `${(
-          (escalatedConversations / totalConversations) * 100 || 0
-        ).toFixed(1)}%`,
-        change: "-1.2%",
+        value: "N/A",
+        change: "N/A",
         trend: "down" as const,
       },
       {
         label: "CSAT Score",
-        value: `${avgCSAT.toFixed(1)}/5`,
-        change: "+0.2",
+        value: "N/A",
+        change: "N/A",
         trend: "up" as const,
       },
       {
         label: "Token Usage",
-        value: "2.4M",
-        change: "-0.8%",
+        value: "N/A",
+        change: "N/A",
         trend: "down" as const,
       },
     ];
@@ -974,12 +972,12 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     CSAT
                   </TableHead>
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Confidence
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Actions
                   </TableHead>
@@ -1074,7 +1072,7 @@ const CallLogs = () => {
                       <TableCell className="p-4">
                         {getStatusBadge(conversation.status)}
                       </TableCell>
-                      <TableCell className="p-4">
+                      {/* <TableCell className="p-4">
                         {renderStars(conversation.csat)}
                       </TableCell>
                       <TableCell className="p-4">
@@ -1089,7 +1087,7 @@ const CallLogs = () => {
                             {conversation.confidence}%
                           </span>
                         </div>
-                      </TableCell>
+                      </TableCell> */}
                       <TableCell className="p-4">
                         <Button
                           variant="link"
@@ -1138,12 +1136,12 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     CSAT
                   </TableHead>
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Confidence
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Actions
                   </TableHead>
@@ -1185,7 +1183,7 @@ const CallLogs = () => {
                     <TableCell className="p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-8"></div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    {/* <TableCell className="p-4">
                       <div className="flex items-center space-x-1">
                         <div className="h-4 bg-gray-200 rounded animate-pulse w-6"></div>
                         <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
@@ -1196,7 +1194,7 @@ const CallLogs = () => {
                         <div className="h-2 bg-gray-200 rounded animate-pulse w-16"></div>
                         <div className="h-3 bg-gray-200 rounded animate-pulse w-8"></div>
                       </div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
                     </TableCell>

@@ -366,7 +366,12 @@ const ViewCallLog = ({ id }: { id: string }) => {
                   <ul className="flex flex-wrap gap-2">
                     {analysis?.keywords?.map((keyword: string) => (
                       <li
-                        className={`text-xs font-bold px-2 py-1 rounded-full ${utils.colors.getRandomColor()}`}
+                        key={keyword}
+                        className={`text-xs font-bold px-2 py-1 rounded-full`}
+                        style={{
+                          backgroundColor: "#F3F4F6", // static light gray bg
+                          color: "#4B5563", // static gray text
+                        }}
                       >
                         {keyword}
                       </li>

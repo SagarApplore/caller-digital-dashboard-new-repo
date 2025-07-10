@@ -80,8 +80,7 @@ const KnowledgeBase = () => {
   return (
     <>
       {/* Knowledge Base Overview */}
-      <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
-        {/* Header */}
+      {/* <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold">Knowledge Base Overview</h1>
           <div className="flex items-center space-x-8 text-sm">
@@ -106,7 +105,6 @@ const KnowledgeBase = () => {
           </div>
         </div>
 
-        {/* AI Training Status */}
         <Card className="border-blue-200 bg-blue-50 rounded-lg">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -130,7 +128,7 @@ const KnowledgeBase = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Upload Documents */}
       <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
@@ -142,7 +140,7 @@ const KnowledgeBase = () => {
             </span>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-1">
             {/* Upload PDFs */}
             <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-4">
               <CardContent className="p-0 text-center">
@@ -155,11 +153,12 @@ const KnowledgeBase = () => {
                 <p className="text-gray-600 text-sm">
                   Drag & drop or click to browse
                 </p>
+                <p className="text-gray-600 text-sm">Max limit: 5MB</p>
               </CardContent>
             </Card>
 
             {/* Web URLs */}
-            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-4">
+            {/* <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-4">
               <CardContent className="p-0 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Link className="w-6 h-6 text-blue-600" />
@@ -167,10 +166,10 @@ const KnowledgeBase = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">Web URLs</h3>
                 <p className="text-gray-600 text-sm">Scrape website content</p>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* CSV/JSON */}
-            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-4">
+            {/* <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-4">
               <CardContent className="p-0 text-center">
                 <div className="w-12 h-12 mx-auto mb-4 bg-green-100 rounded-lg flex items-center justify-center">
                   <Database className="w-6 h-6 text-green-600" />
@@ -178,11 +177,11 @@ const KnowledgeBase = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">CSV/JSON</h3>
                 <p className="text-gray-600 text-sm">Structured data files</p>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <h2 className="text-lg font-semibold">Recent Updates</h2>
           <div className="space-y-2">
             {recentUpdates.map((update) => (
@@ -211,7 +210,7 @@ const KnowledgeBase = () => {
               </Card>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Knowledge Sources */}

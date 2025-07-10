@@ -8,9 +8,8 @@ export const apiRequest = async (
   headers = {}
 ) => {
   try {
-    // const token = localStorage.getItem('token')
-    const token =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MWYzMDJkYjdiMDZjZWVmMTc5NDYzYyIsImlhdCI6MTc1MTk4MDYwMywiZXhwIjoxNzUyNTg1NDAzfQ.RhkKHLITYczRUT2c2JYlyaPOBCRBKV0EilcIpLMjFLU";
+    const tokenObj = localStorage.getItem("auth_token");
+    const token = tokenObj ? JSON.parse(tokenObj).accessToken : null;
     const baseUrl =
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
     if (!baseUrl) {

@@ -26,6 +26,48 @@ export function ChatEmailInsights({
   handleDaysChange: (days: number) => void;
   days: number;
 }) {
+  // Defensive defaults for all metrics to avoid "Cannot read properties of undefined"
+  const chatData =
+    typeof data === "object" &&
+    data !== null &&
+    typeof data.chat === "object" &&
+    data.chat !== null
+      ? data.chat
+      : {};
+  const emailData =
+    typeof data === "object" &&
+    data !== null &&
+    typeof data.email === "object" &&
+    data.email !== null
+      ? data.email
+      : {};
+
+  const chatTotal =
+    typeof chatData.total === "number" && !isNaN(chatData.total)
+      ? chatData.total
+      : 0;
+  const chatPercentageChange =
+    typeof chatData.percentageChange === "number" &&
+    !isNaN(chatData.percentageChange)
+      ? chatData.percentageChange
+      : 0;
+  const chatTrendRaw = Array.isArray(chatData.chatTrend)
+    ? chatData.chatTrend
+    : [];
+
+  const emailTotal =
+    typeof emailData.total === "number" && !isNaN(emailData.total)
+      ? emailData.total
+      : 0;
+  const emailPercentageChange =
+    typeof emailData.percentageChange === "number" &&
+    !isNaN(emailData.percentageChange)
+      ? emailData.percentageChange
+      : 0;
+  const emailTrend = Array.isArray(emailData.emailTrend)
+    ? emailData.emailTrend
+    : [];
+
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
       <CardHeader className="p-0 pb-4">
@@ -68,14 +110,10 @@ export function ChatEmailInsights({
             </Badge>
           </div>
           <div className="flex items-center space-x-2 mb-3">
-            <div className="text-3xl font-bold text-gray-900">
-              {data?.chat?.total ?? 0}
-            </div>
+            <div className="text-3xl font-bold text-gray-900">{chatTotal}</div>
             {(() => {
-              const percentageChange = data?.chat?.percentageChange ?? 0;
+              const percentageChange = chatPercentageChange;
               const isPositive = percentageChange >= 0;
-              // Use ArrowUpRight for positive, ArrowDownLeft for negative
-              // Import these icons at the top: import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
               const ArrowIcon = isPositive ? ArrowUpRight : ArrowDownLeft;
               const colorClass = isPositive ? "text-green-600" : "text-red-600";
               return (
@@ -94,37 +132,43 @@ export function ChatEmailInsights({
             {/* LineChart for Chat Volume Trend */}
             {(() => {
               // The API returns chatTrendData as [{ chat: number, date: string }, ...]
-              const chatTrendDataRaw = data?.chat?.chatTrend ?? [];
-              // Determine if this is a 7-day or 30-day chart
+              const chatTrendDataRaw = chatTrendRaw;
               const is30Days = chatTrendDataRaw.length > 7;
 
               // Map to recharts format: { value: number, day: string }
               // For 7 days: use weekday short name, for 30 days: use date (e.g. "Apr 2")
               const chatTrendData = chatTrendDataRaw.map((item: any) => {
-                const dateObj = new Date(item.date);
+                const dateObj = new Date(item?.date);
                 let day;
                 if (is30Days) {
                   // e.g. "Apr 2"
-                  day = dateObj.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  });
+                  day = !isNaN(dateObj.getTime())
+                    ? dateObj.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "";
                 } else {
                   // e.g. "Mon"
-                  day = dateObj.toLocaleDateString("en-US", {
-                    weekday: "short",
-                  });
+                  day = !isNaN(dateObj.getTime())
+                    ? dateObj.toLocaleDateString("en-US", {
+                        weekday: "short",
+                      })
+                    : "";
                 }
                 return {
-                  value: item.chat ?? 0,
+                  value:
+                    typeof item?.chat === "number" && !isNaN(item.chat)
+                      ? item.chat
+                      : 0,
                   day,
-                  date: item.date,
+                  date: item?.date ?? "",
                 };
               });
 
               // For x-axis labels: 7 days = Mon-Sun, 30 days = show 5 evenly spaced dates
               let xLabels: string[] = [];
-              if (is30Days) {
+              if (is30Days && chatTrendData.length > 0) {
                 // Show 5 evenly spaced labels
                 const labelCount = 5;
                 const step = Math.floor(
@@ -135,8 +179,11 @@ export function ChatEmailInsights({
                     i === labelCount - 1 ? chatTrendData.length - 1 : i * step;
                   return chatTrendData[idx]?.day ?? "";
                 });
-              } else {
+              } else if (chatTrendData.length === 7) {
                 xLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+              } else {
+                // fallback: show as many empty labels as data points
+                xLabels = Array(chatTrendData.length).fill("");
               }
 
               return (
@@ -161,7 +208,7 @@ export function ChatEmailInsights({
                           }}
                           labelFormatter={(_, payload) =>
                             payload && payload.length > 0
-                              ? payload[0].payload.date
+                              ? payload[0]?.payload?.date ?? ""
                               : ""
                           }
                           formatter={(value: any) => [
@@ -198,14 +245,10 @@ export function ChatEmailInsights({
             <Badge className="bg-green-100 text-green-700 text-xs">Email</Badge>
           </div>
           <div className="flex items-center space-x-2 mb-3">
-            <div className="text-3xl font-bold text-gray-900">
-              {data?.email?.total ?? 0}
-            </div>
+            <div className="text-3xl font-bold text-gray-900">{emailTotal}</div>
             {(() => {
-              const percentageChange = data?.email?.percentageChange ?? 0;
+              const percentageChange = emailPercentageChange;
               const isPositive = percentageChange >= 0;
-              // Use ArrowUpRight for positive, ArrowDownLeft for negative
-              // Import these icons at the top: import { ArrowUpRight, ArrowDownLeft } from "lucide-react";
               const ArrowIcon = isPositive ? ArrowUpRight : ArrowDownLeft;
               const colorClass = isPositive ? "text-green-600" : "text-red-600";
               return (
@@ -224,11 +267,9 @@ export function ChatEmailInsights({
             {/* Bar Chart for Email Thread Counts */}
             <ResponsiveContainer width="100%" height={60}>
               <BarChart
-                data={data?.email?.emailTrend ?? []}
+                data={emailTrend}
                 margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-                barCategoryGap={
-                  (data?.email?.emailTrend?.length ?? 0) > 7 ? 2 : 8
-                }
+                barCategoryGap={(emailTrend.length ?? 0) > 7 ? 2 : 8}
               >
                 <Bar
                   dataKey="email"
@@ -241,7 +282,7 @@ export function ChatEmailInsights({
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             {(() => {
-              const trend = data?.email?.emailTrend ?? [];
+              const trend = emailTrend;
               if (trend.length === 30) {
                 // 30 days: show 5 week labels at correct positions
                 // Place W1 at 0, W2 at 6, W3 at 12, W4 at 18, W5 at 24
@@ -301,17 +342,17 @@ export function ChatEmailInsights({
             <div className="text-center">
               <div className="text-2xl mb-1">😊</div>
               <div className="text-xs text-gray-600">Very Satisfied</div>
-              <div className="font-bold text-lg">68%</div>
+              <div className="font-bold text-lg">N/A</div>
             </div>
             <div className="text-center">
               <div className="text-2xl mb-1">😐</div>
               <div className="text-xs text-gray-600">Neutral</div>
-              <div className="font-bold text-lg">24%</div>
+              <div className="font-bold text-lg">N/A</div>
             </div>
             <div className="text-center">
               <div className="text-2xl mb-1">😞</div>
               <div className="text-xs text-gray-600">Unsatisfied</div>
-              <div className="font-bold text-lg">8%</div>
+              <div className="font-bold text-lg">N/A</div>
             </div>
           </div>
 
@@ -330,7 +371,7 @@ export function ChatEmailInsights({
                   fill="none"
                 />
               </svg>
-              2.5% improvement
+              N/A improvement
             </span>
           </div>
         </div>

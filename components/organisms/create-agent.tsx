@@ -29,6 +29,8 @@ import Integrations, {
 import VoiceIntegration from "../molecules/create-agent/voice-integration";
 import RoutingAndEscalation from "../molecules/create-agent/routing-and-escalation";
 import NavFooter from "../molecules/create-agent/nav-footer";
+import endpoints from "@/lib/endpoints";
+import apiRequest from "@/utils/api";
 
 const agentSteps = [
   {
@@ -36,36 +38,36 @@ const agentSteps = [
     title: "Persona & Behavior",
     icon: <User />,
   },
+  // {
+  //   id: 2,
+  //   title: "Channels & Phone Mapping",
+  //   icon: <RadioTower />,
+  // },
   {
     id: 2,
-    title: "Channels & Phone Mapping",
-    icon: <RadioTower />,
-  },
-  {
-    id: 3,
     title: "Knowledge Base",
     icon: <Brain />,
   },
-  {
-    id: 4,
-    title: "Integrations",
-    icon: <Puzzle />,
-  },
-  {
-    id: 5,
-    title: "Voice Integration",
-    icon: <Mic />,
-  },
-  {
-    id: 6,
-    title: "Routing & Escalation",
-    icon: <Route />,
-  },
-  {
-    id: 7,
-    title: "Analytics Summary",
-    icon: <ChartLine />,
-  },
+  // {
+  //   id: 3,
+  //   title: "Integrations",
+  //   icon: <Puzzle />,
+  // },
+  // {
+  //   id: 4,
+  //   title: "Voice Integration",
+  //   icon: <Mic />,
+  // },
+  // {
+  //   id: 5,
+  //   title: "Routing & Escalation",
+  //   icon: <Route />,
+  // },
+  // {
+  //   id: 6,
+  //   title: "Analytics Summary",
+  //   icon: <ChartLine />,
+  // },
 ];
 
 const rawTones = [
@@ -169,7 +171,7 @@ const communicationIntegrations: Integration[] = [
 ];
 
 const CreateAgent = () => {
-  const [activeStep, setActiveStep] = useState(6);
+  const [activeStep, setActiveStep] = useState(1);
 
   const handleStepChange = (step: number) => {
     setActiveStep(step);
@@ -312,6 +314,13 @@ const CreateAgent = () => {
     );
   };
 
+  async function handleCreateAgent(): Promise<void> {
+    const response = await apiRequest(endpoints.assistants.create, "POST", {
+      name: "Test Agent",
+      description: "Test Description",
+    });
+  }
+
   return (
     <div className="flex gap-4 h-full">
       <div className="bg-white p-4 w-full max-w-[250px] h-full">
@@ -353,36 +362,38 @@ const CreateAgent = () => {
           />
         )}
 
-        {activeStep === 2 && (
+        {/* {activeStep === 2 && (
           <ChannelsAndPhoneMapping
             channels={channels}
             toggleChannel={toggleChannel}
           />
-        )}
+        )} */}
 
-        {activeStep === 3 && <KnowledgeBase />}
+        {activeStep === 2 && <KnowledgeBase />}
 
-        {activeStep === 4 && (
+        {/* {activeStep === 3 && (
           <Integrations
             crmIntegrations={integrations.crmIntegrations}
             communicationIntegrations={integrations.communicationIntegrations}
           />
         )}
 
-        {activeStep === 5 && (
+        {activeStep === 4 && (
           <VoiceIntegration
             voiceIntegration={voiceIntegration}
             setVoiceIntegration={setVoiceIntegration}
           />
-        )}
+        )} */}
 
-        {activeStep === 6 && <RoutingAndEscalation />}
+        {/* {activeStep === 5 && <RoutingAndEscalation />} */}
 
         {/* {activeStep === 7 && <AnalyticsSummary />} */}
 
         <NavFooter
           activeStep={activeStep}
           handleStepChange={handleStepChange}
+          totalSteps={agentSteps.length}
+          handleCreateAgent={handleCreateAgent}
         />
       </div>
     </div>

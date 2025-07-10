@@ -127,7 +127,7 @@ export const PersonaAndBehavior = ({
       </div>
 
       {/* Personality & Tone */}
-      <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
+      {/* <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
         <h3 className="text-lg font-semibold">Personality & Tone</h3>
         <div className="w-full flex flex-col gap-4">
           <div className="flex flex-col gap-2">
@@ -174,7 +174,7 @@ export const PersonaAndBehavior = ({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* System Prompt */}
       <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
@@ -184,10 +184,10 @@ export const PersonaAndBehavior = ({
             <span className="text-xs text-gray-500">
               Characters: {systemPrompt.length}/{allowedCharacters}
             </span>
-            <Button className="flex items-center gap-2 bg-cyan-200 text-cyan-700 px-2 h-6 rounded-sm text-xs font-semibold hover:bg-cyan-300">
+            {/* <Button className="flex items-center gap-2 bg-cyan-200 text-cyan-700 px-2 h-6 rounded-sm text-xs font-semibold hover:bg-cyan-300">
               <Wand className="size-2" />
               AI Optimize
-            </Button>
+            </Button> */}
           </div>
         </div>
         <div className="flex flex-col gap-2 w-full">
@@ -202,7 +202,8 @@ export const PersonaAndBehavior = ({
             onChange={(e) => setSystemPrompt(e.target.value)}
           />
         </div>
-        <div className="flex items-center justify-between px-2 bg-yellow-50 rounded-lg border border-yellow-400">
+
+        {/* <div className="flex items-center justify-between px-2 bg-yellow-50 rounded-lg border border-yellow-400">
           <div className="flex items-center gap-2">
             <Lightbulb className="size-4 text-yellow-700" />
             <span className="text-xs text-yellow-800">
@@ -212,17 +213,17 @@ export const PersonaAndBehavior = ({
           <Button className=" text-yellow-500 bg-transparent hover:bg-transparent text-xs font-semibold">
             View Examples
           </Button>
-        </div>
+        </div> */}
 
         <div className="flex gap-2">
           <Button className="flex items-center gap-2 bg-purple-600 border border-purple-600 text-white px-2 h-8 rounded-lg text-sm font-semibold hover:bg-purple-700">
             <Play className="h-4 w-4" />
             Test Prompt
           </Button>
-          <Button className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-2 h-8 rounded-lg text-sm font-semibold hover:bg-gray-100">
+          {/* <Button className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-2 h-8 rounded-lg text-sm font-semibold hover:bg-gray-100">
             <History className="h-4 w-4" />
             Version History
-          </Button>
+          </Button> */}
           <Button className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-2 h-8 rounded-lg text-sm font-semibold hover:bg-gray-100">
             <Download className="h-4 w-4" />
             Export

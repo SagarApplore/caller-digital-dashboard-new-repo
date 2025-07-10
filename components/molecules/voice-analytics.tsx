@@ -10,6 +10,45 @@ import { Phone } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
 
 export function VoiceAnalytics({ data }: { data: any }) {
+  // Defensive defaults for all metrics
+  const totalCalls =
+    typeof data?.totalCalls === "number" && !isNaN(data.totalCalls)
+      ? data.totalCalls
+      : 0;
+
+  const avgDuration =
+    typeof data?.avgDuration === "number" && !isNaN(data.avgDuration)
+      ? data.avgDuration
+      : 0;
+
+  const handOffPercentage =
+    typeof data?.handOff?.percentage === "number" &&
+    !isNaN(data.handOff?.percentage)
+      ? data.handOff.percentage
+      : 0;
+
+  const handOffAgentWise = Array.isArray(data?.handOff?.agentWise)
+    ? data.handOff.agentWise
+    : [];
+
+  const aiPercent =
+    typeof data?.humanVsAgentSplit?.agent === "number" &&
+    !isNaN(data.humanVsAgentSplit?.agent)
+      ? data.humanVsAgentSplit.agent
+      : 0;
+
+  const humanPercent =
+    typeof data?.humanVsAgentSplit?.human === "number" &&
+    !isNaN(data.humanVsAgentSplit?.human)
+      ? data.humanVsAgentSplit.human
+      : 0;
+
+  const humanPercentageDrop =
+    typeof data?.humanVsAgentSplit?.humanPercentageDrop === "number" &&
+    !isNaN(data.humanVsAgentSplit?.humanPercentageDrop)
+      ? data.humanVsAgentSplit.humanPercentageDrop
+      : 0;
+
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
       <CardHeader className="p-0 pb-4">
@@ -38,7 +77,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
               </span> */}
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {utils.string.formatNumber(data.totalCalls)}
+              {utils.string.formatNumber(totalCalls)}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
@@ -52,7 +91,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
               <span className="text-sm text-gray-600">Resolution Rate</span>
               {/* <span className="text-sm text-green-600 font-medium">+2.1%</span> */}
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-2">92.4%</div>
+            <div className="text-3xl font-bold text-gray-900 mb-2">N/A</div>
             <div className="w-full bg-purple-100 rounded-lg h-8 relative overflow-hidden">
               <svg
                 className="absolute inset-0 w-full h-full"
@@ -76,7 +115,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
               Avg. Call Duration
             </span>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {utils.string.formatDuration(data.avgDuration ?? 0)}
+              {utils.string.formatDuration(avgDuration)}
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
@@ -92,23 +131,35 @@ export function VoiceAnalytics({ data }: { data: any }) {
           <div className="bg-gray-100 p-4 rounded-lg">
             <span className="text-sm text-gray-600 block mb-1">Handoff %</span>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {data.handOff?.percentage ?? 0}%
+              {handOffPercentage}%
             </div>
             <div className="space-y-1">
-              {data.handOff?.agentWise?.map((agent: any) => (
-                <div
-                  className="flex items-center justify-between text-xs"
-                  key={agent.agentName}
-                >
-                  <div className="flex items-center">
-                    <div
-                      className={`w-2 h-2 ${utils.colors.getRandomColor()} rounded-full mr-2`}
-                    ></div>
-                    <span className="text-gray-600">{agent.agentName}</span>
+              {handOffAgentWise.length > 0 ? (
+                handOffAgentWise.map((agent: any) => (
+                  <div
+                    className="flex items-center justify-between text-xs"
+                    key={agent.agentName || agent._id || Math.random()}
+                  >
+                    <div className="flex items-center">
+                      <div
+                        className={`w-2 h-2 ${utils.colors.getRandomColor()} rounded-full mr-2`}
+                      ></div>
+                      <span className="text-gray-600">
+                        {agent.agentName ?? "N/A"}
+                      </span>
+                    </div>
+                    <span className="font-medium">
+                      {typeof agent.percentage === "number" &&
+                      !isNaN(agent.percentage)
+                        ? agent.percentage
+                        : 0}
+                      %
+                    </span>
                   </div>
-                  <span className="font-medium">{agent.percentage}%</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-xs text-gray-400">No handoff data</div>
+              )}
             </div>
           </div>
         </div>
@@ -124,16 +175,14 @@ export function VoiceAnalytics({ data }: { data: any }) {
               {/* Pie chart using recharts for AI vs Human Split */}
               {(() => {
                 // Prepare data for recharts PieChart
-                const aiPercent = data?.humanVsAgentSplit?.agent ?? 0;
-                const humanPercent = data?.humanVsAgentSplit?.human ?? 0;
                 const pieData = [
                   { name: "AI Handled", value: aiPercent },
                   { name: "Human Handled", value: humanPercent },
                 ];
                 const COLORS = ["#8b5cf6", "#3b82f6"];
-                // Lazy import PieChart components if not already at top
-                // import { PieChart, Pie, Cell } from "recharts";
-                return (
+                // If both values are zero, show a blank pie
+                const hasData = aiPercent > 0 || humanPercent > 0;
+                return hasData ? (
                   <PieChart width={96} height={96}>
                     <Pie
                       data={pieData}
@@ -154,6 +203,10 @@ export function VoiceAnalytics({ data }: { data: any }) {
                       ))}
                     </Pie>
                   </PieChart>
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full text-xs text-gray-400">
+                    No data
+                  </div>
                 );
               })()}
             </div>
@@ -161,15 +214,13 @@ export function VoiceAnalytics({ data }: { data: any }) {
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                 <span className="text-sm">
-                  AI Handled:{" "}
-                  <strong>{data?.humanVsAgentSplit?.agent ?? 0}%</strong>
+                  AI Handled: <strong>{aiPercent}%</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 <span className="text-sm">
-                  Human Handled:{" "}
-                  <strong>{data?.humanVsAgentSplit?.human ?? 0}%</strong>
+                  Human Handled: <strong>{humanPercent}%</strong>
                 </span>
               </div>
               <div className="flex items-center space-x-2 text-green-600">
@@ -186,8 +237,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
                   />
                 </svg>
                 <span className="text-sm">
-                  {data?.humanVsAgentSplit?.humanPercentageDrop ?? 0}% less
-                  human intervention
+                  {humanPercentageDrop}% less human intervention
                 </span>
               </div>
             </div>

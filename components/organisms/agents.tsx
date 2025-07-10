@@ -31,16 +31,24 @@ export interface AssistantStats {
 }
 
 export interface AssistantCard {
-  id: string;
-  name: string;
-  role: string;
-  avatar: string;
-  status: "Live" | "Test" | "Offline";
-  phoneNumbers?: string[];
-  languages: string[];
-  contactMethods: ("phone" | "chat" | "email" | "whatsapp")[];
-  stats: AssistantStats;
-  showManage?: boolean;
+  _id: string;
+  agentName: string;
+  createdAt: string;
+  updatedAt: string;
+  chats: {
+    agentPrompt: string;
+    knowledgeBase: any;
+  };
+  email: {
+    agentPrompt: string;
+    knowledgeBase: any;
+  };
+  voice: {
+    agentPrompt: string;
+    knowledgeBase: any;
+  };
+  client: any;
+  status: string;
 }
 
 interface FilterState {
@@ -101,11 +109,7 @@ const getActiveColor = (lastActive: string) => {
   return "text-gray-600";
 };
 
-export default function Agents({
-  assistants,
-}: {
-  assistants: AssistantCard[];
-}) {
+export default function Agents({ assistants }: { assistants: any[] }) {
   const [filters, setFilters] = useState<FilterState>({
     status: "All Status",
     channels: "All Channels",
@@ -314,7 +318,7 @@ export default function Agents({
         <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {assistants.map((assistant) => (
             <Card
-              key={assistant.id}
+              key={assistant._id}
               className="bg-white shadow-lg shadow-gray-200 hover:shadow-md transition-shadow border-none"
             >
               <CardContent className="p-6">
@@ -324,13 +328,13 @@ export default function Agents({
                     <div className="relative">
                       <Avatar className="w-12 h-12">
                         <AvatarImage
-                          src={assistant.avatar || "/placeholder.svg"}
-                          alt={assistant.name}
+                          src={assistant.agentName || "/placeholder.svg"}
+                          alt={assistant.agentName}
                         />
                         <AvatarFallback>
-                          {assistant.name
+                          {assistant.agentName
                             .split(" ")
-                            .map((n) => n[0])
+                            .map((n: any) => n[0])
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
@@ -338,33 +342,23 @@ export default function Agents({
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 text-lg">
-                        {assistant.name}
+                        {assistant.agentName}
                       </h3>
-                      <p className="text-gray-600 text-sm">{assistant.role}</p>
+                      <p className="text-gray-600 text-sm">
+                        {assistant.client?.name}
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <StatusBadge status={assistant.status} />
-                    {assistant.showManage && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-purple-600 hover:text-purple-700 p-1"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
 
                 {/* Phone Numbers (if available) */}
-                {assistant.phoneNumbers && (
+                {assistant?.phoneNumbers && (
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">
                         Phone Numbers
                       </span>
-                      {assistant.showManage && (
+                      {assistant?.showManage && (
                         <Button
                           variant="link"
                           size="sm"
@@ -375,7 +369,7 @@ export default function Agents({
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {assistant.phoneNumbers.map((number) => (
+                      {assistant?.phoneNumbers?.map((number: any) => (
                         <Badge
                           key={number}
                           variant="outline"
@@ -391,14 +385,14 @@ export default function Agents({
                 {/* Contact Methods & Languages */}
                 <div className="mb-6">
                   <div className="flex items-center space-x-3">
-                    {assistant.contactMethods.map((method) => (
+                    {assistant?.contactMethods?.map((method: any) => (
                       <ContactMethodIcon key={method} method={method} />
                     ))}
                     <div className="flex items-center space-x-1 ml-auto">
-                      {assistant.languages.map((lang, index) => (
+                      {assistant?.languages?.map((lang: any, index: any) => (
                         <span key={lang} className="text-sm text-gray-600">
                           {lang}
-                          {index < assistant.languages.length - 1 ? ", " : ""}
+                          {index < assistant?.languages?.length - 1 ? ", " : ""}
                         </span>
                       ))}
                     </div>
@@ -412,17 +406,17 @@ export default function Agents({
                       Conversations
                     </div>
                     <div className="text-2xl font-bold text-gray-900">
-                      {formatNumber(assistant.stats.conversations)}
+                      {formatNumber(assistant?.conversations ?? 0)}
                     </div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-600 mb-1">CSAT Score</div>
                     <div
                       className={`text-2xl font-bold ${getScoreColor(
-                        assistant.stats.csatScore
+                        assistant?.stats?.csatScore ?? 0
                       )}`}
                     >
-                      {assistant.stats.csatScore}%
+                      {assistant?.stats?.csatScore ?? 0}%
                     </div>
                   </div>
                   <div>
@@ -431,10 +425,10 @@ export default function Agents({
                     </div>
                     <div
                       className={`text-2xl font-bold ${getScoreColor(
-                        assistant.stats.resolutionRate
+                        assistant?.stats?.resolutionRate ?? 0
                       )}`}
                     >
-                      {assistant.stats.resolutionRate}%
+                      {assistant?.stats?.resolutionRate ?? 0}%
                     </div>
                   </div>
                   <div>
@@ -443,10 +437,10 @@ export default function Agents({
                     </div>
                     <div
                       className={`text-2xl font-bold ${getActiveColor(
-                        assistant.stats.lastActive
+                        assistant?.stats?.lastActive ?? ""
                       )}`}
                     >
-                      {assistant.stats.lastActive}
+                      {assistant?.stats?.lastActive ?? ""}
                     </div>
                   </div>
                 </div>

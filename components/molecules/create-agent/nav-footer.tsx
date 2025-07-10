@@ -5,9 +5,13 @@ import React from "react";
 const NavFooter = ({
   activeStep,
   handleStepChange,
+  totalSteps,
+  handleCreateAgent,
 }: {
   activeStep: number;
   handleStepChange: (step: number) => void;
+  totalSteps: number;
+  handleCreateAgent: () => void;
 }) => {
   return (
     <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow-lg shadow-gray-200">
@@ -23,8 +27,12 @@ const NavFooter = ({
         className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
         onClick={() => handleStepChange(activeStep + 1)}
       >
-        Next
-        <ArrowRight className="w-4 h-4" />
+        {activeStep === totalSteps ? (
+          <Button onClick={handleCreateAgent}>Create Agent</Button>
+        ) : (
+          "Next"
+        )}
+        {activeStep !== totalSteps && <ArrowRight className="w-4 h-4" />}
       </Button>
     </div>
   );

@@ -7,9 +7,62 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Phone, MessageSquare, Mail } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
+import React from "react";
 
 export function OmnichannelSnapshot({ data }: { data: any }) {
-  console.log("data", data);
+  // Defensive defaults and error handling
+  let error = null;
+  let channelWise = {
+    voicePercentage: 0,
+    chatPercentage: 0,
+    emailPercentage: 0,
+    whatsappPercentage: 0,
+  };
+  let topAgent = {
+    agentName: "Sophia AI",
+  };
+
+  try {
+    if (!data || typeof data !== "object") {
+      throw new Error("No data available");
+    }
+    if (data.channelWise && typeof data.channelWise === "object") {
+      channelWise = {
+        voicePercentage:
+          typeof data.channelWise.voicePercentage === "number" &&
+          !isNaN(data.channelWise.voicePercentage)
+            ? data.channelWise.voicePercentage
+            : 0,
+        chatPercentage:
+          typeof data.channelWise.chatPercentage === "number" &&
+          !isNaN(data.channelWise.chatPercentage)
+            ? data.channelWise.chatPercentage
+            : 0,
+        emailPercentage:
+          typeof data.channelWise.emailPercentage === "number" &&
+          !isNaN(data.channelWise.emailPercentage)
+            ? data.channelWise.emailPercentage
+            : 0,
+        whatsappPercentage:
+          typeof data.channelWise.whatsappPercentage === "number" &&
+          !isNaN(data.channelWise.whatsappPercentage)
+            ? data.channelWise.whatsappPercentage
+            : 0,
+      };
+    }
+    if (data.topAgent && typeof data.topAgent === "object") {
+      topAgent = {
+        agentName:
+          typeof data.topAgent.agentName === "string" &&
+          data.topAgent.agentName.trim().length > 0
+            ? data.topAgent.agentName
+            : "Sophia AI",
+      };
+    }
+  } catch (e: any) {
+    error = e.message || "An error occurred while loading data.";
+  }
+
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
       <CardHeader className="p-0 pb-4">
@@ -27,108 +80,103 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
           <span className="text-sm text-gray-600 mb-3 block">
             Channel-wise Usage
           </span>
-          <div className="flex items-center space-x-4">
-            <div className="relative w-20 h-20">
-              {/* Pie chart using recharts */}
-              {(() => {
-                // Prepare data for recharts PieChart
-                const channelData = [
-                  {
-                    name: "Voice",
-                    value: data?.channelWise?.voicePercentage ?? 0,
-                    color: "#3b82f6",
-                  },
-                  {
-                    name: "Chat",
-                    value: data?.channelWise?.chatPercentage ?? 0,
-                    color: "#8b5cf6",
-                  },
-                  {
-                    name: "Email",
-                    value: data?.channelWise?.emailPercentage ?? 0,
-                    color: "#10b981",
-                  },
-                  {
-                    name: "WhatsApp",
-                    value: data?.channelWise?.whatsappPercentage ?? 0,
-                    color: "#22c55e",
-                  },
-                ];
+          {error ? (
+            <div className="text-red-500 text-sm">{error}</div>
+          ) : (
+            <div className="flex items-center space-x-4">
+              <div className="relative w-20 h-20">
+                {/* Pie chart using recharts */}
+                {(() => {
+                  // Prepare data for recharts PieChart
+                  const channelData = [
+                    {
+                      name: "Voice",
+                      value: channelWise.voicePercentage,
+                      color: "#3b82f6",
+                    },
+                    {
+                      name: "Chat",
+                      value: channelWise.chatPercentage,
+                      color: "#8b5cf6",
+                    },
+                    {
+                      name: "Email",
+                      value: channelWise.emailPercentage,
+                      color: "#10b981",
+                    },
+                    {
+                      name: "WhatsApp",
+                      value: channelWise.whatsappPercentage,
+                      color: "#22c55e",
+                    },
+                  ];
 
-                // Only show if at least one value is > 0
-                const hasData = channelData.some((c) => c.value > 0);
+                  // Only show if at least one value is > 0
+                  const hasData = channelData.some((c) => c.value > 0);
 
-                // Lazy load recharts to avoid SSR issues if needed
-                // But for now, just import at top:
-                // import { PieChart, Pie, Cell, Tooltip } from "recharts";
-                // (If not already imported, add to file imports.)
-
-                return (
-                  <div className="w-20 h-20 flex items-center justify-center">
-                    {hasData ? (
-                      <PieChart width={80} height={80}>
-                        <Pie
-                          data={channelData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={22}
-                          outerRadius={36}
-                          paddingAngle={2}
-                          stroke="none"
-                        >
-                          {channelData.map((entry, idx) => (
-                            <Cell key={`cell-${idx}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        {/* Optionally, add a tooltip */}
-                        {/* <Tooltip /> */}
-                      </PieChart>
-                    ) : (
-                      <div className="w-20 h-20 flex items-center justify-center text-xs text-gray-400">
-                        No Data
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm">
-                  Voice:{" "}
-                  <strong>{data?.channelWise?.voicePercentage ?? 0}%</strong>
-                </span>
+                  return (
+                    <div className="w-20 h-20 flex items-center justify-center">
+                      {hasData ? (
+                        <PieChart width={80} height={80}>
+                          <Pie
+                            data={channelData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={22}
+                            outerRadius={36}
+                            paddingAngle={2}
+                            stroke="none"
+                          >
+                            {channelData.map((entry, idx) => (
+                              <Cell key={`cell-${idx}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          {/* Optionally, add a tooltip */}
+                          {/* <Tooltip /> */}
+                        </PieChart>
+                      ) : (
+                        <div className="w-20 h-20 flex items-center justify-center text-xs text-gray-400">
+                          No Data
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                <span className="text-sm">
-                  Chat:{" "}
-                  <strong>{data?.channelWise?.chatPercentage ?? 0}%</strong>
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm">
-                  Email:{" "}
-                  <strong>{data?.channelWise?.emailPercentage ?? 0}%</strong>
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                <span className="text-sm">
-                  WhatsApp:{" "}
-                  <strong>{data?.channelWise?.whatsappPercentage ?? 0}%</strong>
-                </span>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm">
+                    Voice: <strong>{channelWise.voicePercentage}%</strong>
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm">
+                    Chat: <strong>{channelWise.chatPercentage}%</strong>
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">
+                    Email: <strong>{channelWise.emailPercentage}%</strong>
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  <span className="text-sm">
+                    WhatsApp: <strong>{channelWise.whatsappPercentage}%</strong>
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* CSAT Trendline */}
-        <div className="bg-gray-100 p-4 rounded-lg">
+        {/* <div className="bg-gray-100 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">CSAT Trendline</span>
             <span className="text-xs text-gray-500">Last 7 days</span>
@@ -166,7 +214,7 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
               Response Rate: <strong>68%</strong>
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* Top Assistant */}
         <div className="bg-gray-100 p-4 rounded-lg">
@@ -185,10 +233,10 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
             </div>
             <div className="flex-1">
               <div className="font-medium text-gray-900">
-                {data?.topAgent?.agentName ?? "Sophia AI"}
+                {topAgent.agentName}
               </div>
               <div className="text-sm text-gray-600">
-                CSAT {data?.topAgent?.csat ?? 0}% • Last active: Now
+                CSAT N/A • Last active: Now
               </div>
               <div className="flex space-x-1 mt-1">
                 <Phone className="w-3 h-3 text-gray-400" />
@@ -200,7 +248,7 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
         </div>
 
         {/* AI System Summary */}
-        <div className="bg-gray-100 p-4 rounded-lg">
+        {/* <div className="bg-gray-100 p-4 rounded-lg">
           <span className="text-sm text-gray-600 mb-3 block">
             AI System Summary
           </span>
@@ -252,7 +300,7 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
               <div className="text-xl font-bold text-gray-900">4.2%</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   );

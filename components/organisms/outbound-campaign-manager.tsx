@@ -14,11 +14,11 @@ export default function OutboundCampaignManager() {
       label: "Campaign List",
       component: <Campaigns />,
     },
-    {
-      id: "analytics",
-      label: "Analytics",
-      component: <Analytics />,
-    },
+    // {
+    //   id: "analytics",
+    //   label: "Analytics",
+    //   component: <Analytics />,
+    // },
   ];
 
   const handleTabChange = (tab: number) => {

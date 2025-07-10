@@ -244,9 +244,9 @@ export function CampaignsPage() {
                     <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
                       Created On
                     </TableHead>
-                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                    {/* <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
                       Actions
-                    </TableHead>
+                    </TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -345,7 +345,7 @@ export function CampaignsPage() {
                             {utils.string.formatDate(campaign.createdAt)}
                           </span>
                         </TableCell>
-                        <TableCell className="py-4 px-4">
+                        {/* <TableCell className="py-4 px-4">
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
@@ -374,7 +374,7 @@ export function CampaignsPage() {
                               Stop
                             </Button>
                           </div>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     ))
                   ) : (
@@ -392,7 +392,7 @@ export function CampaignsPage() {
       </div>
 
       {/* Total Leads Dialed */}
-      <div className="bg-white rounded-lg shadow-lg shadow-gray-200 w-fit">
+      {/* <div className="bg-white rounded-lg shadow-lg shadow-gray-200 w-fit">
         <div className="m-4">
           <h2 className="text-sm text-gray-400">Total Leads Dialed</h2>
           <div className="flex items-center space-x-2">
@@ -410,7 +410,7 @@ export function CampaignsPage() {
             </span>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
