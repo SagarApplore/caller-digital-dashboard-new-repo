@@ -1,8 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft } from "lucide-react";
-
 interface HeaderProps {
   currentTab: number;
   tabs: {

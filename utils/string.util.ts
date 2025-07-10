@@ -49,6 +49,9 @@ const string = {
     // If not, add: import moment from "moment";
     return moment(date).format("MMMM D, YYYY h:mm a");
   },
+  formatDate: (date: string) => {
+    return moment(date).format("MMM D, YYYY");
+  },
 };
 
 export default string;

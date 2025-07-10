@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/organisms/card";
 import {
   FileText,
@@ -27,6 +27,9 @@ import {
   Shield,
   Target,
   TrendingUp,
+  X,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -44,15 +47,21 @@ import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
 import { Checkbox } from "@radix-ui/react-checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Stepper } from "@/components/molecules/stepper";
+import { NetworkService } from "@/services/network-service";
+import endpoints from "@/lib/endpoints";
+import apiRequest from "@/utils/api";
 
 export function CreateCampaignPage() {
   const router = useRouter();
-  const [selectedSource, setSelectedSource] = useState<"csv" | "crm">();
+  const [selectedSource, setSelectedSource] = useState<"csv" | "crm" | null>(
+    null
+  );
   const [dragActive, setDragActive] = useState(false);
   const [step, setStep] = useState(1);
   const [campaignName, setCampaignName] = useState("");
   const [campaignDescription, setCampaignDescription] = useState("");
-  const [selectedAssistant, setSelectedAssistant] = useState("");
+  // selectedAssistant now stores the whole assistant object, not just the id
+  const [selectedAssistant, setSelectedAssistant] = useState<any>(null);
   const [selectedPhone, setSelectedPhone] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -66,13 +75,22 @@ export function CreateCampaignPage() {
     sat: false,
     sun: false,
   });
-
+  const [assistants, setAssistants] = useState<any[]>([]);
   const [maxRetries, setMaxRetries] = useState(1);
   const [retryInterval, setRetryInterval] = useState(1);
   const [enableSmartRetry, setEnableSmartRetry] = useState(false);
   const [enableHumanHandoff, setEnableHumanHandoff] = useState(false);
   const [customerRequestsAgent, setCustomerRequestsAgent] = useState(false);
   const [lowConfidenceHandoff, setLowConfidenceHandoff] = useState(false);
+
+  // File upload states
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string>("");
+  const [campaignCreating, setCampaignCreating] = useState(false);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -90,15 +108,71 @@ export function CreateCampaignPage() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      // Handle file upload logic here
-      console.log("File dropped:", e.dataTransfer.files[0]);
+      handleFileUpload(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      // Handle file selection logic here
-      console.log("File selected:", e.target.files[0]);
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    // Reset states
+    setUploadError("");
+    setUploadProgress(0);
+
+    // Validate file type
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setUploadError("Please select a valid CSV file.");
+      return;
+    }
+
+    // Validate file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError("File size must be less than 50MB.");
+      return;
+    }
+
+    // Set file and simulate upload progress (API call will be done later)
+    setUploadedFile(file);
+    setUploadStatus("uploading");
+
+    try {
+      // Simulate upload progress
+      for (let i = 0; i <= 100; i += 10) {
+        setUploadProgress(i);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      setUploadStatus("success");
+      console.log("File upload simulated successfully");
+
+      // Clear the file input
+      const fileInput = document.getElementById(
+        "csv-upload"
+      ) as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = "";
+      }
+    } catch (simulationError) {
+      setUploadStatus("error");
+      setUploadError("Upload failed. Please try again.");
+      console.error("Upload error:", simulationError);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setUploadStatus("idle");
+    setUploadProgress(0);
+    setUploadError("");
+
+    // Clear the file input
+    const fileInput = document.getElementById("csv-upload") as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = "";
     }
   };
 
@@ -108,6 +182,77 @@ export function CreateCampaignPage() {
       [key]: checked,
     }));
   }
+
+  useEffect(() => {
+    fetchAssistants();
+  }, []);
+
+  const fetchAssistants = async () => {
+    const response = await apiRequest(endpoints.assistants.list, "GET");
+
+    if (response.data?.success === true) {
+      setAssistants(response.data.data);
+    } else {
+      console.error("Failed to fetch assistants:", response.statusText);
+    }
+  };
+
+  // Helper to get assistant id for Select value
+  const getSelectedAssistantId = () =>
+    selectedAssistant && selectedAssistant._id ? selectedAssistant._id : "";
+
+  const createCampaign = async () => {
+    setCampaignCreating(true);
+    try {
+      // Check if we have a CSV file to upload
+      if (selectedSource === "csv" && uploadedFile) {
+        // Create FormData to send file + campaign data together
+        const formData = new FormData();
+
+        // Add the CSV file
+        formData.append("csvFile", uploadedFile);
+
+        formData.append("campaignName", campaignName);
+        formData.append("assistant", selectedAssistant._id);
+
+        const response = await apiRequest(
+          endpoints.outboundCampaign.create,
+          "POST",
+          formData
+        );
+
+        console.log("Campaign created with CSV:", response.data);
+
+        // Redirect to campaigns page on success
+        router.push("/outbound-campaign-manager");
+        return response.data;
+      } else {
+        // For CRM or other sources without file upload
+        const response = await apiRequest(
+          endpoints.outboundCampaign.create,
+          "POST",
+          {
+            campaignName,
+            assistant: selectedAssistant._id,
+            selectedSource,
+          }
+        );
+
+        console.log("Campaign created:", response.data);
+
+        // Redirect to campaigns page on success
+        router.push("/outbound-campaign-manager");
+        return response.data;
+      }
+    } catch (error) {
+      console.error("Campaign creation failed:", error);
+      // You can add toast notification here
+      alert("Failed to create campaign. Please try again.");
+      throw error;
+    } finally {
+      setCampaignCreating(false);
+    }
+  };
 
   return (
     <div>
@@ -216,52 +361,171 @@ export function CreateCampaignPage() {
           {selectedSource === "csv" && (
             <Card className="mb-6">
               <CardContent className="p-8">
-                <div
-                  className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
-                    dragActive
-                      ? "border-purple-400 bg-purple-50"
-                      : "border-gray-300 bg-gray-50"
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Upload Your CSV File
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Drag and drop your CSV file here, or click to browse
-                  </p>
-
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="csv-upload"
-                  />
-                  <label htmlFor="csv-upload">
-                    <Button
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 cursor-pointer"
-                      onClick={() => {
-                        document.getElementById("csv-upload")?.click();
-                      }}
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Choose File
-                    </Button>
-                  </label>
-
-                  <div className="mt-6 text-sm text-gray-500">
-                    <p className="mb-1">Supported format: CSV (max 50MB)</p>
-                    <p>
-                      Required columns: Phone, Name (Optional: Email, Company,
-                      Custom Fields)
+                {!uploadedFile ? (
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${
+                      dragActive
+                        ? "border-purple-400 bg-purple-50"
+                        : "border-gray-300 bg-gray-50"
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                  >
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Upload Your CSV File
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Drag and drop your CSV file here, or click to browse
                     </p>
+
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="csv-upload"
+                    />
+                    <label htmlFor="csv-upload">
+                      <Button
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 cursor-pointer"
+                        onClick={() => {
+                          document.getElementById("csv-upload")?.click();
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Choose File
+                      </Button>
+                    </label>
+
+                    <div className="mt-6 text-sm text-gray-500">
+                      <p className="mb-1">Supported format: CSV (max 50MB)</p>
+                      <p>
+                        Required columns: Phone, Name (Optional: Email, Company,
+                        Custom Fields)
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="border-2 border-solid rounded-lg p-6 transition-colors border-green-300 bg-green-50">
+                    {/* Upload Progress */}
+                    {uploadStatus === "uploading" && (
+                      <div className="text-center mb-4">
+                        <div className="flex items-center justify-center mb-2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mr-2"></div>
+                          <span className="text-purple-600 font-medium">
+                            Uploading...
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2">
+                          {uploadProgress}% complete
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Upload Success */}
+                    {uploadStatus === "success" && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">
+                              {uploadedFile.name}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                              • Uploaded successfully
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveFile}
+                          className="text-gray-500 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Upload Error */}
+                    {uploadStatus === "error" && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="w-5 h-5 text-red-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-900">
+                              {uploadedFile.name}
+                            </h4>
+                            <p className="text-sm text-red-600">
+                              {uploadError}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveFile}
+                          className="text-gray-500 hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Change File Button */}
+                    {uploadStatus === "success" && (
+                      <div className="mt-4 text-center">
+                        <input
+                          type="file"
+                          accept=".csv"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="csv-upload-change"
+                        />
+                        <label htmlFor="csv-upload-change">
+                          <Button
+                            variant="outline"
+                            className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                            onClick={() => {
+                              document
+                                .getElementById("csv-upload-change")
+                                ?.click();
+                            }}
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            Change File
+                          </Button>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {uploadError && !uploadedFile && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                      <span className="text-sm text-red-600">
+                        {uploadError}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -299,8 +563,19 @@ export function CreateCampaignPage() {
             </Button>
 
             <Button
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2"
+              className={`px-8 py-2 ${
+                selectedSource === null ||
+                (selectedSource === "csv" &&
+                  (!uploadedFile || uploadStatus === "uploading"))
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 text-white"
+              }`}
               onClick={() => setStep(step + 1)}
+              disabled={
+                selectedSource === null ||
+                (selectedSource === "csv" &&
+                  (!uploadedFile || uploadStatus === "uploading"))
+              }
             >
               Continue to Assistant Selection
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -310,9 +585,9 @@ export function CreateCampaignPage() {
       )}
 
       {step === 2 && (
-        <div className="max-w-5xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto">
+        <div className="max-w-5xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto space-y-4">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
               Campaign Configuration
             </h1>
@@ -320,6 +595,7 @@ export function CreateCampaignPage() {
               Configure your AI assistant, calling settings, and campaign rules
             </p>
           </div>
+
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left Column */}
             <div className="space-y-6">
@@ -385,22 +661,26 @@ export function CreateCampaignPage() {
                         Select Assistant
                       </Label>
                       <Select
-                        value={selectedAssistant || ""}
-                        onValueChange={(value) => setSelectedAssistant(value)}
+                        value={getSelectedAssistantId()}
+                        onValueChange={(value) => {
+                          const found = assistants.find(
+                            (assistant) => assistant._id === value
+                          );
+                          setSelectedAssistant(found || null);
+                        }}
                       >
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Choose an assistant..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="sarah">
-                            Sarah - Sales Assistant
-                          </SelectItem>
-                          <SelectItem value="mike">
-                            Mike - Support Assistant
-                          </SelectItem>
-                          <SelectItem value="emma">
-                            Emma - Marketing Assistant
-                          </SelectItem>
+                          {assistants.map((assistant) => (
+                            <SelectItem
+                              key={assistant._id}
+                              value={assistant._id}
+                            >
+                              {assistant.agentName}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -410,27 +690,38 @@ export function CreateCampaignPage() {
                       <div className="flex items-start space-x-3">
                         <Avatar className="w-10 h-10">
                           <AvatarFallback className="bg-purple-200 text-purple-700">
-                            S
+                            {selectedAssistant && selectedAssistant.agentName
+                              ? selectedAssistant.agentName[0]
+                              : "S"}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">
-                            Sarah - Sales Assistant
+                            {selectedAssistant && selectedAssistant.agentName
+                              ? selectedAssistant.agentName
+                              : "Sarah - Sales Assistant"}
                           </h3>
                           <p className="text-sm text-gray-600 mt-1">
-                            Professional, persuasive, goal-oriented
+                            {selectedAssistant && selectedAssistant.description
+                              ? selectedAssistant.description
+                              : "Professional, persuasive, goal-oriented"}
                           </p>
                           <div className="flex items-center justify-between mt-3">
                             <div className="flex items-center space-x-2">
                               <Globe className="w-4 h-4 text-gray-500" />
                               <span className="text-sm text-gray-600">
-                                English, Spanish
+                                {selectedAssistant &&
+                                selectedAssistant.languages
+                                  ? selectedAssistant.languages.join(", ")
+                                  : "English, Spanish"}
                               </span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Star className="w-4 h-4 text-yellow-400 fill-current" />
                               <span className="text-sm font-medium text-gray-700">
-                                4.8 Rating
+                                {selectedAssistant && selectedAssistant.rating
+                                  ? `${selectedAssistant.rating} Rating`
+                                  : "4.8 Rating"}
                               </span>
                             </div>
                           </div>
@@ -761,6 +1052,31 @@ export function CreateCampaignPage() {
               </Card>
             </div>
           </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-800"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Previous
+            </Button>
+
+            <Button
+              className={`px-8 py-2 ${
+                !selectedAssistant || !campaignName.trim()
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 text-white"
+              }`}
+              onClick={() => setStep(step + 1)}
+              disabled={!selectedAssistant || !campaignName.trim()}
+            >
+              Review & Launch Campaign
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       )}
 
@@ -792,7 +1108,7 @@ export function CreateCampaignPage() {
                     <div className="flex justify-between">
                       <span className="text-purple-700 font-medium">Name:</span>
                       <span className="text-gray-900 font-medium">
-                        Q1 Product Launch
+                        {campaignName}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -806,7 +1122,7 @@ export function CreateCampaignPage() {
                         Source:
                       </span>
                       <span className="text-gray-900 font-medium">
-                        CSV Upload
+                        {selectedSource === "csv" ? "CSV Upload" : "CRM Upload"}
                       </span>
                     </div>
                   </div>
@@ -828,7 +1144,9 @@ export function CreateCampaignPage() {
                         Assistant:
                       </span>
                       <span className="text-gray-900 font-medium">
-                        Sarah - Sales
+                        {selectedAssistant && selectedAssistant.agentName
+                          ? selectedAssistant.agentName
+                          : ""}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -1091,9 +1409,26 @@ export function CreateCampaignPage() {
                   Save as Draft
                 </Button>
 
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2">
-                  <Rocket className="w-4 h-4 mr-2" />
-                  Launch Campaign
+                <Button
+                  className={`px-8 py-2 ${
+                    campaignCreating
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-purple-600 hover:bg-purple-700 text-white"
+                  }`}
+                  onClick={createCampaign}
+                  disabled={campaignCreating}
+                >
+                  {campaignCreating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating Campaign...
+                    </>
+                  ) : (
+                    <>
+                      <Rocket className="w-4 h-4 mr-2" />
+                      Launch Campaign
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

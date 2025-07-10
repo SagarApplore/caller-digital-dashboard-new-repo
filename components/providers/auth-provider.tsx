@@ -13,6 +13,7 @@ import {
   removeUserData,
 } from "@/lib/auth";
 import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
 
 interface AuthContextType {
   user: User | null;
@@ -83,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       // TODO: Replace with your actual backend API call
-      const response = await apiRequest("/auth/login", "POST", {
+      const response = await apiRequest(endpoints.auth.login, "POST", {
         email,
         password,
       });

@@ -16,48 +16,56 @@ import {
   Calendar,
   Download,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 import utils from "@/utils/index.util";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-const data = [
-  {
-    id: 1,
-    name: "Q4 Lead Follow-up",
-    leads: "2,450 leads",
-    status: "Running",
-    assistant: { name: "Sophia AI", initials: "SA" },
-    callsPlaced: 1847,
-    connectRate: 68.5,
-    createdOn: "Dec 15, 2024",
-    icon: Phone,
-  },
-  {
-    id: 2,
-    name: "Product Demo Outreach",
-    leads: "1,200 leads",
-    status: "Completed",
-    assistant: { name: "Max AI", initials: "MA" },
-    callsPlaced: 1200,
-    connectRate: 72.3,
-    createdOn: "Dec 10, 2024",
-    icon: Users,
-  },
-  {
-    id: 3,
-    name: "Customer Satisfaction Survey",
-    leads: "850 leads",
-    status: "Paused",
-    assistant: { name: "Emma AI", initials: "EA" },
-    callsPlaced: 423,
-    connectRate: 39,
-    createdOn: "Dec 8, 2024",
-    icon: BarChart,
-  },
-];
+import { toast } from "react-toastify";
+import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import Image from "next/image";
 
 export function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await apiRequest(
+        endpoints.outboundCampaign.getAll,
+        "GET"
+      );
+      if (response.data?.success === true) {
+        setCampaigns(response.data?.data);
+        setIsLoading(false);
+      } else {
+        toast.error(response.data?.message || "Error fetching campaigns");
+        setCampaigns([]);
+      }
+    } catch (error) {
+      toast.error("Error fetching campaigns");
+      setCampaigns([]);
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  useEffect(() => {
+    console.log(isLoading);
+  }, [isLoading]);
+
   const [filters, setFilters] = useState({
     status: "all-status",
     assistant: "all-assistants",
@@ -65,32 +73,29 @@ export function CampaignsPage() {
   });
 
   // Memoized filtered campaigns for better performance
-  const filteredCampaigns = useMemo(() => {
-    return data.filter((campaign) => {
-      const statusMatch =
-        filters.status === "all-status" ||
-        campaign.status.toLowerCase() === filters.status.toLowerCase();
+  // const filteredCampaigns = useMemo(() => {
+  //   return campaigns.filter((campaign) => {
+  //     const statusMatch =
+  //       filters.status === "all-status" ||
+  //       campaign.status.toLowerCase() === filters.status.toLowerCase();
 
-      const assistantMatch =
-        filters.assistant === "all-assistants" ||
-        campaign.assistant.name
-          .toLowerCase()
-          .includes(filters.assistant.toLowerCase());
+  //     const assistantMatch =
+  //       filters.assistant === "all-assistants" ||
+  //       campaign.assistant.name
+  //         .toLowerCase()
+  //         .includes(filters.assistant.toLowerCase());
 
-      // Date range filtering can be implemented here when needed
-      const dateMatch = filters.dateRange === "all-dates" || true;
+  //     // Date range filtering can be implemented here when needed
+  //     const dateMatch = filters.dateRange === "all-dates" || true;
 
-      return statusMatch && assistantMatch && dateMatch;
-    });
-  }, [filters]);
+  //     return statusMatch && assistantMatch && dateMatch;
+  //   });
+  // }, [filters]);
 
   // Memoized total calls for better performance
   const totalCalls = useMemo(() => {
-    return filteredCampaigns.reduce(
-      (acc, campaign) => acc + campaign.callsPlaced,
-      0
-    );
-  }, [filteredCampaigns]);
+    return campaigns.reduce((acc, campaign) => acc + campaign.callsPlaced, 0);
+  }, [campaigns]);
 
   const getProgressColor = useCallback((connectRate: number) => {
     if (connectRate >= 70) return "bg-green-500";
@@ -206,137 +211,182 @@ export function CampaignsPage() {
       <div className="bg-white rounded-lg shadow-lg shadow-gray-200">
         <div className="">
           <h2 className="text-lg font-semibold text-gray-900 m-4">
-            Active Campaigns ({filteredCampaigns.length})
+            Active Campaigns ({campaigns.length})
           </h2>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Campaign Name
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Status
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Assistant
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Calls Placed
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Connect Rate
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Created On
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCampaigns.map((campaign) => (
-                  <tr
-                    key={campaign.id}
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <campaign.icon className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {campaign.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {campaign.leads}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <Badge
-                        className={`${getStatusColor(
-                          campaign.status
-                        )} border-0`}
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="animate-spin" />
+                <span className="ml-3 text-gray-500 text-sm">
+                  Loading campaigns...
+                </span>
+              </div>
+            ) : (
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="bg-gray-100">
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Campaign Name
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Assistant
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Calls Placed
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Connect Rate
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Created On
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.length > 0 ? (
+                    campaigns.map((campaign) => (
+                      <TableRow
+                        key={campaign._id}
+                        className="border-b border-gray-100 hover:bg-gray-50"
                       >
-                        {campaign.status}
-                      </Badge>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="text-xs bg-purple-100 text-purple-600">
-                            {campaign.assistant.initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium text-gray-900">
-                          {campaign.assistant.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="font-medium text-gray-900">
-                        {utils.string.formatNumber(campaign.callsPlaced)}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900">
-                          {campaign.connectRate}%
-                        </span>
-                        <div className="w-16">
-                          <Progress
-                            value={campaign.connectRate}
-                            className={`h-2 ${getProgressColor(
-                              campaign.connectRate
-                            )}`}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-sm text-gray-500">
-                        {campaign.createdOn}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-blue-600 hover:text-blue-700"
-                          onClick={() =>
-                            router.push(
-                              `/outbound-campaign-manager/${campaign.id}`
-                            )
-                          }
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-600 hover:text-gray-700"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          Stop
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              {campaign.icon ? (
+                                <Image
+                                  src={campaign.icon}
+                                  alt={campaign.campaignName}
+                                  width={32}
+                                  height={32}
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center">
+                                  <span className="text-sm">
+                                    {campaign.campaignName.charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {campaign.campaignName}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {campaign.callPlaced}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <Badge
+                            className={`${getStatusColor(
+                              campaign.status
+                            )} border-0`}
+                          >
+                            {campaign.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex items-center space-x-2">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="text-xs bg-purple-100 text-purple-600">
+                                {campaign.assistant?.image ? (
+                                  <Image
+                                    src={campaign.assistant.image}
+                                    alt={campaign.assistant.agentName}
+                                    width={32}
+                                    height={32}
+                                  />
+                                ) : (
+                                  <div className="flex items-center justify-center">
+                                    <span className="text-sm">
+                                      {campaign.assistant.agentName.charAt(0)}
+                                    </span>
+                                  </div>
+                                )}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium text-gray-900">
+                              {campaign.assistant.agentName}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="font-medium text-gray-900">
+                            {utils.string.formatNumber(
+                              campaign.callsPlaced ?? 0
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium text-gray-900">
+                              {campaign.connectRate}%
+                            </span>
+                            <div className="w-16">
+                              <Progress
+                                value={campaign.connectRate}
+                                className={`h-2 ${getProgressColor(
+                                  campaign.connectRate
+                                )}`}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="text-sm text-gray-500">
+                            {utils.string.formatDate(campaign.createdAt)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-700"
+                              onClick={() =>
+                                router.push(
+                                  `/outbound-campaign-manager/${campaign._id}`
+                                )
+                              }
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-600 hover:text-gray-700"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              Stop
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-4 px-4">
+                        No campaigns found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </div>
       </div>
@@ -347,7 +397,16 @@ export function CampaignsPage() {
           <h2 className="text-sm text-gray-400">Total Leads Dialed</h2>
           <div className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-gray-900">
-              {utils.string.formatNumber(totalCalls)}
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="animate-spin" />
+                  <span className="text-sm text-gray-500">
+                    Loading total calls...
+                  </span>
+                </div>
+              ) : (
+                utils.string.formatNumber(totalCalls)
+              )}
             </span>
           </div>
         </div>

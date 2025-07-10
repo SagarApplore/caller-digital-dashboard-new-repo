@@ -27,6 +27,8 @@ import Integrations, {
   Integration,
 } from "../molecules/create-agent/integrations";
 import VoiceIntegration from "../molecules/create-agent/voice-integration";
+import RoutingAndEscalation from "../molecules/create-agent/routing-and-escalation";
+import NavFooter from "../molecules/create-agent/nav-footer";
 
 const agentSteps = [
   {
@@ -167,7 +169,11 @@ const communicationIntegrations: Integration[] = [
 ];
 
 const CreateAgent = () => {
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState(6);
+
+  const handleStepChange = (step: number) => {
+    setActiveStep(step);
+  };
 
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<PersonaAndBehavior>({
@@ -370,7 +376,14 @@ const CreateAgent = () => {
           />
         )}
 
-        {/* {activeStep === 6 && <RoutingAndEscalation />} */}
+        {activeStep === 6 && <RoutingAndEscalation />}
+
+        {/* {activeStep === 7 && <AnalyticsSummary />} */}
+
+        <NavFooter
+          activeStep={activeStep}
+          handleStepChange={handleStepChange}
+        />
       </div>
     </div>
   );

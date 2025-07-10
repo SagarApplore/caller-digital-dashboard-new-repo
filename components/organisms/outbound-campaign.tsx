@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  ArrowLeft,
   Phone,
   CheckCircle,
   Clock,
@@ -11,15 +10,17 @@ import {
   ThumbsUp,
   AlertTriangle,
   ExternalLink,
-  Pause,
-  Square,
   Heart,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "./card";
+import { Card, CardContent } from "@/components/organisms/card";
+import { useParams } from "next/navigation";
+import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
 
 export default function OutboundCampaign() {
+  const params = useParams();
+  const id = params?.id as string | undefined;
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -28,6 +29,20 @@ export default function OutboundCampaign() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const fetchCampaign = async () => {
+    try {
+      const response = await apiRequest(
+        endpoints.outboundCampaign.getById.replace(":id", id as string)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaign();
+  }, [id]);
 
   const callData = [
     {
