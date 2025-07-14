@@ -56,7 +56,7 @@ const Transcript = ({
             .getInitials(
               transcript.role?.toLowerCase() === "user"
                 ? callLog?.clientId?.name
-                : callLog?.agentId?.agentName
+                : callLog?.agentId?.agentName ?? "Agent"
             )
             .toUpperCase()}
         </div>
