@@ -19,7 +19,11 @@ interface TestAgentModalProps {
   agent: any;
 }
 
-export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModalProps) {
+export default function TestAgentModal({
+  isOpen,
+  onClose,
+  agent,
+}: TestAgentModalProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -28,15 +32,15 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
 
   const handleStartTest = async () => {
     if (!agent) return;
-    
+
     setIsConnecting(true);
     setError(null);
-    
+
     try {
       // Step 1: Get LiveKit token
       const roomName = `test-${agent._id}-${Date.now()}`;
       const participantName = `user-${Date.now()}`;
-      
+
       const tokenResponse = await apiRequest(
         `${endpoints.assistants.list}/livekit-token`,
         "POST",
@@ -53,21 +57,17 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
       setLiveKitToken(tokenResponse.data.token);
 
       // Step 2: Call Python agent endpoint
-      const agentResponse = await apiRequest(
-        "/api/test-agent",
-        "POST",
-        {
-          agentId: agent._id,
-          roomName,
-          liveKitToken: tokenResponse.data.token,
-          agentData: {
-            name: agent.agentName,
-            voice: agent.voice,
-            email: agent.email,
-            chats: agent.chats,
-          },
-        }
-      );
+      const agentResponse = await apiRequest("/api/test-agent", "POST", {
+        agentId: agent._id,
+        roomName,
+        liveKitToken: tokenResponse.data.token,
+        agentData: {
+          name: agent.agentName,
+          voice: agent.voice,
+          email: agent.email,
+          chats: agent.chats,
+        },
+      });
 
       if (!agentResponse.data?.success) {
         throw new Error("Failed to start agent");
@@ -84,13 +84,9 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
   const handleStopTest = async () => {
     try {
       // Call endpoint to stop the agent
-      await apiRequest(
-        "/api/stop-agent",
-        "POST",
-        {
-          agentId: agent._id,
-        }
-      );
+      await apiRequest("/api/stop-agent", "POST", {
+        agentId: agent._id,
+      });
     } catch (err) {
       console.error("Error stopping agent:", err);
     } finally {
@@ -118,7 +114,7 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
         <DialogHeader>
           <DialogTitle>Test Agent: {agent?.agentName}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -153,7 +149,9 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
             <div className="space-y-4">
               <div className="text-center">
                 <p className="text-green-600 font-medium">Connected to Agent</p>
-                <p className="text-sm text-gray-500">You can now speak with your agent</p>
+                <p className="text-sm text-gray-500">
+                  You can now speak with your agent
+                </p>
               </div>
 
               {/* Audio Visualizer */}
@@ -168,10 +166,14 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
                   onClick={handleToggleMute}
                   className={isMuted ? "text-red-600" : "text-green-600"}
                 >
-                  {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {isMuted ? (
+                    <MicOff className="w-4 h-4" />
+                  ) : (
+                    <Mic className="w-4 h-4" />
+                  )}
                   {isMuted ? "Unmute" : "Mute"}
                 </Button>
-                
+
                 <Button
                   variant="destructive"
                   size="sm"
@@ -187,4 +189,4 @@ export default function TestAgentModal({ isOpen, onClose, agent }: TestAgentModa
       </DialogContent>
     </Dialog>
   );
-} 
+}

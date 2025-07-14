@@ -12,6 +12,8 @@ import {
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/organisms/card";
+import { Label } from "@/components/atoms/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export interface Channel {
   id: string;
@@ -20,6 +22,11 @@ export interface Channel {
   icon: React.ReactNode;
   iconBg: string;
   active: boolean;
+  prompt: {
+    title: string;
+    value: string;
+    allowedCharacters: number;
+  };
 }
 
 export interface PhoneNumber {
@@ -33,9 +40,11 @@ export interface PhoneNumber {
 const ChannelsAndPhoneMapping = ({
   channels,
   toggleChannel,
+  updatePrompt,
 }: {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
+  updatePrompt: (channelId: string, prompt: string) => void;
 }) => {
   const [phoneNumbers] = useState<PhoneNumber[]>([
     {
@@ -76,7 +85,7 @@ const ChannelsAndPhoneMapping = ({
         <div className="space-y-4">
           {channels.map((channel) => (
             <Card key={channel.id} className="bg-white">
-              <CardContent className="p-4">
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div
@@ -111,6 +120,19 @@ const ChannelsAndPhoneMapping = ({
                     />
                   </div>
                 </div>
+
+                {/* Voice Prompt */}
+                {channel.active && (
+                  <div className="flex flex-col gap-4">
+                    <Textarea
+                      id="voice-instructions"
+                      placeholder="Enter voice-specific instructions for phone calls..."
+                      className="h-32"
+                      value={channel.prompt.value}
+                      onChange={(e) => updatePrompt(channel.id, e.target.value)}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

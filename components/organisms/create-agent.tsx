@@ -96,10 +96,6 @@ const rawTones = [
 interface PersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
-  voicePrompt: string;
-  emailPrompt: string;
-  chatPrompt: string;
-  allowedCharacters: number;
   agentName: string;
 }
 
@@ -206,10 +202,6 @@ const CreateAgent = ({
     useState<PersonaAndBehavior>({
       languages: [],
       tones: [],
-      voicePrompt: initialData?.voice?.agentPrompt || "",
-      emailPrompt: initialData?.email?.agentPrompt || "",
-      chatPrompt: initialData?.chats?.agentPrompt || "",
-      allowedCharacters: 2000,
       agentName: initialData?.agentName || "",
     });
 
@@ -227,14 +219,11 @@ const CreateAgent = ({
       icon: <Phone className="w-5 h-5 text-blue-600" />,
       iconBg: "bg-blue-100",
       active: true,
-    },
-    {
-      id: "whatsapp",
-      name: "WhatsApp Business",
-      description: "WhatsApp messaging & media",
-      icon: <MessageCircle className="w-5 h-5 text-green-600" />,
-      iconBg: "bg-green-100",
-      active: true,
+      prompt: {
+        title: "Voice Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
     {
       id: "livechat",
@@ -243,6 +232,11 @@ const CreateAgent = ({
       icon: <MessageSquare className="w-5 h-5 text-blue-600" />,
       iconBg: "bg-blue-100",
       active: false,
+      prompt: {
+        title: "Live Chat Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
     {
       id: "email",
@@ -251,6 +245,11 @@ const CreateAgent = ({
       icon: <Mail className="w-5 h-5 text-green-600" />,
       iconBg: "bg-green-100",
       active: true,
+      prompt: {
+        title: "Email Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
   ]);
 
@@ -326,10 +325,17 @@ const CreateAgent = ({
 
           setPersonaAndBehavior((prev) => ({
             ...prev,
-            voicePrompt: agentData?.voice?.agentPrompt || "",
-            emailPrompt: agentData?.email?.agentPrompt || "",
-            chatPrompt: agentData?.chats?.agentPrompt || "",
           }));
+
+          setChannels((prev) =>
+            prev.map((channel) => ({
+              ...channel,
+              prompt: {
+                ...channel.prompt,
+                value: agentData[channel.id]?.agentPrompt || "",
+              },
+            }))
+          );
 
           setKnowledgeBase({
             voiceDocuments: agentData?.voice?.knowledgeBase || [],
@@ -382,15 +388,21 @@ const CreateAgent = ({
       agentName: personaAndBehavior.agentName || "New Agent",
       description: "Agent Description",
       voice: {
-        agentPrompt: personaAndBehavior.voicePrompt,
+        agentPrompt:
+          channels.find((channel) => channel.id === "voice")?.prompt.value ||
+          "",
         knowledgeBase: knowledgeBase.voiceDocuments,
       },
       email: {
-        agentPrompt: personaAndBehavior.emailPrompt,
+        agentPrompt:
+          channels.find((channel) => channel.id === "email")?.prompt.value ||
+          "",
         knowledgeBase: knowledgeBase.emailDocuments,
       },
       chats: {
-        agentPrompt: personaAndBehavior.chatPrompt,
+        agentPrompt:
+          channels.find((channel) => channel.id === "livechat")?.prompt.value ||
+          "",
         knowledgeBase: knowledgeBase.chatDocuments,
       },
       languages: personaAndBehavior.languages
@@ -414,6 +426,16 @@ const CreateAgent = ({
       await apiRequest(endpoints.assistants.create, "POST", agentData);
     }
   }
+
+  const updatePrompt = (channelId: string, prompt: string) => {
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === channelId
+          ? { ...channel, prompt: { ...channel.prompt, value: prompt } }
+          : channel
+      )
+    );
+  };
 
   return (
     <div className="flex gap-4 h-full">
@@ -445,29 +467,7 @@ const CreateAgent = ({
             handleLanguageClick={handleLanguageClick}
             tones={personaAndBehavior.tones}
             handleToneClick={handleToneClick}
-            voicePrompt={personaAndBehavior.voicePrompt}
-            emailPrompt={personaAndBehavior.emailPrompt}
-            chatPrompt={personaAndBehavior.chatPrompt}
-            allowedCharacters={personaAndBehavior.allowedCharacters}
             agentName={personaAndBehavior.agentName}
-            setVoicePrompt={(voicePrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                voicePrompt,
-              }))
-            }
-            setEmailPrompt={(emailPrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                emailPrompt,
-              }))
-            }
-            setChatPrompt={(chatPrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                chatPrompt,
-              }))
-            }
             setAgentName={(agentName) =>
               setPersonaAndBehavior((prev) => ({
                 ...prev,
@@ -481,6 +481,7 @@ const CreateAgent = ({
           <ChannelsAndPhoneMapping
             channels={channels}
             toggleChannel={toggleChannel}
+            updatePrompt={updatePrompt}
           />
         )}
 
