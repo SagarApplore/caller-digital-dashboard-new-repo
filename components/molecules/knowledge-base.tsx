@@ -1,0 +1,249 @@
+"use client";
+
+import { Card, CardContent } from "@/components/organisms/card";
+import { FileText, Trash2, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+
+export interface KnowledgeBaseItem {
+  file: string;
+  _id: string;
+  createdAt: string;
+}
+
+export interface KnowledgeBaseProps {
+  knowledgeBase: {
+    documents: KnowledgeBaseItem[];
+  };
+  setKnowledgeBase: React.Dispatch<
+    React.SetStateAction<{
+      documents: KnowledgeBaseItem[];
+    }>
+  >;
+}
+
+const KnowledgeBase = ({
+  knowledgeBase,
+  setKnowledgeBase,
+}: KnowledgeBaseProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [selectedDocument, setSelectedDocument] =
+    useState<KnowledgeBaseItem | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Only validates and sets pendingFile, does not update knowledgeBase
+  const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPendingFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.add("border-purple-400", "bg-purple-50");
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove("border-purple-400", "bg-purple-50");
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove("border-purple-400", "bg-purple-50");
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      setPendingFile(files[0]);
+    }
+  };
+
+  // Only on submit, add to knowledgeBase
+  const handleSubmit = async () => {
+    if (!pendingFile) return;
+    if (pendingFile.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit. Please upload a smaller PDF file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      // Simulate upload and add to local state
+      const newDocument: KnowledgeBaseItem = {
+        file: `s3://knowledgebasecaller/pdf/${Date.now()}-${pendingFile.name}`,
+        _id: `temp_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      };
+      setKnowledgeBase((prev) => ({
+        ...prev,
+        documents: [...(prev.documents || []), newDocument],
+      }));
+      setSelectedDocument(newDocument);
+      setPendingFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      console.error(`Error uploading PDF file:`, error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSelectDocument = (doc: KnowledgeBaseItem) => {
+    setSelectedDocument(doc);
+    setPendingFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleCancelPending = () => {
+    setPendingFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="h-full overflow-y-auto">
+      {/* Upload PDF Document */}
+      <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
+        <div className="space-y-4 flex flex-col items-center justify-between">
+          <Card
+            className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors cursor-pointer p-6 w-full"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <CardContent className="p-0 text-center relative">
+              <input
+                type="file"
+                id="pdf-upload"
+                className="hidden"
+                accept=".pdf"
+                onChange={handleFileInput}
+                ref={fileInputRef}
+              />
+              <label htmlFor="pdf-upload" className="cursor-pointer block">
+                <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg flex items-center justify-center">
+                  {uploading ? (
+                    <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-6 h-6 text-purple-600" />
+                  )}
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  {uploading ? "Uploading..." : "Upload PDF"}
+                </h3>
+                {pendingFile ? (
+                  <div className="mb-2 flex items-center justify-center gap-2 relative">
+                    <span className="text-gray-700 text-sm font-medium">
+                      Selected file:{" "}
+                      <span className="text-purple-700">
+                        {pendingFile.name}
+                      </span>
+                    </span>
+                    {!uploading && (
+                      <button
+                        type="button"
+                        aria-label="Clear selected file"
+                        className="ml-2 p-1 rounded hover:bg-gray-200 transition-colors absolute right-0 top-1/2 -translate-y-1/2"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleCancelPending();
+                        }}
+                      >
+                        <X className="w-4 h-4 text-gray-500" />
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+                <p className="text-gray-600 text-sm">
+                  Drag & drop or click to browse
+                </p>
+                <p className="text-gray-600 text-sm">Max limit: 5MB</p>
+              </label>
+            </CardContent>
+          </Card>
+          <Button
+            variant="outline"
+            className=""
+            disabled={uploading || !pendingFile}
+            onClick={handleSubmit}
+          >
+            {uploading ? "Uploading..." : "Submit PDF"}
+          </Button>
+          {/* Removed "Clear Selected File" button, now handled by cross in upload box */}
+        </div>
+      </div>
+
+      {/* Existing Knowledge Base Documents */}
+      {knowledgeBase.documents && knowledgeBase.documents.length > 0 && (
+        <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
+          <h2 className="text-lg font-semibold">Existing Knowledge Base</h2>
+          <div className="space-y-3">
+            {knowledgeBase.documents.map((doc) => (
+              <Card
+                key={doc._id}
+                className={`bg-purple-50 border-purple-200 ${
+                  selectedDocument && selectedDocument._id === doc._id
+                    ? "ring-2 ring-purple-400"
+                    : ""
+                }`}
+                onClick={() => handleSelectDocument(doc)}
+                style={{ cursor: "pointer" }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {doc.file.split("/").pop()}
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {new Date(doc.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setKnowledgeBase((prev) => ({
+                          ...prev,
+                          documents: prev.documents.filter(
+                            (d) => d._id !== doc._id
+                          ),
+                        }));
+                        if (
+                          selectedDocument &&
+                          selectedDocument._id === doc._id
+                        ) {
+                          setSelectedDocument(null);
+                          setPendingFile(null);
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default KnowledgeBase;

@@ -22,6 +22,7 @@ import {
 import ChannelsAndPhoneMapping, {
   Channel,
 } from "../molecules/create-agent/channels-and-phone-mapping";
+import { KnowledgeBaseItem } from "../molecules/knowledge-base";
 import KnowledgeBase from "../molecules/create-agent/knowledge-base";
 import Integrations, {
   Integration,
@@ -97,18 +98,6 @@ interface PersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
   agentName: string;
-}
-
-interface KnowledgeBaseItem {
-  file: string;
-  prompt: string;
-  _id: string;
-}
-
-interface KnowledgeBaseData {
-  voiceDocuments: KnowledgeBaseItem[];
-  emailDocuments: KnowledgeBaseItem[];
-  chatDocuments: KnowledgeBaseItem[];
 }
 
 const crmIntegrations: Integration[] = [
@@ -198,18 +187,15 @@ const CreateAgent = ({
     setActiveStep(step);
   };
 
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] =
+    useState<KnowledgeBaseItem | null>(null);
+
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<PersonaAndBehavior>({
       languages: [],
       tones: [],
       agentName: initialData?.agentName || "",
     });
-
-  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>({
-    voiceDocuments: initialData?.voice?.knowledgeBase || [],
-    emailDocuments: initialData?.email?.knowledgeBase || [],
-    chatDocuments: initialData?.chats?.knowledgeBase || [],
-  });
 
   const [channels, setChannels] = useState<Channel[]>([
     {
@@ -336,12 +322,6 @@ const CreateAgent = ({
               },
             }))
           );
-
-          setKnowledgeBase({
-            voiceDocuments: agentData?.voice?.knowledgeBase || [],
-            emailDocuments: agentData?.email?.knowledgeBase || [],
-            chatDocuments: agentData?.chats?.knowledgeBase || [],
-          });
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -383,6 +363,10 @@ const CreateAgent = ({
     );
   };
 
+  const selectKnowledgeBase = (knowledgeBase: KnowledgeBaseItem) => {
+    setSelectedKnowledgeBase(knowledgeBase);
+  };
+
   async function handleCreateAgent(): Promise<void> {
     const agentData = {
       agentName: personaAndBehavior.agentName || "New Agent",
@@ -391,19 +375,19 @@ const CreateAgent = ({
         agentPrompt:
           channels.find((channel) => channel.id === "voice")?.prompt.value ||
           "",
-        knowledgeBase: knowledgeBase.voiceDocuments,
+        knowledgeBase: selectedKnowledgeBase || "",
       },
       email: {
         agentPrompt:
           channels.find((channel) => channel.id === "email")?.prompt.value ||
           "",
-        knowledgeBase: knowledgeBase.emailDocuments,
+        knowledgeBase: selectedKnowledgeBase || [],
       },
       chats: {
         agentPrompt:
           channels.find((channel) => channel.id === "livechat")?.prompt.value ||
           "",
-        knowledgeBase: knowledgeBase.chatDocuments,
+        knowledgeBase: selectedKnowledgeBase || [],
       },
       languages: personaAndBehavior.languages
         .filter((lang) => lang.selected)
@@ -487,8 +471,9 @@ const CreateAgent = ({
 
         {activeStep === 3 && (
           <KnowledgeBase
-            knowledgeBase={knowledgeBase}
-            setKnowledgeBase={setKnowledgeBase}
+            knowledgeBases={initialData?.voice?.knowledgeBase || []}
+            selectedKnowledgeBase={selectedKnowledgeBase}
+            selectKnowledgeBase={selectKnowledgeBase}
           />
         )}
 
