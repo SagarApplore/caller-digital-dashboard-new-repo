@@ -186,7 +186,7 @@ const KnowledgeBase = ({
   return (
     <>
       {/* Knowledge Base Overview */}
-      {/* <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
+      <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold">Knowledge Base Overview</h1>
           <div className="flex items-center space-x-8 text-sm">
@@ -234,7 +234,7 @@ const KnowledgeBase = ({
             </div>
           </CardContent>
         </Card>
-      </div> */}
+      </div>
 
       {/* Upload Documents */}
       <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">

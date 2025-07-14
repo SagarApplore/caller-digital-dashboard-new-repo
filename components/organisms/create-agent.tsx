@@ -38,36 +38,36 @@ const agentSteps = [
     title: "Persona & Behavior",
     icon: <User />,
   },
-  // {
-  //   id: 2,
-  //   title: "Channels & Phone Mapping",
-  //   icon: <RadioTower />,
-  // },
   {
     id: 2,
+    title: "Channels & Phone Mapping",
+    icon: <RadioTower />,
+  },
+  {
+    id: 3,
     title: "Knowledge Base",
     icon: <Brain />,
   },
-  // {
-  //   id: 3,
-  //   title: "Integrations",
-  //   icon: <Puzzle />,
-  // },
-  // {
-  //   id: 4,
-  //   title: "Voice Integration",
-  //   icon: <Mic />,
-  // },
-  // {
-  //   id: 5,
-  //   title: "Routing & Escalation",
-  //   icon: <Route />,
-  // },
-  // {
-  //   id: 6,
-  //   title: "Analytics Summary",
-  //   icon: <ChartLine />,
-  // },
+  {
+    id: 4,
+    title: "Integrations",
+    icon: <Puzzle />,
+  },
+  {
+    id: 5,
+    title: "Voice Integration",
+    icon: <Mic />,
+  },
+  {
+    id: 6,
+    title: "Routing & Escalation",
+    icon: <Route />,
+  },
+  {
+    id: 7,
+    title: "Analytics Summary",
+    icon: <ChartLine />,
+  },
 ];
 
 const rawTones = [
@@ -477,35 +477,35 @@ const CreateAgent = ({
           />
         )}
 
-        {/* {activeStep === 2 && (
+        {activeStep === 2 && (
           <ChannelsAndPhoneMapping
             channels={channels}
             toggleChannel={toggleChannel}
           />
-        )} */}
+        )}
 
-        {activeStep === 2 && (
+        {activeStep === 3 && (
           <KnowledgeBase
             knowledgeBase={knowledgeBase}
             setKnowledgeBase={setKnowledgeBase}
           />
         )}
 
-        {/* {activeStep === 3 && (
+        {activeStep === 4 && (
           <Integrations
             crmIntegrations={integrations.crmIntegrations}
             communicationIntegrations={integrations.communicationIntegrations}
           />
         )}
 
-        {activeStep === 4 && (
+        {activeStep === 5 && (
           <VoiceIntegration
             voiceIntegration={voiceIntegration}
             setVoiceIntegration={setVoiceIntegration}
           />
-        )} */}
+        )}
 
-        {/* {activeStep === 5 && <RoutingAndEscalation />} */}
+        {activeStep === 6 && <RoutingAndEscalation />}
 
         {/* {activeStep === 7 && <AnalyticsSummary />} */}
 
