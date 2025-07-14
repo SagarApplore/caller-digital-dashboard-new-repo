@@ -5,7 +5,6 @@ import {
   Phone,
   MessageCircle,
   Star,
-  ChevronDown,
   Calendar,
   Search,
   X,
@@ -617,15 +616,14 @@ const CallLogs = () => {
   return (
     <>
       {/* Filter Bar */}
-      <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-white p-4 rounded-lg shadow-sm gap-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
           <Select
             value={filters.channel}
             onValueChange={(value) => updateFilter("channel", value)}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="All Channels" />
-              <ChevronDown className="w-4 h-4" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-channels">All Channels</SelectItem>
@@ -640,9 +638,8 @@ const CallLogs = () => {
             value={filters.assistant}
             onValueChange={(value) => updateFilter("assistant", value)}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="All Assistants" />
-              <ChevronDown className="w-4 h-4" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-assistants">All Assistants</SelectItem>
@@ -657,10 +654,10 @@ const CallLogs = () => {
             </SelectContent>
           </Select>
 
-          <div className="relative date-filter-container flex items-center">
+          <div className="relative date-filter-container flex items-center w-full sm:w-auto">
             <Button
               variant="outline"
-              className={`flex items-center h-10 px-4 py-2 rounded-md border text-base font-normal shadow-sm min-w-[160px] ${
+              className={`flex items-center h-10 px-4 py-2 rounded-md border text-base font-normal shadow-sm min-w-[160px] w-full sm:w-auto ${
                 showDateFilter || (dateInputs.startDate && dateInputs.endDate)
                   ? "text-blue-600 border-blue-300 bg-blue-50"
                   : "text-gray-600 border-gray-300 bg-white hover:bg-blue-50"
@@ -756,9 +753,8 @@ const CallLogs = () => {
             value={filters.status}
             onValueChange={(value) => updateFilter("status", value)}
           >
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder="All Status" />
-              <ChevronDown className="w-4 h-4" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-status">All Status</SelectItem>
@@ -772,9 +768,8 @@ const CallLogs = () => {
             value={filters.language}
             onValueChange={(value) => updateFilter("language", value)}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="All Languages" />
-              <ChevronDown className="w-4 h-4" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all-languages">All Languages</SelectItem>
@@ -785,18 +780,18 @@ const CallLogs = () => {
           </Select>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               placeholder="Search by phone, email, user ID..."
               value={filters.searchQuery}
               onChange={(e) => updateFilter("searchQuery", e.target.value)}
-              className="pl-10 w-64"
+              className="pl-10 w-full sm:w-64"
             />
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
               className={`cursor-pointer transition-colors ${
                 filters.quickFilters.escalation
@@ -855,7 +850,7 @@ const CallLogs = () => {
       {/* Error State */}
       {error && !loading && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-sm text-red-800">Error: {error}</p>
             <Button
               variant="outline"
@@ -879,10 +874,10 @@ const CallLogs = () => {
         </div>
       )}
 
-      <div className="m-6 space-y-6 h-full">
+      <div className="m-2 sm:m-6 space-y-6 h-full">
         {/* Metrics Cards */}
         {!loading && !error && (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
             {metrics.map((metric, index) => (
               <Card
                 key={index}
@@ -919,7 +914,7 @@ const CallLogs = () => {
 
         {/* Loading Skeleton for Metrics */}
         {loading && (
-          <div className="grid grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
             {Array.from({ length: 6 }).map((_, index) => (
               <Card
                 key={index}
@@ -939,11 +934,11 @@ const CallLogs = () => {
 
         {/* Data Table */}
         {!loading && !error && (
-          <div className="overflow-scroll rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
-            <Table className="w-full">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+            <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-4 w-12">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
                     <Checkbox
                       className="border-gray-300 border h-4 w-4 bg-white"
                       checked={
@@ -954,22 +949,22 @@ const CallLogs = () => {
                       onCheckedChange={toggleAllConversations}
                     />
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Contact
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Channel
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Assistant
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Timestamp
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Duration
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </TableHead>
                   {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
@@ -978,7 +973,7 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Confidence
                   </TableHead> */}
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -1002,7 +997,7 @@ const CallLogs = () => {
                       key={conversation.id}
                       className="hover:bg-gray-50 border-gray-50"
                     >
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         <Checkbox
                           className="border-gray-300 border h-4 w-4 bg-white"
                           checked={selectedConversations.includes(
@@ -1013,7 +1008,7 @@ const CallLogs = () => {
                           }
                         />
                       </TableCell>
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">
                             <AvatarImage
@@ -1030,19 +1025,19 @@ const CallLogs = () => {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 text-xs sm:text-base">
                               {conversation.contact.name}
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs sm:text-sm text-gray-600">
                               {conversation.contact.identifier}
                             </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         {getChannelIcon(conversation.channel)}
                       </TableCell>
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         <div className="flex items-center space-x-2">
                           <Avatar className="w-6 h-6">
                             <AvatarImage
@@ -1058,18 +1053,18 @@ const CallLogs = () => {
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium">
+                          <span className="text-xs sm:text-sm font-medium">
                             {conversation.assistant.name}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="p-4 text-sm text-gray-600">
+                      <TableCell className="p-2 sm:p-4 text-xs sm:text-sm text-gray-600">
                         {conversation.timestamp}
                       </TableCell>
-                      <TableCell className="p-4 text-sm font-medium">
+                      <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
                         {conversation.duration}
                       </TableCell>
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         {getStatusBadge(conversation.status)}
                       </TableCell>
                       {/* <TableCell className="p-4">
@@ -1088,7 +1083,7 @@ const CallLogs = () => {
                           </span>
                         </div>
                       </TableCell> */}
-                      <TableCell className="p-4">
+                      <TableCell className="p-2 sm:p-4">
                         <Button
                           variant="link"
                           size="sm"
@@ -1098,7 +1093,7 @@ const CallLogs = () => {
                           }
                         >
                           <Play className="w-4 h-4 mr-1" />
-                          View Details
+                          <span className="hidden xs:inline">View Details</span>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -1111,29 +1106,29 @@ const CallLogs = () => {
 
         {/* Loading Skeleton for Table */}
         {loading && (
-          <div className="overflow-scroll rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
-            <Table className="w-full">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+            <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-4 w-12">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
                     <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Contact
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Channel
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Assistant
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Timestamp
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Duration
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </TableHead>
                   {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
@@ -1142,7 +1137,7 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Confidence
                   </TableHead> */}
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -1153,10 +1148,10 @@ const CallLogs = () => {
                     key={index}
                     className="hover:bg-gray-50 border-gray-50"
                   >
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
                         <div className="space-y-1">
@@ -1165,22 +1160,22 @@ const CallLogs = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="flex items-center space-x-2">
                         <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
                         <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
                       </div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-16"></div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-12"></div>
                     </TableCell>
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-8"></div>
                     </TableCell>
                     {/* <TableCell className="p-4">
@@ -1195,7 +1190,7 @@ const CallLogs = () => {
                         <div className="h-3 bg-gray-200 rounded animate-pulse w-8"></div>
                       </div>
                     </TableCell> */}
-                    <TableCell className="p-4">
+                    <TableCell className="p-2 sm:p-4">
                       <div className="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
                     </TableCell>
                   </TableRow>
