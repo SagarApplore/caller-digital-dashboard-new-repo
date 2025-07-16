@@ -54,7 +54,7 @@ const KnowledgeBase = ({
               ) : (
                 knowledgeBases.map((item) => (
                   <SelectItem key={item._id} value={item._id}>
-                    {item.file}
+                    {item.name}
                   </SelectItem>
                 ))
               )}

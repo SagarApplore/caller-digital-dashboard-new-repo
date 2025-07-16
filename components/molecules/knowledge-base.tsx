@@ -4,10 +4,13 @@ import { Card, CardContent } from "@/components/organisms/card";
 import { FileText, Trash2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/atoms/input";
 
 export interface KnowledgeBaseItem {
-  file: string;
   _id: string;
+  fileUri: string;
+  name: string;
+
   createdAt: string;
 }
 
@@ -30,15 +33,19 @@ const KnowledgeBase = ({
   const [uploading, setUploading] = useState<boolean>(false);
   const [selectedDocument, setSelectedDocument] =
     useState<KnowledgeBaseItem | null>(null);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Only validates and sets pendingFile, does not update knowledgeBase
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setPendingFile(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const validFiles = Array.from(files).filter(
+        (file) => file.type === "application/pdf"
+      );
+      setPendingFiles(validFiles);
     }
+    console.log(files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -57,31 +64,32 @@ const KnowledgeBase = ({
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      setPendingFile(files[0]);
+      setPendingFiles(Array.from(files));
     }
   };
 
   // Only on submit, add to knowledgeBase
   const handleSubmit = async () => {
-    if (!pendingFile) return;
-    if (pendingFile.size > 5 * 1024 * 1024) {
+    if (!pendingFiles.length) return;
+    if (pendingFiles[0].size > 5 * 1024 * 1024) {
       alert("File size exceeds 5MB limit. Please upload a smaller PDF file.");
       return;
     }
     setUploading(true);
     try {
       // Simulate upload and add to local state
-      const newDocument: KnowledgeBaseItem = {
-        file: `s3://knowledgebasecaller/pdf/${Date.now()}-${pendingFile.name}`,
+      const newDocuments: KnowledgeBaseItem[] = pendingFiles.map((file) => ({
+        fileUri: `s3://knowledgebasecaller/pdf/${Date.now()}-${file.name}`,
         _id: `temp_${Date.now()}`,
+        name: file.name,
         createdAt: new Date().toISOString(),
-      };
+      }));
       setKnowledgeBase((prev) => ({
         ...prev,
-        documents: [...(prev.documents || []), newDocument],
+        documents: [...(prev.documents || []), ...newDocuments],
       }));
-      setSelectedDocument(newDocument);
-      setPendingFile(null);
+      setSelectedDocument(newDocuments[0]);
+      setPendingFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -94,14 +102,14 @@ const KnowledgeBase = ({
 
   const handleSelectDocument = (doc: KnowledgeBaseItem) => {
     setSelectedDocument(doc);
-    setPendingFile(null);
+    setPendingFiles([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const handleCancelPending = () => {
-    setPendingFile(null);
+    setPendingFiles([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -119,13 +127,14 @@ const KnowledgeBase = ({
             onDrop={handleDrop}
           >
             <CardContent className="p-0 text-center relative">
-              <input
+              <Input
                 type="file"
                 id="pdf-upload"
                 className="hidden"
                 accept=".pdf"
                 onChange={handleFileInput}
                 ref={fileInputRef}
+                multiple={true}
               />
               <label htmlFor="pdf-upload" className="cursor-pointer block">
                 <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -138,12 +147,12 @@ const KnowledgeBase = ({
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {uploading ? "Uploading..." : "Upload PDF"}
                 </h3>
-                {pendingFile ? (
+                {pendingFiles.length > 0 ? (
                   <div className="mb-2 flex items-center justify-center gap-2 relative">
                     <span className="text-gray-700 text-sm font-medium">
-                      Selected file:{" "}
+                      Selected files:{" "}
                       <span className="text-purple-700">
-                        {pendingFile.name}
+                        {pendingFiles.map((file) => file.name).join(", ")}
                       </span>
                     </span>
                     {!uploading && (
@@ -172,7 +181,7 @@ const KnowledgeBase = ({
           <Button
             variant="outline"
             className=""
-            disabled={uploading || !pendingFile}
+            disabled={uploading || !pendingFiles.length}
             onClick={handleSubmit}
           >
             {uploading ? "Uploading..." : "Submit PDF"}
@@ -205,7 +214,7 @@ const KnowledgeBase = ({
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900 text-sm">
-                          {doc.file.split("/").pop()}
+                          {doc.name}
                         </h4>
                         <p className="text-xs text-gray-600 mt-1">
                           {new Date(doc.createdAt).toLocaleDateString()}
@@ -229,7 +238,7 @@ const KnowledgeBase = ({
                           selectedDocument._id === doc._id
                         ) {
                           setSelectedDocument(null);
-                          setPendingFile(null);
+                          setPendingFiles([]);
                         }
                       }}
                     >

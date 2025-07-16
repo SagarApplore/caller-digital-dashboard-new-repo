@@ -444,7 +444,7 @@ const CreateAgent = ({
         </ul>
       </div>
 
-      <div className="py-4 mr-4 flex flex-col gap-4 w-full overflow-y-auto">
+      <div className="py-4 mr-4 flex flex-col gap-4 w-full h-full overflow-y-auto">
         {activeStep === 1 && (
           <PersonaAndBehavior
             languages={personaAndBehavior.languages}

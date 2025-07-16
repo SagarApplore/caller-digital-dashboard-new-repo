@@ -1,18 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Phone,
-  MessageCircle,
-  MessageSquare,
-  Mail,
-  MapPin,
-  Plus,
-  Tag,
-} from "lucide-react";
+import { Phone, MapPin, Plus, Tag } from "lucide-react";
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/organisms/card";
-import { Label } from "@/components/atoms/label";
 import { Textarea } from "@/components/ui/textarea";
 
 export interface Channel {
