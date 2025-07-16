@@ -1,30 +1,26 @@
 "use client";
 
 import { Card, CardContent } from "@/components/organisms/card";
-import { FileText, Trash2, Upload, X } from "lucide-react";
+import { Download, FileText, Trash2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/atoms/input";
 import { useAuth } from "@/hooks/use-auth";
 import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
+import { toast } from "react-toastify";
 
 export interface KnowledgeBaseItem {
   _id: string;
   fileUri: string;
   name: string;
-
   createdAt: string;
+  prompt: string;
 }
 
-interface KnowledgeBaseProps {
-  knowledgeBase: {
-    documents: KnowledgeBaseItem[];
-  };
-  setKnowledgeBase: React.Dispatch<
-    React.SetStateAction<{
-      documents: KnowledgeBaseItem[];
-    }>
-  >;
+export interface KnowledgeBaseProps {
+  knowledgeBase: KnowledgeBaseItem[];
+  setKnowledgeBase: React.Dispatch<React.SetStateAction<KnowledgeBaseItem[]>>;
 }
 
 const KnowledgeBase = ({
@@ -36,19 +32,15 @@ const KnowledgeBase = ({
   const [uploading, setUploading] = useState<boolean>(false);
   const [selectedDocument, setSelectedDocument] =
     useState<KnowledgeBaseItem | null>(null);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [prompt, setPrompt] = useState<string>('');
+  const [prompt, setPrompt] = useState<string>("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Only support CSV and PDF files
-  const supportedFileTypes = [
-    'application/pdf',
-    'text/csv',
-    'application/csv'
-  ];
+  const supportedFileTypes = ["application/pdf", "text/csv", "application/csv"];
 
   const getFileExtension = (fileName: string) => {
-    return fileName.split('.').pop()?.toLowerCase();
+    return fileName.split(".").pop()?.toLowerCase();
   };
 
   const isValidFileType = (file: File) => {
@@ -56,24 +48,19 @@ const KnowledgeBase = ({
     if (supportedFileTypes.includes(file.type)) {
       return true;
     }
-    
+
     // Fallback to file extension check
     const extension = getFileExtension(file.name);
-    const validExtensions = ['pdf', 'csv'];
-    return validExtensions.includes(extension || '');
+    const validExtensions = ["pdf", "csv"];
+    return validExtensions.includes(extension || "");
   };
 
   // Only validates and sets pendingFile, does not update knowledgeBase
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      const validFiles = Array.from(files).filter(isValidFileType);
-      if (validFiles.length !== files.length) {
-        alert('Some files were skipped. Only PDF and CSV files are supported.');
-      }
-      setPendingFiles(validFiles);
+    const file = event.target.files?.[0] as File;
+    if (file && file.type === "application/pdf") {
+      setPendingFile(file);
     }
-    console.log(files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -92,83 +79,84 @@ const KnowledgeBase = ({
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      const validFiles = Array.from(files).filter(isValidFileType);
-      if (validFiles.length !== files.length) {
-        alert('Some files were skipped. Only PDF and CSV files are supported.');
-      }
-      setPendingFiles(validFiles);
+      setPendingFile(files[0]);
     }
   };
 
   // Only on submit, add to knowledgeBase
   const handleSubmit = async () => {
-    if (!pendingFiles.length) return;
-    if (pendingFiles[0].size > 5 * 1024 * 1024) {
-      alert("File size exceeds 5MB limit. Please upload a smaller file.");
+    if (!pendingFile) return;
+    if (prompt.trim() === "") {
+      toast.error("Please enter prompt");
+      return;
+    }
+    if (pendingFile.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB limit. Please upload a smaller PDF file.");
       return;
     }
     setUploading(true);
     try {
-      // Create FormData for file upload
       const formData = new FormData();
-      formData.append('file', pendingFiles[0]);
-      formData.append('name', pendingFiles[0].name);
-      formData.append('createdBy', user?.id || '');
-      formData.append('prompt', prompt);
+      formData.append("file", pendingFile);
+      formData.append("prompt", prompt);
+      formData.append("name", pendingFile.name);
+      formData.append("createdBy", user?.id || "");
 
-      // Upload to backend using apiRequest utility
-      const response = await apiRequest('/knowledgeBase', 'POST', formData);
-      const result = response.data;
-      
-      // Add to local state
-      const newDocument: KnowledgeBaseItem = {
-        fileUri: result.data.fileUri,
-        _id: result.data._id,
-        name: result.data.name,
-        createdAt: result.data.createdAt,
-      };
+      const response = await apiRequest(
+        endpoints.knowledgeBase.create,
+        "POST",
+        formData
+      );
 
-      setKnowledgeBase((prev) => ({
-        ...prev,
-        documents: [...(prev.documents || []), newDocument],
-      }));
-      setSelectedDocument(newDocument);
-      setPendingFiles([]);
-      setPrompt('');
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      if (!response?.data) {
+        throw new Error("Failed to upload document.");
       }
+
+      const uploadedDocument: KnowledgeBaseItem = response?.data?.data;
+
+      setKnowledgeBase((prev) => [...prev, uploadedDocument]);
+      setSelectedDocument(uploadedDocument);
+      handleCancelPending();
     } catch (error) {
-      console.error(`Error uploading file:`, error);
-      
+      console.error(`Error uploading PDF file:`, error);
+
       // Better error handling
-      let errorMessage = 'Unknown error occurred';
+      let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      } else if (typeof error === "object" && error !== null) {
         errorMessage = JSON.stringify(error);
       }
-      
-      alert(`Error uploading file: ${errorMessage}`);
-    } finally {
-      setUploading(false);
+
+      toast.error(`Error uploading file: ${errorMessage}`);
     }
   };
 
   const handleSelectDocument = (doc: KnowledgeBaseItem) => {
     setSelectedDocument(doc);
-    setPendingFiles([]);
+    setPendingFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
   const handleCancelPending = () => {
-    setPendingFiles([]);
-    setPrompt('');
+    setPendingFile(null);
+    setPrompt("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleDownload = (fileUri: string) => {
+    //  TODO
+    // URI is not working, need to fix it
+    const link = document.createElement("a");
+    link.href = fileUri;
+    link.download = "";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -190,12 +178,8 @@ const KnowledgeBase = ({
                 accept=".pdf,.csv"
                 onChange={handleFileInput}
                 ref={fileInputRef}
-                multiple={true}
               />
-              <label
-                htmlFor="document-upload"
-                className="cursor-pointer block"
-              >
+              <label htmlFor="document-upload" className="cursor-pointer block">
                 <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg flex items-center justify-center">
                   {uploading ? (
                     <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -206,12 +190,12 @@ const KnowledgeBase = ({
                 <h3 className="font-semibold text-gray-900 mb-2">
                   {uploading ? "Uploading..." : "Upload Document"}
                 </h3>
-                {pendingFiles.length > 0 ? (
+                {pendingFile ? (
                   <div className="mb-2 flex items-center justify-center gap-2 relative">
                     <span className="text-gray-700 text-sm font-medium">
                       Selected files:{" "}
                       <span className="text-purple-700">
-                        {pendingFiles.map((file) => file.name).join(", ")}
+                        {pendingFile.name}
                       </span>
                     </span>
                     {!uploading && (
@@ -240,25 +224,18 @@ const KnowledgeBase = ({
               </label>
             </CardContent>
           </Card>
-          {pendingFiles.length > 0 && (
-            <div className="w-full space-y-2">
-              <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">
-                Prompt (Optional)
-              </label>
-              <textarea
-                id="prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Enter a prompt or description for this file..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={3}
-              />
-            </div>
-          )}
+          <Input
+            value={prompt}
+            placeholder={
+              pendingFile ? "Enter prompt" : "Upload a file to enter prompt"
+            }
+            disabled={!pendingFile}
+            onChange={(e) => setPrompt(e.currentTarget.value)}
+          />
           <Button
             variant="outline"
             className=""
-            disabled={uploading || !pendingFiles.length}
+            disabled={uploading || !pendingFile}
             onClick={handleSubmit}
           >
             {uploading ? "Uploading..." : "Submit Document"}
@@ -268,74 +245,128 @@ const KnowledgeBase = ({
       </div>
 
       {/* Existing Knowledge Base Documents */}
-      <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Knowledge Base Documents
-          </h3>
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-            <FileText className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {knowledgeBase.length > 0 && (
+        <>
+          <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
+            <h2 className="text-lg font-semibold">Existing Knowledge Base</h2>
+            <div className="space-y-3">
+              {knowledgeBase.map((doc) => (
+                <Card
+                  key={doc._id}
+                  className={`bg-purple-50 border-purple-200 ${
+                    selectedDocument && selectedDocument._id === doc._id
+                      ? "ring-2 ring-purple-400"
+                      : ""
+                  }`}
+                  onClick={() => handleSelectDocument(doc)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">
+                            {doc.name}
+                          </h4>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {new Date(doc.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownload(doc.fileUri)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setKnowledgeBase((prev) =>
+                              prev.filter((d) => d._id !== doc._id)
+                            );
+                            if (
+                              selectedDocument &&
+                              selectedDocument._id === doc._id
+                            ) {
+                              setSelectedDocument(null);
+                              setPendingFile(null);
+                            }
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          {knowledgeBase.documents
-            ?.filter((doc) =>
-              doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-            .map((doc) => (
-              <div
-                key={doc._id}
-                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                  selectedDocument?._id === doc._id
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => handleSelectDocument(doc)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-purple-600" />
+          <div className="space-y-2">
+            {knowledgeBase
+              ?.filter((doc) =>
+                doc.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((doc) => (
+                <div
+                  key={doc._id}
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                    selectedDocument?._id === doc._id
+                      ? "border-purple-500 bg-purple-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  onClick={() => handleSelectDocument(doc)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {doc.name}
+                        </h4>
+                        <p className="text-sm text-gray-500">
+                          Uploaded:{" "}
+                          {new Date(doc.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">{doc.name}</h4>
-                      <p className="text-sm text-gray-500">
-                        Uploaded: {new Date(doc.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <button
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Handle delete functionality here
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Handle delete functionality here
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
                 </div>
-              </div>
-            ))}
-        </div>
-
-        {knowledgeBase.documents?.length === 0 && (
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500">No documents uploaded yet.</p>
-            <p className="text-sm text-gray-400">
-              Upload your first document to get started.
-            </p>
+              ))}
           </div>
-        )}
-      </div>
+
+          {knowledgeBase?.length === 0 && (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No documents uploaded yet.</p>
+              <p className="text-sm text-gray-400">
+                Upload your first document to get started.
+              </p>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

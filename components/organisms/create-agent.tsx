@@ -1,18 +1,6 @@
 "use client";
 
-import {
-  Brain,
-  ChartLine,
-  Mail,
-  MessageCircle,
-  MessageSquare,
-  Mic,
-  Phone,
-  Puzzle,
-  RadioTower,
-  Route,
-  User,
-} from "lucide-react";
+import { Loader2, Mail, MessageSquare, Phone } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   Language,
@@ -24,151 +12,33 @@ import ChannelsAndPhoneMapping, {
 } from "../molecules/create-agent/channels-and-phone-mapping";
 import { KnowledgeBaseItem } from "../molecules/knowledge-base";
 import KnowledgeBase from "../molecules/create-agent/knowledge-base";
-import Integrations, {
-  Integration,
-} from "../molecules/create-agent/integrations";
+import { Integration } from "../molecules/create-agent/integrations";
 import VoiceIntegration from "../molecules/create-agent/voice-integration";
-import RoutingAndEscalation from "../molecules/create-agent/routing-and-escalation";
 import NavFooter from "../molecules/create-agent/nav-footer";
 import endpoints from "@/lib/endpoints";
 import apiRequest from "@/utils/api";
+import { useAuth } from "../providers/auth-provider";
+import {
+  agentSteps,
+  communicationIntegrations,
+  crmIntegrations,
+  initialChannels,
+  rawTones,
+} from "@/lib/create-agent-config";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import responseMessages from "@/lib/responseMessages";
+import ChatIntegration from "../molecules/create-agent/chat-integration";
+import EmailIntegration from "../molecules/create-agent/email-integration";
 
-const agentSteps = [
-  {
-    id: 1,
-    title: "Persona & Behavior",
-    icon: <User />,
-  },
-  {
-    id: 2,
-    title: "Channels & Phone Mapping",
-    icon: <RadioTower />,
-  },
-  {
-    id: 3,
-    title: "Knowledge Base",
-    icon: <Brain />,
-  },
-  {
-    id: 4,
-    title: "Integrations",
-    icon: <Puzzle />,
-  },
-  {
-    id: 5,
-    title: "Voice Integration",
-    icon: <Mic />,
-  },
-  {
-    id: 6,
-    title: "Routing & Escalation",
-    icon: <Route />,
-  },
-  {
-    id: 7,
-    title: "Analytics Summary",
-    icon: <ChartLine />,
-  },
-];
-
-const rawTones = [
-  {
-    id: 1,
-    name: "Friendly",
-    selected: false,
-  },
-  {
-    id: 2,
-    name: "Professional",
-    selected: false,
-  },
-  {
-    id: 3,
-    name: "Neutral",
-    selected: false,
-  },
-  {
-    id: 4,
-    name: "Empathetic",
-    selected: false,
-  },
-];
-
-interface PersonaAndBehavior {
+interface IPersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
   agentName: string;
+  summaryPrompt: string;
+  successEvaluationPrompt: string;
+  failureEvaluationPrompt: string;
 }
-
-const crmIntegrations: Integration[] = [
-  {
-    id: "hubspot",
-    name: "HubSpot",
-    description: "CRM & Sales automation",
-    icon: "🧡",
-    iconBg: "bg-orange-100",
-    connected: true,
-  },
-  {
-    id: "salesforce",
-    name: "Salesforce",
-    description: "Enterprise CRM platform",
-    icon: "☁️",
-    iconBg: "bg-blue-100",
-    connected: false,
-  },
-  {
-    id: "zendesk",
-    name: "Zendesk",
-    description: "Customer support tickets",
-    icon: "💚",
-    iconBg: "bg-green-100",
-    connected: true,
-  },
-  {
-    id: "airtable",
-    name: "Airtable",
-    description: "Database & workflow",
-    icon: "🔴",
-    iconBg: "bg-red-100",
-    connected: false,
-  },
-];
-
-const communicationIntegrations: Integration[] = [
-  {
-    id: "twilio",
-    name: "Twilio",
-    description: "Voice & SMS services",
-    icon: "📞",
-    iconBg: "bg-red-100",
-    connected: true,
-  },
-  {
-    id: "whatsapp",
-    name: "WhatsApp Cloud API",
-    description: "Meta's official WhatsApp API",
-    icon: "💚",
-    iconBg: "bg-green-100",
-    connected: true,
-  },
-  {
-    id: "slack",
-    name: "Slack",
-    description: "Team notifications & alerts",
-    icon: "💜",
-    iconBg: "bg-purple-100",
-    connected: false,
-  },
-  {
-    id: "teams",
-    name: "Microsoft Teams",
-    description: "Team collaboration platform",
-    icon: "🔵",
-    iconBg: "bg-blue-100",
-    connected: false,
-  },
-];
 
 interface CreateAgentProps {
   mode?: "create" | "edit";
@@ -182,63 +52,29 @@ const CreateAgent = ({
   initialData,
 }: CreateAgentProps) => {
   const [activeStep, setActiveStep] = useState(1);
-
-  const handleStepChange = (step: number) => {
-    setActiveStep(step);
-  };
-
-  const [selectedKnowledgeBase, setSelectedKnowledgeBase] =
-    useState<KnowledgeBaseItem | null>(null);
-
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [knowledgeBaseData, setKnowledgeBaseData] = useState<{
+    knowledgeBases: KnowledgeBaseItem[];
+    selectedKnowledgeBases: KnowledgeBaseItem[];
+  }>({
+    knowledgeBases: [],
+    selectedKnowledgeBases: [],
+  });
   const [personaAndBehavior, setPersonaAndBehavior] =
-    useState<PersonaAndBehavior>({
+    useState<IPersonaAndBehavior>({
       languages: [],
       tones: [],
       agentName: initialData?.agentName || "",
+      summaryPrompt: initialData?.summaryPrompt || "",
+      successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
+      failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
     });
-
-  const [channels, setChannels] = useState<Channel[]>([
-    {
-      id: "voice",
-      name: "Voice Calls",
-      description: "Inbound & outbound phone calls",
-      icon: <Phone className="w-5 h-5 text-blue-600" />,
-      iconBg: "bg-blue-100",
-      active: true,
-      prompt: {
-        title: "Voice Instructions",
-        value: "",
-        allowedCharacters: 2000,
-      },
-    },
-    {
-      id: "livechat",
-      name: "Live Chat",
-      description: "Website chat widget",
-      icon: <MessageSquare className="w-5 h-5 text-blue-600" />,
-      iconBg: "bg-blue-100",
-      active: false,
-      prompt: {
-        title: "Live Chat Instructions",
-        value: "",
-        allowedCharacters: 2000,
-      },
-    },
-    {
-      id: "email",
-      name: "Email Support",
-      description: "Email ticketing system",
-      icon: <Mail className="w-5 h-5 text-green-600" />,
-      iconBg: "bg-green-100",
-      active: true,
-      prompt: {
-        title: "Email Instructions",
-        value: "",
-        allowedCharacters: 2000,
-      },
-    },
-  ]);
-
+  const [channels, setChannels] = useState<Channel[]>(
+    initialChannels.map((channel) => ({
+      ...channel,
+    }))
+  );
   const [integrations, setIntegrations] = useState<{
     crmIntegrations: Integration[];
     communicationIntegrations: Integration[];
@@ -246,21 +82,52 @@ const CreateAgent = ({
     crmIntegrations: crmIntegrations,
     communicationIntegrations: communicationIntegrations,
   });
-
   const [voiceIntegration, setVoiceIntegration] = useState({
-    voiceProvider: "elevenlabs",
-    voiceModel: "sophia-professional",
-    speakingSpeed: [1],
-    pitch: [1],
-    emotion: "neutral",
-    language: "en-us",
-    selectedTTS: "elevenlabs-turbo",
-    selectedSTT: "deepgram-nova",
-    interruptSensitivity: [50],
-    responseDelay: [1000],
-    enableDTMF: true,
-    backgroundNoiseSuppression: false,
+    selectedTTSModel: null,
+    selectedTTSModelName: null,
+    selectedTTSProvider: null,
+    selectedTTSProviderName: null,
+    selectedSTTModel: null,
+    selectedSTTModelName: null,
+    selectedSTTProvider: null,
+    selectedSTTProviderName: null,
+    selectedLLMModel: null,
+    selectedLLMModelName: null,
+    selectedLLMProvider: null,
+    selectedLLMProviderName: null,
   });
+  const [emailIntegration, setEmailIntegration] = useState({
+    selectedLLMModel: null,
+    selectedLLMModelName: null,
+    selectedLLMProvider: null,
+    selectedLLMProviderName: null,
+  });
+  const [chatIntegration, setChatIntegration] = useState({
+    selectedLLMModel: null,
+    selectedLLMModelName: null,
+    selectedLLMProvider: null,
+    selectedLLMProviderName: null,
+  });
+
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleStepChange = (step: number) => {
+    setActiveStep(step);
+  };
+
+  useEffect(() => {
+    const fetchKnowledgeBases = async () => {
+      setLoading(true);
+      const response = await apiRequest(endpoints.knowledgeBase.getAll, "GET");
+      setKnowledgeBaseData((prev) => ({
+        ...prev,
+        knowledgeBases: response?.data?.data || [],
+      }));
+      setLoading(false);
+    };
+    fetchKnowledgeBases();
+  }, []);
 
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -270,18 +137,17 @@ const CreateAgent = ({
         {
           id: 1,
           name: "English",
+          key: "EN",
         },
         {
           id: 2,
           name: "Spanish",
+          key: "ES",
         },
         {
           id: 3,
           name: "French",
-        },
-        {
-          id: 4,
-          name: "German",
+          key: "FR",
         },
       ];
       setPersonaAndBehavior((prev) => ({
@@ -353,6 +219,26 @@ const CreateAgent = ({
     }));
   };
 
+  const handleSummaryPrompt = (message: string) => {
+    setPersonaAndBehavior((prev) => ({
+      ...prev,
+      summaryPrompt: message,
+    }));
+  };
+
+  const handleSuccessEvaluationPrompt = (message: string) => {
+    setPersonaAndBehavior((prev) => ({
+      ...prev,
+      successEvaluationPrompt: message,
+    }));
+  };
+  const handleFailureEvaluationPrompt = (message: string) => {
+    setPersonaAndBehavior((prev) => ({
+      ...prev,
+      failureEvaluationPrompt: message,
+    }));
+  };
+
   const toggleChannel = (channelId: string) => {
     setChannels((prev) =>
       prev.map((channel) =>
@@ -363,35 +249,90 @@ const CreateAgent = ({
     );
   };
 
-  const selectKnowledgeBase = (knowledgeBase: KnowledgeBaseItem) => {
-    setSelectedKnowledgeBase(knowledgeBase);
+  const selectKnowledgeBase = (knowledgeBases: KnowledgeBaseItem[]) => {
+    setKnowledgeBaseData((prev) => ({
+      ...prev,
+      selectedKnowledgeBases: knowledgeBases,
+    }));
   };
 
   async function handleCreateAgent(): Promise<void> {
+    setCreating(true);
     const agentData = {
-      agentName: personaAndBehavior.agentName || "New Agent",
-      description: "Agent Description",
+      agentName: personaAndBehavior.agentName,
+      client: user?.id,
+      status: "active",
+      channels: channels
+        .filter((channel) => {
+          if (channel.active) {
+            return channel;
+          }
+        })
+        .map((channel) => channel.id.toLowerCase()),
+      languages: personaAndBehavior.languages.map((language) => language.key),
+      tone: personaAndBehavior.tones
+        .filter((tone) => tone.selected)
+        .map((tone) => tone.name.toLowerCase()),
+      call_type: "OUTBOUND", // or "inbound", etc.
+      agent_number: "+15550123", // Phone number for the agent
+      summaryPrompt: personaAndBehavior.summaryPrompt,
+      successEvaluationPrompt: personaAndBehavior.successEvaluationPrompt,
+      failureEvaluationPrompt: personaAndBehavior.failureEvaluationPrompt,
+      knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
+        (selectKnowledgeBase) => selectKnowledgeBase._id
+      ), // Array of knowledge base ObjectIds
+      functionTools: [], // Array of function tool ObjectIds
       voice: {
-        agentPrompt:
-          channels.find((channel) => channel.id === "voice")?.prompt.value ||
-          "",
-        knowledgeBase: selectedKnowledgeBase || "",
-      },
-      email: {
-        agentPrompt:
-          channels.find((channel) => channel.id === "email")?.prompt.value ||
-          "",
-        knowledgeBase: selectedKnowledgeBase || [],
+        llmProvider: {
+          model: voiceIntegration.selectedLLMModelName,
+          providerName: voiceIntegration.selectedLLMProviderName,
+        },
+        voiceProvider: {
+          model: voiceIntegration.selectedTTSModelName,
+          providerName: voiceIntegration.selectedTTSProviderName,
+        },
+        transcriberProvider: {
+          model: voiceIntegration.selectedSTTModelName,
+          providerName: voiceIntegration.selectedSTTProviderName,
+        },
+        firstMessageMode: "AI_SPEAKS_FIRST",
+        firstMessage: channels.filter(
+          (channel) => channel.id.toLowerCase() === "voice"
+        )?.[0]?.firstMessage,
+        agentPrompt: channels.filter(
+          (channel) => channel.id.toLowerCase() === "voice"
+        )?.[0]?.prompt?.value,
+        temperature: 100,
+        maxTokens: 100,
       },
       chats: {
-        agentPrompt:
-          channels.find((channel) => channel.id === "livechat")?.prompt.value ||
-          "",
-        knowledgeBase: selectedKnowledgeBase || [],
+        llmProvider: {
+          model: chatIntegration.selectedLLMModelName,
+          providerName: chatIntegration.selectedLLMProviderName,
+        },
+        firstMessage: channels.filter(
+          (channel) => channel.id.toLowerCase() === "chat"
+        )?.[0]?.firstMessage,
+        agentPrompt: channels.filter(
+          (channel) => channel.id.toLowerCase() === "chat"
+        )?.[0]?.prompt?.value,
+        temperature: 100,
+        maxTokens: 100,
       },
-      languages: personaAndBehavior.languages
-        .filter((lang) => lang.selected)
-        .map((lang) => lang.name),
+      email: {
+        llmProvider: {
+          model: emailIntegration.selectedLLMModelName,
+          providerName: emailIntegration.selectedLLMProviderName,
+        },
+        firstMessage: channels.filter(
+          (channel) => channel.id.toLowerCase() === "email"
+        )?.[0]?.firstMessage,
+        agentPrompt: channels.filter(
+          (channel) => channel.id.toLowerCase() === "email"
+        )?.[0]?.prompt?.value,
+        temperature: 100,
+        maxTokens: 100,
+      },
     };
 
     if (mode === "edit" && agentId) {
@@ -406,9 +347,16 @@ const CreateAgent = ({
         updateData
       );
     } else {
-      // Create new agent
-      await apiRequest(endpoints.assistants.create, "POST", agentData);
+      try {
+        await apiRequest(endpoints.assistants.create, "POST", agentData);
+      } catch (error) {
+        console.error(error);
+      }
     }
+
+    setCreating(false);
+    toast.success(responseMessages.agent.create);
+    // router.back();
   }
 
   const updatePrompt = (channelId: string, prompt: string) => {
@@ -420,6 +368,24 @@ const CreateAgent = ({
       )
     );
   };
+
+  const updateFirstMessage = (channelId: string, firstMessage: string) => {
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === channelId
+          ? { ...channel, firstMessage: firstMessage }
+          : channel
+      )
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <Loader2 className="animate-spin h-8 w-8 text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-4 h-full">
@@ -433,10 +399,10 @@ const CreateAgent = ({
                   ? "bg-purple-100 text-purple-700"
                   : "bg-white text-gray-500"
               }`}
-              onClick={() => setActiveStep(step.id)}
+              // onClick={() => setActiveStep(step.id)}
             >
               <div className="flex items-center gap-2">
-                <span>{step.icon}</span>
+                <step.icon />
                 <span>{step.title}</span>
               </div>
             </li>
@@ -444,56 +410,81 @@ const CreateAgent = ({
         </ul>
       </div>
 
-      <div className="py-4 mr-4 flex flex-col gap-4 w-full h-full overflow-y-auto">
-        {activeStep === 1 && (
-          <PersonaAndBehavior
-            languages={personaAndBehavior.languages}
-            handleLanguageClick={handleLanguageClick}
-            tones={personaAndBehavior.tones}
-            handleToneClick={handleToneClick}
-            agentName={personaAndBehavior.agentName}
-            setAgentName={(agentName) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                agentName,
-              }))
-            }
-          />
-        )}
+      <div className="py-4 mr-4 flex flex-col gap-4 w-full h-full">
+        <div className="flex flex-col gap-4 w-full h-[calc(100vh-170px)] overflow-y-scroll">
+          {activeStep === 1 && (
+            <PersonaAndBehavior
+              languages={personaAndBehavior.languages}
+              handleLanguageClick={handleLanguageClick}
+              tones={personaAndBehavior.tones}
+              handleToneClick={handleToneClick}
+              agentName={personaAndBehavior.agentName}
+              setAgentName={(agentName) =>
+                setPersonaAndBehavior((prev) => ({
+                  ...prev,
+                  agentName,
+                }))
+              }
+              summaryPrompt={personaAndBehavior.summaryPrompt}
+              failureEvaluationPrompt={
+                personaAndBehavior.failureEvaluationPrompt
+              }
+              successEvaluationPrompt={
+                personaAndBehavior.successEvaluationPrompt
+              }
+              handleSummaryPrompt={handleSummaryPrompt}
+              handleSuccessEvaluationPrompt={handleSuccessEvaluationPrompt}
+              hanldeFailureEvaluationPrompt={handleFailureEvaluationPrompt}
+            />
+          )}
 
-        {activeStep === 2 && (
-          <ChannelsAndPhoneMapping
-            channels={channels}
-            toggleChannel={toggleChannel}
-            updatePrompt={updatePrompt}
-          />
-        )}
+          {activeStep === 2 && (
+            <ChannelsAndPhoneMapping
+              channels={channels}
+              toggleChannel={toggleChannel}
+              updatePrompt={updatePrompt}
+              updateFirstMessage={updateFirstMessage}
+            />
+          )}
 
-        {activeStep === 3 && (
-          <KnowledgeBase
-            knowledgeBases={initialData?.voice?.knowledgeBase || []}
-            selectedKnowledgeBase={selectedKnowledgeBase}
-            selectKnowledgeBase={selectKnowledgeBase}
-          />
-        )}
+          {activeStep === 3 && (
+            <KnowledgeBase
+              knowledgeBases={knowledgeBaseData.knowledgeBases}
+              selectedKnowledgeBases={knowledgeBaseData.selectedKnowledgeBases}
+              selectKnowledgeBase={selectKnowledgeBase}
+            />
+          )}
 
-        {activeStep === 4 && (
+          {activeStep === 4 && (
+            <VoiceIntegration
+              voiceIntegration={voiceIntegration}
+              setVoiceIntegration={setVoiceIntegration}
+            />
+          )}
+
+          {activeStep === 5 && (
+            <ChatIntegration
+              chatIntegration={chatIntegration}
+              setChatIntegration={setChatIntegration}
+            />
+          )}
+
+          {activeStep === 6 && (
+            <EmailIntegration
+              emailIntegration={emailIntegration}
+              setEmailIntegration={setEmailIntegration}
+            />
+          )}
+
+          {/* {activeStep === 4 && (
           <Integrations
             crmIntegrations={integrations.crmIntegrations}
             communicationIntegrations={integrations.communicationIntegrations}
           />
-        )}
+        )} */}
 
-        {activeStep === 5 && (
-          <VoiceIntegration
-            voiceIntegration={voiceIntegration}
-            setVoiceIntegration={setVoiceIntegration}
-          />
-        )}
-
-        {activeStep === 6 && <RoutingAndEscalation />}
-
-        {/* {activeStep === 7 && <AnalyticsSummary />} */}
+          {/* {activeStep === 6 && <RoutingAndEscalation />} */}
+        </div>
 
         <NavFooter
           activeStep={activeStep}
@@ -501,6 +492,7 @@ const CreateAgent = ({
           totalSteps={agentSteps.length}
           handleCreateAgent={handleCreateAgent}
           mode={mode}
+          creating={creating}
         />
       </div>
     </div>
