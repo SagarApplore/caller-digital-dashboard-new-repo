@@ -8,18 +8,20 @@ const NavFooter = ({
   totalSteps,
   handleCreateAgent,
   mode = "create",
+  creating,
 }: {
   activeStep: number;
   handleStepChange: (step: number) => void;
   totalSteps: number;
   handleCreateAgent: () => void;
   mode?: "create" | "edit";
+  creating: boolean;
 }) => {
   return (
     <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow-lg shadow-gray-200">
       <Button
         className="bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold"
-        disabled={activeStep === 1}
+        disabled={activeStep === 1 || creating}
         onClick={() => handleStepChange(activeStep - 1)}
       >
         <ArrowLeft className="w-4 h-4" />
@@ -28,6 +30,7 @@ const NavFooter = ({
       {activeStep === totalSteps ? (
         <Button
           className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+          disabled={creating}
           onClick={handleCreateAgent}
         >
           {mode === "edit" ? "Update Agent" : "Create Agent"}

@@ -1,25 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Phone,
-  MessageCircle,
-  MessageSquare,
-  Mail,
-  MapPin,
-  Plus,
-  Tag,
-} from "lucide-react";
-import React, { useState } from "react";
+import { Phone, MapPin, Plus, Tag, LucideProps } from "lucide-react";
+import React, {
+  ForwardRefExoticComponent,
+  RefAttributes,
+  useState,
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/organisms/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/atoms/input";
 
 export interface Channel {
   id: string;
   name: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ForwardRefExoticComponent<
+    Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+  >;
   iconBg: string;
   active: boolean;
+  prompt: {
+    title: string;
+    value: string;
+    allowedCharacters: number;
+  };
+  firstMessage: string;
 }
 
 export interface PhoneNumber {
@@ -33,9 +39,13 @@ export interface PhoneNumber {
 const ChannelsAndPhoneMapping = ({
   channels,
   toggleChannel,
+  updatePrompt,
+  updateFirstMessage,
 }: {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
+  updatePrompt: (channelId: string, prompt: string) => void;
+  updateFirstMessage: (channelId: string, firstMessage: string) => void;
 }) => {
   const [phoneNumbers] = useState<PhoneNumber[]>([
     {
@@ -76,13 +86,13 @@ const ChannelsAndPhoneMapping = ({
         <div className="space-y-4">
           {channels.map((channel) => (
             <Card key={channel.id} className="bg-white">
-              <CardContent className="p-4">
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div
                       className={`w-12 h-12 rounded-lg ${channel.iconBg} flex items-center justify-center`}
                     >
-                      {channel.icon}
+                      <channel.icon className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
@@ -111,6 +121,33 @@ const ChannelsAndPhoneMapping = ({
                     />
                   </div>
                 </div>
+
+                {/* Voice Prompt */}
+                {channel.active && (
+                  <div className="flex flex-col gap-4">
+                    <Textarea
+                      id="voice-instructions"
+                      placeholder="Enter voice-specific instructions for phone calls..."
+                      className="h-32"
+                      value={channel.prompt.value}
+                      onChange={(e) => updatePrompt(channel.id, e.target.value)}
+                    />
+                  </div>
+                )}
+
+                {/* First Message */}
+                {channel.active && (
+                  <div className="flex flex-col gap-4">
+                    <Input
+                      id="first-message"
+                      placeholder="First Message..."
+                      value={channel.firstMessage}
+                      onChange={(e: any) =>
+                        updateFirstMessage(channel.id, e.target.value)
+                      }
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

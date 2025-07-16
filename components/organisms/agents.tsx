@@ -13,6 +13,7 @@ import {
   ChevronDown,
   Globe,
   Languages,
+  Play,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/organisms/card";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@radix-ui/react-dropdown-menu";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import TestAgentModal from "./test-agent-modal";
 
 export interface AssistantStats {
   conversations: number;
@@ -119,6 +121,8 @@ export default function Agents({ assistants }: { assistants: any[] }) {
     regions: "All Regions",
     sortBy: "Sort by Usage",
   });
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -162,6 +166,11 @@ export default function Agents({ assistants }: { assistants: any[] }) {
     { value: "resolution", label: "Sort by Resolution Rate" },
     { value: "name", label: "Sort by Name" },
   ];
+
+  const handleTestAgent = (assistant: any) => {
+    setSelectedAgent(assistant);
+    setIsTestModalOpen(true);
+  };
 
   return (
     <div>
@@ -316,7 +325,7 @@ export default function Agents({ assistants }: { assistants: any[] }) {
       </div>
 
       {/* Agents */}
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-6 bg-gray-50 h-[calc(100vh-150px)] overflow-y-scroll">
         <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {assistants.map((assistant) => (
             <Card
@@ -351,15 +360,28 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                       </p>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => router.push(`/agents/edit/${assistant._id}`)}
-                    className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
-                  >
-                    <Settings className="w-4 h-4" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTestAgent(assistant)}
+                      className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
+                    >
+                      <Play className="w-4 h-4" />
+                      Test
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/agents/edit/${assistant._id}`)
+                      }
+                      className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Phone Numbers (if available) */}
@@ -463,6 +485,12 @@ export default function Agents({ assistants }: { assistants: any[] }) {
           ))}
         </div>
       </div>
+
+      <TestAgentModal
+        isOpen={isTestModalOpen}
+        onClose={() => setIsTestModalOpen(false)}
+        agent={selectedAgent}
+      />
     </div>
   );
 }
