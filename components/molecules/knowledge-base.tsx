@@ -77,49 +77,39 @@ const KnowledgeBase = ({
     }
     setUploading(true);
     try {
-      try {
-        const formData = new FormData();
-        formData.append("file", pendingFile);
-        formData.append("prompt", prompt);
-        formData.append('name', pendingFile.name);
-      formData.append('createdBy', user?.id || '');
+      const formData = new FormData();
+      formData.append("file", pendingFile);
+      formData.append("prompt", prompt);
+      formData.append("name", pendingFile.name);
+      formData.append("createdBy", user?.id || "");
 
-        const response = await apiRequest(
-          endpoints.knowledgeBase.create,
-          "POST",
-          formData
-        );
+      const response = await apiRequest(
+        endpoints.knowledgeBase.create,
+        "POST",
+        formData
+      );
 
-        if (!response?.data) {
-          throw new Error("Failed to upload document.");
-        }
-
-        const uploadedDocuments: KnowledgeBaseItem[] = response?.data;
-
-        setKnowledgeBase((prev) => [...prev, ...uploadedDocuments]);
-        setSelectedDocument(uploadedDocuments[0]);
-        setPendingFile(null);
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-      } catch (error) {
-        alert("Error uploading document. Please try again.");
-        console.error("Error uploading PDF file:", error);
+      if (!response?.data) {
+        throw new Error("Failed to upload document.");
       }
+
+      const uploadedDocument: KnowledgeBaseItem = response?.data?.data;
+
+      setKnowledgeBase((prev) => [...prev, uploadedDocument]);
+      setSelectedDocument(uploadedDocument);
+      handleCancelPending();
     } catch (error) {
       console.error(`Error uploading PDF file:`, error);
-      
+
       // Better error handling
-      let errorMessage = 'Unknown error occurred';
+      let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
+      } else if (typeof error === "object" && error !== null) {
         errorMessage = JSON.stringify(error);
       }
-      
-      alert(`Error uploading file: ${errorMessage}`);
-    } finally {
-      setUploading(false);
+
+      toast.error(`Error uploading file: ${errorMessage}`);
     }
   };
 

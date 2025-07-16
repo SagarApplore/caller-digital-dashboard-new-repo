@@ -19,15 +19,15 @@ const endpoints = {
     getById: "/knowledgeBase/:id",
   },
   llmModels: {
-    getModels: "/ai-models",
+    getModels: "/ai-models/provider",
     getProviders: "/model-providers",
   },
   ttsModels: {
-    getModels: "/voice-models",
+    getModels: "/voice-models/provider",
     getProviders: "/voice-model-providers",
   },
   sttModels: {
-    getModels: "/stt-models",
+    getModels: "/stt-models/provider",
     getProviders: "/stt-model-providers",
   },
 };

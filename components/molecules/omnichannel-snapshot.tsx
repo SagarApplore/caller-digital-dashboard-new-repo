@@ -248,7 +248,7 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
         </div>
 
         {/* AI System Summary */}
-        {/* <div className="bg-gray-100 p-4 rounded-lg">
+        <div className="bg-gray-100 p-4 rounded-lg">
           <span className="text-sm text-gray-600 mb-3 block">
             AI System Summary
           </span>
@@ -300,7 +300,7 @@ export function OmnichannelSnapshot({ data }: { data: any }) {
               <div className="text-xl font-bold text-gray-900">4.2%</div>
             </div>
           </div>
-        </div> */}
+        </div>
       </CardContent>
     </Card>
   );

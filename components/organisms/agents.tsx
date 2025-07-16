@@ -325,7 +325,7 @@ export default function Agents({ assistants }: { assistants: any[] }) {
       </div>
 
       {/* Agents */}
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-6 bg-gray-50 h-[calc(100vh-150px)] overflow-y-scroll">
         <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {assistants.map((assistant) => (
             <Card
@@ -373,7 +373,9 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/agents/edit/${assistant._id}`)}
+                      onClick={() =>
+                        router.push(`/agents/edit/${assistant._id}`)
+                      }
                       className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
                     >
                       <Settings className="w-4 h-4" />
@@ -483,7 +485,7 @@ export default function Agents({ assistants }: { assistants: any[] }) {
           ))}
         </div>
       </div>
-      
+
       <TestAgentModal
         isOpen={isTestModalOpen}
         onClose={() => setIsTestModalOpen(false)}
