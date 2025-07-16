@@ -9,7 +9,6 @@ export default function NewAgentPage() {
       <Dashboard
         header={{
           title: "Create Agent",
-          subtitle: { text: "Create a new agent", className: "text-gray-500" },
           backRoute: "/agents",
         }}
       >

@@ -22,6 +22,7 @@ import {
 import ChannelsAndPhoneMapping, {
   Channel,
 } from "../molecules/create-agent/channels-and-phone-mapping";
+import { KnowledgeBaseItem } from "../molecules/knowledge-base";
 import KnowledgeBase from "../molecules/create-agent/knowledge-base";
 import Integrations, {
   Integration,
@@ -38,36 +39,36 @@ const agentSteps = [
     title: "Persona & Behavior",
     icon: <User />,
   },
-  // {
-  //   id: 2,
-  //   title: "Channels & Phone Mapping",
-  //   icon: <RadioTower />,
-  // },
   {
     id: 2,
+    title: "Channels & Phone Mapping",
+    icon: <RadioTower />,
+  },
+  {
+    id: 3,
     title: "Knowledge Base",
     icon: <Brain />,
   },
-  // {
-  //   id: 3,
-  //   title: "Integrations",
-  //   icon: <Puzzle />,
-  // },
-  // {
-  //   id: 4,
-  //   title: "Voice Integration",
-  //   icon: <Mic />,
-  // },
-  // {
-  //   id: 5,
-  //   title: "Routing & Escalation",
-  //   icon: <Route />,
-  // },
-  // {
-  //   id: 6,
-  //   title: "Analytics Summary",
-  //   icon: <ChartLine />,
-  // },
+  {
+    id: 4,
+    title: "Integrations",
+    icon: <Puzzle />,
+  },
+  {
+    id: 5,
+    title: "Voice Integration",
+    icon: <Mic />,
+  },
+  {
+    id: 6,
+    title: "Routing & Escalation",
+    icon: <Route />,
+  },
+  {
+    id: 7,
+    title: "Analytics Summary",
+    icon: <ChartLine />,
+  },
 ];
 
 const rawTones = [
@@ -96,23 +97,7 @@ const rawTones = [
 interface PersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
-  voicePrompt: string;
-  emailPrompt: string;
-  chatPrompt: string;
-  allowedCharacters: number;
   agentName: string;
-}
-
-interface KnowledgeBaseItem {
-  file: string;
-  prompt: string;
-  _id: string;
-}
-
-interface KnowledgeBaseData {
-  voiceDocuments: KnowledgeBaseItem[];
-  emailDocuments: KnowledgeBaseItem[];
-  chatDocuments: KnowledgeBaseItem[];
 }
 
 const crmIntegrations: Integration[] = [
@@ -202,22 +187,15 @@ const CreateAgent = ({
     setActiveStep(step);
   };
 
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] =
+    useState<KnowledgeBaseItem | null>(null);
+
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<PersonaAndBehavior>({
       languages: [],
       tones: [],
-      voicePrompt: initialData?.voice?.agentPrompt || "",
-      emailPrompt: initialData?.email?.agentPrompt || "",
-      chatPrompt: initialData?.chats?.agentPrompt || "",
-      allowedCharacters: 2000,
       agentName: initialData?.agentName || "",
     });
-
-  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseData>({
-    voiceDocuments: initialData?.voice?.knowledgeBase || [],
-    emailDocuments: initialData?.email?.knowledgeBase || [],
-    chatDocuments: initialData?.chats?.knowledgeBase || [],
-  });
 
   const [channels, setChannels] = useState<Channel[]>([
     {
@@ -227,14 +205,11 @@ const CreateAgent = ({
       icon: <Phone className="w-5 h-5 text-blue-600" />,
       iconBg: "bg-blue-100",
       active: true,
-    },
-    {
-      id: "whatsapp",
-      name: "WhatsApp Business",
-      description: "WhatsApp messaging & media",
-      icon: <MessageCircle className="w-5 h-5 text-green-600" />,
-      iconBg: "bg-green-100",
-      active: true,
+      prompt: {
+        title: "Voice Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
     {
       id: "livechat",
@@ -243,6 +218,11 @@ const CreateAgent = ({
       icon: <MessageSquare className="w-5 h-5 text-blue-600" />,
       iconBg: "bg-blue-100",
       active: false,
+      prompt: {
+        title: "Live Chat Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
     {
       id: "email",
@@ -251,6 +231,11 @@ const CreateAgent = ({
       icon: <Mail className="w-5 h-5 text-green-600" />,
       iconBg: "bg-green-100",
       active: true,
+      prompt: {
+        title: "Email Instructions",
+        value: "",
+        allowedCharacters: 2000,
+      },
     },
   ]);
 
@@ -326,16 +311,17 @@ const CreateAgent = ({
 
           setPersonaAndBehavior((prev) => ({
             ...prev,
-            voicePrompt: agentData?.voice?.agentPrompt || "",
-            emailPrompt: agentData?.email?.agentPrompt || "",
-            chatPrompt: agentData?.chats?.agentPrompt || "",
           }));
 
-          setKnowledgeBase({
-            voiceDocuments: agentData?.voice?.knowledgeBase || [],
-            emailDocuments: agentData?.email?.knowledgeBase || [],
-            chatDocuments: agentData?.chats?.knowledgeBase || [],
-          });
+          setChannels((prev) =>
+            prev.map((channel) => ({
+              ...channel,
+              prompt: {
+                ...channel.prompt,
+                value: agentData[channel.id]?.agentPrompt || "",
+              },
+            }))
+          );
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -377,21 +363,31 @@ const CreateAgent = ({
     );
   };
 
+  const selectKnowledgeBase = (knowledgeBase: KnowledgeBaseItem) => {
+    setSelectedKnowledgeBase(knowledgeBase);
+  };
+
   async function handleCreateAgent(): Promise<void> {
     const agentData = {
       agentName: personaAndBehavior.agentName || "New Agent",
       description: "Agent Description",
       voice: {
-        agentPrompt: personaAndBehavior.voicePrompt,
-        knowledgeBase: knowledgeBase.voiceDocuments,
+        agentPrompt:
+          channels.find((channel) => channel.id === "voice")?.prompt.value ||
+          "",
+        knowledgeBase: selectedKnowledgeBase || "",
       },
       email: {
-        agentPrompt: personaAndBehavior.emailPrompt,
-        knowledgeBase: knowledgeBase.emailDocuments,
+        agentPrompt:
+          channels.find((channel) => channel.id === "email")?.prompt.value ||
+          "",
+        knowledgeBase: selectedKnowledgeBase || [],
       },
       chats: {
-        agentPrompt: personaAndBehavior.chatPrompt,
-        knowledgeBase: knowledgeBase.chatDocuments,
+        agentPrompt:
+          channels.find((channel) => channel.id === "livechat")?.prompt.value ||
+          "",
+        knowledgeBase: selectedKnowledgeBase || [],
       },
       languages: personaAndBehavior.languages
         .filter((lang) => lang.selected)
@@ -414,6 +410,16 @@ const CreateAgent = ({
       await apiRequest(endpoints.assistants.create, "POST", agentData);
     }
   }
+
+  const updatePrompt = (channelId: string, prompt: string) => {
+    setChannels((prev) =>
+      prev.map((channel) =>
+        channel.id === channelId
+          ? { ...channel, prompt: { ...channel.prompt, value: prompt } }
+          : channel
+      )
+    );
+  };
 
   return (
     <div className="flex gap-4 h-full">
@@ -438,36 +444,14 @@ const CreateAgent = ({
         </ul>
       </div>
 
-      <div className="py-4 mr-4 flex flex-col gap-4 w-full overflow-y-auto">
+      <div className="py-4 mr-4 flex flex-col gap-4 w-full h-full overflow-y-auto">
         {activeStep === 1 && (
           <PersonaAndBehavior
             languages={personaAndBehavior.languages}
             handleLanguageClick={handleLanguageClick}
             tones={personaAndBehavior.tones}
             handleToneClick={handleToneClick}
-            voicePrompt={personaAndBehavior.voicePrompt}
-            emailPrompt={personaAndBehavior.emailPrompt}
-            chatPrompt={personaAndBehavior.chatPrompt}
-            allowedCharacters={personaAndBehavior.allowedCharacters}
             agentName={personaAndBehavior.agentName}
-            setVoicePrompt={(voicePrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                voicePrompt,
-              }))
-            }
-            setEmailPrompt={(emailPrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                emailPrompt,
-              }))
-            }
-            setChatPrompt={(chatPrompt) =>
-              setPersonaAndBehavior((prev) => ({
-                ...prev,
-                chatPrompt,
-              }))
-            }
             setAgentName={(agentName) =>
               setPersonaAndBehavior((prev) => ({
                 ...prev,
@@ -477,35 +461,37 @@ const CreateAgent = ({
           />
         )}
 
-        {/* {activeStep === 2 && (
+        {activeStep === 2 && (
           <ChannelsAndPhoneMapping
             channels={channels}
             toggleChannel={toggleChannel}
-          />
-        )} */}
-
-        {activeStep === 2 && (
-          <KnowledgeBase
-            knowledgeBase={knowledgeBase}
-            setKnowledgeBase={setKnowledgeBase}
+            updatePrompt={updatePrompt}
           />
         )}
 
-        {/* {activeStep === 3 && (
+        {activeStep === 3 && (
+          <KnowledgeBase
+            knowledgeBases={initialData?.voice?.knowledgeBase || []}
+            selectedKnowledgeBase={selectedKnowledgeBase}
+            selectKnowledgeBase={selectKnowledgeBase}
+          />
+        )}
+
+        {activeStep === 4 && (
           <Integrations
             crmIntegrations={integrations.crmIntegrations}
             communicationIntegrations={integrations.communicationIntegrations}
           />
         )}
 
-        {activeStep === 4 && (
+        {activeStep === 5 && (
           <VoiceIntegration
             voiceIntegration={voiceIntegration}
             setVoiceIntegration={setVoiceIntegration}
           />
-        )} */}
+        )}
 
-        {/* {activeStep === 5 && <RoutingAndEscalation />} */}
+        {activeStep === 6 && <RoutingAndEscalation />}
 
         {/* {activeStep === 7 && <AnalyticsSummary />} */}
 

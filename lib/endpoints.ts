@@ -13,6 +13,11 @@ const endpoints = {
     get: "/agents",
     update: "/agents",
   },
+  knowledgeBase: {
+    getAll: "/knowledgeBase",
+    create: "/knowledgeBase",
+    getById: "/knowledgeBase/:id",
+  },
 };
 
 export default endpoints;

@@ -8,7 +8,7 @@ import { Plus } from "lucide-react";
 interface DashboardProps {
   header: {
     title: string;
-    subtitle: {
+    subtitle?: {
       text: string;
       className?: string;
     };
