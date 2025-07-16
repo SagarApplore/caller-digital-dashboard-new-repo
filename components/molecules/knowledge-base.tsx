@@ -5,6 +5,8 @@ import { FileText, Trash2, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/atoms/input";
+import { useAuth } from "@/hooks/use-auth";
+import apiRequest from "@/utils/api";
 
 export interface KnowledgeBaseItem {
   _id: string;
@@ -29,11 +31,13 @@ const KnowledgeBase = ({
   knowledgeBase,
   setKnowledgeBase,
 }: KnowledgeBaseProps) => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [uploading, setUploading] = useState<boolean>(false);
   const [selectedDocument, setSelectedDocument] =
     useState<KnowledgeBaseItem | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [prompt, setPrompt] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Only validates and sets pendingFile, does not update knowledgeBase
@@ -77,24 +81,47 @@ const KnowledgeBase = ({
     }
     setUploading(true);
     try {
-      // Simulate upload and add to local state
-      const newDocuments: KnowledgeBaseItem[] = pendingFiles.map((file) => ({
-        fileUri: `s3://knowledgebasecaller/pdf/${Date.now()}-${file.name}`,
-        _id: `temp_${Date.now()}`,
-        name: file.name,
-        createdAt: new Date().toISOString(),
-      }));
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', pendingFiles[0]);
+      formData.append('name', pendingFiles[0].name);
+      formData.append('createdBy', user?.id || '');
+      formData.append('prompt', prompt);
+
+      // Upload to backend using apiRequest utility
+      const response = await apiRequest('/knowledgeBase', 'POST', formData);
+      const result = response.data;
+      
+      // Add to local state
+      const newDocument: KnowledgeBaseItem = {
+        fileUri: result.data.fileUri,
+        _id: result.data._id,
+        name: result.data.name,
+        createdAt: result.data.createdAt,
+      };
+
       setKnowledgeBase((prev) => ({
         ...prev,
-        documents: [...(prev.documents || []), ...newDocuments],
+        documents: [...(prev.documents || []), newDocument],
       }));
-      setSelectedDocument(newDocuments[0]);
+      setSelectedDocument(newDocument);
       setPendingFiles([]);
+      setPrompt('');
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     } catch (error) {
       console.error(`Error uploading PDF file:`, error);
+      
+      // Better error handling
+      let errorMessage = 'Unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage = JSON.stringify(error);
+      }
+      
+      alert(`Error uploading file: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
@@ -110,6 +137,7 @@ const KnowledgeBase = ({
 
   const handleCancelPending = () => {
     setPendingFiles([]);
+    setPrompt('');
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -178,6 +206,21 @@ const KnowledgeBase = ({
               </label>
             </CardContent>
           </Card>
+          {pendingFiles.length > 0 && (
+            <div className="w-full space-y-2">
+              <label htmlFor="prompt" className="block text-sm font-medium text-gray-700">
+                Prompt (Optional)
+              </label>
+              <textarea
+                id="prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Enter a prompt or description for this file..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                rows={3}
+              />
+            </div>
+          )}
           <Button
             variant="outline"
             className=""
