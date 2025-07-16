@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useImperativeHandle, forwardRef } from 'react';
 
 interface LiveKitRoomProps {
   token: string;
@@ -10,19 +10,42 @@ interface LiveKitRoomProps {
   onMuteChange?: (isMuted: boolean) => void;
 }
 
-export default function LiveKitRoom({ 
+export interface LiveKitRoomRef {
+  disconnect: () => Promise<void>;
+}
+
+const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({ 
   token, 
   serverUrl, 
   onConnect, 
   onDisconnect,
   onMuteChange 
-}: LiveKitRoomProps) {
+}, ref) => {
   const [room, setRoom] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [hasAudioPermission, setHasAudioPermission] = useState(false);
   const localParticipantRef = useRef<any>(null);
+
+  // Expose disconnect function to parent component
+  useImperativeHandle(ref, () => ({
+    disconnect: async () => {
+      if (room) {
+        try {
+          console.log('Disconnecting from LiveKit room:', room.name);
+          await room.disconnect();
+          setRoom(null);
+          setIsConnected(false);
+          if (onDisconnect) {
+            onDisconnect();
+          }
+        } catch (err) {
+          console.error('Error disconnecting from room:', err);
+        }
+      }
+    }
+  }));
 
   useEffect(() => {
     if (!token || !serverUrl) return;
@@ -101,13 +124,13 @@ export default function LiveKitRoom({
     connectToRoom();
 
     return () => {
-      if (room) {
-        room.disconnect();
-        setIsConnected(false);
-        if (onDisconnect) {
-          onDisconnect();
-        }
-      }
+      // if (room) {
+      //   room.disconnect();
+      //   setIsConnected(false);
+      //   if (onDisconnect) {
+      //     onDisconnect();
+      //   }
+      // }
     };
   }, [token, serverUrl, onConnect, onDisconnect]);
 
@@ -178,4 +201,8 @@ export default function LiveKitRoom({
       </div>
     </div>
   );
-} 
+});
+
+LiveKitRoom.displayName = 'LiveKitRoom';
+
+export default LiveKitRoom; 
