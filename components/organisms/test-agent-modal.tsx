@@ -54,8 +54,44 @@ export default function TestAgentModal({
         serverUrl
       });
 
-      // Use the new Next.js token API
-      const tokenResponse = await fetch(`/api/token?room=${newRoomName}&username=${newParticipantName}`);
+      // Build query parameters with agent metadata
+      console.log('Agent data for token request:', {
+        agentId: agent._id,
+        agentName: agent.agentName,
+        client: agent.client,
+        clientType: typeof agent.client,
+        clientId: agent.client?._id,
+        clientKeys: agent.client ? Object.keys(agent.client) : [],
+        workspace: agent.workspace
+      });
+
+      // Handle clientId - check if it's already a string or an object
+      let clientIdValue = '';
+      if (typeof agent.client === 'string') {
+        clientIdValue = agent.client;
+      } else if (agent.client && typeof agent.client === 'object') {
+        clientIdValue = agent.client._id || agent.client.id || '';
+      }
+
+      const params = new URLSearchParams({
+        room: newRoomName,
+        username: newParticipantName,
+        agentId: agent._id,
+        agentName: agent.agentName || '',
+        agentChannels: JSON.stringify(agent.channels || []),
+        agentLanguages: JSON.stringify(agent.languages || []),
+        agentVoice: JSON.stringify(agent.voice || {}),
+        agentEmail: JSON.stringify(agent.email || {}),
+        agentChats: JSON.stringify(agent.chats || {}),
+        clientId: clientIdValue,
+        workspaceId: agent.workspace || ''
+      });
+
+      console.log('Client ID being sent:', clientIdValue);
+      console.log('Full params:', params.toString());
+
+      // Use the new Next.js token API with metadata
+      const tokenResponse = await fetch(`/api/token?${params.toString()}`);
       const data = await tokenResponse.json();
 
       console.log('Token response:', data);

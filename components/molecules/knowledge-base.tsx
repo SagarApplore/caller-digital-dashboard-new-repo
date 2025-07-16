@@ -16,7 +16,7 @@ export interface KnowledgeBaseItem {
   createdAt: string;
 }
 
-export interface KnowledgeBaseProps {
+interface KnowledgeBaseProps {
   knowledgeBase: {
     documents: KnowledgeBaseItem[];
   };
@@ -40,18 +40,11 @@ const KnowledgeBase = ({
   const [prompt, setPrompt] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Supported file types for knowledge base
+  // Only support CSV and PDF files
   const supportedFileTypes = [
     'application/pdf',
-    'text/plain',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'text/csv',
-    'application/json',
-    'text/markdown',
-    'text/html'
+    'application/csv'
   ];
 
   const getFileExtension = (fileName: string) => {
@@ -66,7 +59,7 @@ const KnowledgeBase = ({
     
     // Fallback to file extension check
     const extension = getFileExtension(file.name);
-    const validExtensions = ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'json', 'md', 'html'];
+    const validExtensions = ['pdf', 'csv'];
     return validExtensions.includes(extension || '');
   };
 
@@ -76,7 +69,7 @@ const KnowledgeBase = ({
     if (files && files.length > 0) {
       const validFiles = Array.from(files).filter(isValidFileType);
       if (validFiles.length !== files.length) {
-        alert('Some files were skipped. Only PDF, Word, Excel, CSV, JSON, Markdown, HTML, and text files are supported.');
+        alert('Some files were skipped. Only PDF and CSV files are supported.');
       }
       setPendingFiles(validFiles);
     }
@@ -101,7 +94,7 @@ const KnowledgeBase = ({
     if (files.length > 0) {
       const validFiles = Array.from(files).filter(isValidFileType);
       if (validFiles.length !== files.length) {
-        alert('Some files were skipped. Only PDF, Word, Excel, CSV, JSON, Markdown, HTML, and text files are supported.');
+        alert('Some files were skipped. Only PDF and CSV files are supported.');
       }
       setPendingFiles(validFiles);
     }
@@ -194,12 +187,15 @@ const KnowledgeBase = ({
                 type="file"
                 id="document-upload"
                 className="hidden"
-                accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.json,.md,.html"
+                accept=".pdf,.csv"
                 onChange={handleFileInput}
                 ref={fileInputRef}
                 multiple={true}
               />
-              <label htmlFor="document-upload" className="cursor-pointer block">
+              <label
+                htmlFor="document-upload"
+                className="cursor-pointer block"
+              >
                 <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg flex items-center justify-center">
                   {uploading ? (
                     <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -237,7 +233,9 @@ const KnowledgeBase = ({
                 <p className="text-gray-600 text-sm">
                   Drag & drop or click to browse
                 </p>
-                <p className="text-gray-600 text-sm">Supported: PDF, Word, Excel, CSV, JSON, Markdown, HTML, Text</p>
+                <p className="text-gray-600 text-sm">
+                  Supported formats: PDF, CSV
+                </p>
                 <p className="text-gray-600 text-sm">Max limit: 5MB</p>
               </label>
             </CardContent>
@@ -270,66 +268,74 @@ const KnowledgeBase = ({
       </div>
 
       {/* Existing Knowledge Base Documents */}
-      {knowledgeBase.documents && knowledgeBase.documents.length > 0 && (
-        <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
-          <h2 className="text-lg font-semibold">Existing Knowledge Base</h2>
-          <div className="space-y-3">
-            {knowledgeBase.documents.map((doc) => (
-              <Card
-                key={doc._id}
-                className={`bg-purple-50 border-purple-200 ${
-                  selectedDocument && selectedDocument._id === doc._id
-                    ? "ring-2 ring-purple-400"
-                    : ""
-                }`}
-                onClick={() => handleSelectDocument(doc)}
-                style={{ cursor: "pointer" }}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 text-sm">
-                          {doc.name}
-                        </h4>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {new Date(doc.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setKnowledgeBase((prev) => ({
-                          ...prev,
-                          documents: prev.documents.filter(
-                            (d) => d._id !== doc._id
-                          ),
-                        }));
-                        if (
-                          selectedDocument &&
-                          selectedDocument._id === doc._id
-                        ) {
-                          setSelectedDocument(null);
-                          setPendingFiles([]);
-                        }
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+      <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Knowledge Base Documents
+          </h3>
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <FileText className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           </div>
         </div>
-      )}
+
+        <div className="space-y-2">
+          {knowledgeBase.documents
+            ?.filter((doc) =>
+              doc.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((doc) => (
+              <div
+                key={doc._id}
+                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                  selectedDocument?._id === doc._id
+                    ? "border-purple-500 bg-purple-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+                onClick={() => handleSelectDocument(doc)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-900">{doc.name}</h4>
+                      <p className="text-sm text-gray-500">
+                        Uploaded: {new Date(doc.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle delete functionality here
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+        </div>
+
+        {knowledgeBase.documents?.length === 0 && (
+          <div className="text-center py-8">
+            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No documents uploaded yet.</p>
+            <p className="text-sm text-gray-400">
+              Upload your first document to get started.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
