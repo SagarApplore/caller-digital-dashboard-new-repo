@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,8 @@ import { Play, Square, Mic, MicOff } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import AudioVisualizer from "@/components/molecules/audio-visualizer";
+import LiveKitRoomOfficial from "@/components/molecules/livekit-room-official";
+import { getLiveKitServerUrl } from "@/lib/livekit-config";
 
 interface TestAgentModalProps {
   isOpen: boolean;
@@ -29,6 +31,10 @@ export default function TestAgentModal({
   const [isMuted, setIsMuted] = useState(false);
   const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [room, setRoom] = useState<any>(null);
+  const [serverUrl] = useState<string>(getLiveKitServerUrl());
+  const [roomName, setRoomName] = useState<string>('');
+  const [participantName, setParticipantName] = useState<string>('');
 
   const handleStartTest = async () => {
     if (!agent) return;
@@ -37,45 +43,37 @@ export default function TestAgentModal({
     setError(null);
 
     try {
-      // Step 1: Get LiveKit token
-      const roomName = `test-${agent._id}-${Date.now()}`;
-      const participantName = `user-${Date.now()}`;
+      // Get LiveKit token from Next.js API
+      const newRoomName = `test-${agent._id}-${Date.now()}`;
+      const newParticipantName = `user-${Date.now()}`;
 
-      const tokenResponse = await apiRequest(
-        `${endpoints.assistants.list}/livekit-token`,
-        "POST",
-        {
-          roomName,
-          participantName,
-        }
-      );
-
-      if (!tokenResponse.data?.success) {
-        throw new Error("Failed to get LiveKit token");
-      }
-
-      setLiveKitToken(tokenResponse.data.token);
-
-      // Step 2: Call Python agent endpoint
-      const agentResponse = await apiRequest("/api/test-agent", "POST", {
+      console.log('Requesting LiveKit token with:', {
+        roomName: newRoomName,
+        participantName: newParticipantName,
         agentId: agent._id,
-        roomName,
-        liveKitToken: tokenResponse.data.token,
-        agentData: {
-          name: agent.agentName,
-          voice: agent.voice,
-          email: agent.email,
-          chats: agent.chats,
-        },
+        serverUrl
       });
 
-      if (!agentResponse.data?.success) {
-        throw new Error("Failed to start agent");
+      // Use the new Next.js token API
+      const tokenResponse = await fetch(`/api/token?room=${newRoomName}&username=${newParticipantName}`);
+      const data = await tokenResponse.json();
+
+      console.log('Token response:', data);
+
+      if (data.error) {
+        throw new Error(data.error || "Failed to get LiveKit token");
       }
 
+      const token = data.token;
+      console.log('Received token, length:', token.length);
+      setLiveKitToken(token);
+      setRoomName(newRoomName);
+      setParticipantName(newParticipantName);
       setIsConnected(true);
+
     } catch (err: any) {
-      setError(err.message || "Failed to start agent test");
+      console.error('Error getting LiveKit token:', err);
+      setError(err.message || "Failed to get LiveKit token");
     } finally {
       setIsConnecting(false);
     }
@@ -83,21 +81,20 @@ export default function TestAgentModal({
 
   const handleStopTest = async () => {
     try {
-      // Call endpoint to stop the agent
-      await apiRequest("/api/stop-agent", "POST", {
-        agentId: agent._id,
-      });
-    } catch (err) {
-      console.error("Error stopping agent:", err);
-    } finally {
+      // The LiveKit component will handle disconnection automatically
       setIsConnected(false);
       setLiveKitToken(null);
+      setRoom(null);
+      setRoomName('');
+      setParticipantName('');
+    } catch (err) {
+      console.error("Error stopping agent:", err);
     }
   };
 
   const handleToggleMute = () => {
     setIsMuted(!isMuted);
-    // Implement mute/unmute logic for LiveKit
+    // Mute/unmute will be handled by LiveKit component
   };
 
   useEffect(() => {
@@ -105,12 +102,15 @@ export default function TestAgentModal({
       setIsConnected(false);
       setLiveKitToken(null);
       setError(null);
+      setRoom(null);
+      setRoomName('');
+      setParticipantName('');
     }
   }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Test Agent: {agent?.agentName}</DialogTitle>
         </DialogHeader>
@@ -153,6 +153,20 @@ export default function TestAgentModal({
                   You can now speak with your agent
                 </p>
               </div>
+
+              {/* LiveKit Room Component using official components */}
+              {liveKitToken && (
+                <div className="h-96 border rounded-lg overflow-hidden">
+                  <LiveKitRoomOfficial
+                    token={liveKitToken}
+                    serverUrl={serverUrl}
+                    roomName={roomName}
+                    participantName={participantName}
+                    onConnect={(connectedRoom) => setRoom(connectedRoom)}
+                    onDisconnect={() => setRoom(null)}
+                  />
+                </div>
+              )}
 
               {/* Audio Visualizer */}
               <div className="h-32 bg-gray-50 rounded-lg flex items-center justify-center">

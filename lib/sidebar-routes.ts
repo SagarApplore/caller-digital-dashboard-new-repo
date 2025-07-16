@@ -1,4 +1,4 @@
-import { Home, Megaphone, Brain, Phone, Bot, Settings } from "lucide-react";
+import { Home, Megaphone, Brain, Phone, Building2, Bot } from "lucide-react";
 
 export interface SidebarRouteItem {
   id: string;
@@ -49,6 +49,12 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     name: "Call Logs",
     path: "/call-logs",
     icon: Phone,
+  },
+  {
+    id: "manage-brands",
+    name: "Manage Brands",
+    path: "/manage-brands",
+    icon: Building2,
   },
   {
     id: "knowledge-base",

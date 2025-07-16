@@ -36,6 +36,36 @@ const KnowledgeBase = ({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Supported file types for knowledge base
+  const supportedFileTypes = [
+    'application/pdf',
+    'text/plain',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+    'application/json',
+    'text/markdown',
+    'text/html'
+  ];
+
+  const getFileExtension = (fileName: string) => {
+    return fileName.split('.').pop()?.toLowerCase();
+  };
+
+  const isValidFileType = (file: File) => {
+    // Check MIME type first
+    if (supportedFileTypes.includes(file.type)) {
+      return true;
+    }
+    
+    // Fallback to file extension check
+    const extension = getFileExtension(file.name);
+    const validExtensions = ['pdf', 'txt', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'json', 'md', 'html'];
+    return validExtensions.includes(extension || '');
+  };
+
   // Only validates and sets pendingFile, does not update knowledgeBase
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] as File;
@@ -142,7 +172,7 @@ const KnowledgeBase = ({
 
   return (
     <div className="h-full overflow-y-auto">
-      {/* Upload PDF Document */}
+      {/* Upload Document */}
       <div className="bg-white p-4 rounded-lg space-y-4 shadow-lg shadow-gray-200">
         <div className="space-y-4 flex flex-col items-center justify-between">
           <Card
@@ -154,13 +184,13 @@ const KnowledgeBase = ({
             <CardContent className="p-0 text-center relative">
               <Input
                 type="file"
-                id="pdf-upload"
+                id="document-upload"
                 className="hidden"
-                accept=".pdf"
+                accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.json,.md,.html"
                 onChange={handleFileInput}
                 ref={fileInputRef}
               />
-              <label htmlFor="pdf-upload" className="cursor-pointer block">
+              <label htmlFor="document-upload" className="cursor-pointer block">
                 <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-lg flex items-center justify-center">
                   {uploading ? (
                     <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
@@ -169,7 +199,7 @@ const KnowledgeBase = ({
                   )}
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">
-                  {uploading ? "Uploading..." : "Upload PDF"}
+                  {uploading ? "Uploading..." : "Upload Document"}
                 </h3>
                 {pendingFile ? (
                   <div className="mb-2 flex items-center justify-center gap-2 relative">
@@ -198,6 +228,7 @@ const KnowledgeBase = ({
                 <p className="text-gray-600 text-sm">
                   Drag & drop or click to browse
                 </p>
+                <p className="text-gray-600 text-sm">Supported: PDF, Word, Excel, CSV, JSON, Markdown, HTML, Text</p>
                 <p className="text-gray-600 text-sm">Max limit: 5MB</p>
               </label>
             </CardContent>
@@ -216,7 +247,7 @@ const KnowledgeBase = ({
             disabled={uploading || !pendingFile}
             onClick={handleSubmit}
           >
-            {uploading ? "Uploading..." : "Submit PDF"}
+            {uploading ? "Uploading..." : "Submit Document"}
           </Button>
           {/* Removed "Clear Selected File" button, now handled by cross in upload box */}
         </div>
