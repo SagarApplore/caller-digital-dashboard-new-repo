@@ -26,7 +26,9 @@ const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [hasAudioPermission, setHasAudioPermission] = useState(false);
+  const [agentAudioConnected, setAgentAudioConnected] = useState(false);
   const localParticipantRef = useRef<any>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // Expose disconnect function to parent component
   useImperativeHandle(ref, () => ({
@@ -34,9 +36,17 @@ const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({
       if (room) {
         try {
           console.log('Disconnecting from LiveKit room:', room.name);
+          
+          // Clean up audio element
+          if (audioElementRef.current) {
+            audioElementRef.current.remove();
+            audioElementRef.current = null;
+          }
+          
           await room.disconnect();
           setRoom(null);
           setIsConnected(false);
+          setAgentAudioConnected(false);
           if (onDisconnect) {
             onDisconnect();
           }
@@ -64,18 +74,101 @@ const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({
         // Set up event listeners
         livekitRoom.on(RoomEvent.ParticipantConnected, (participant) => {
           console.log('Participant connected:', participant.identity);
+          
+          // Check if this is the agent
+          if (participant.identity.includes('agent-')) {
+            console.log('Agent connected! Waiting for audio tracks...');
+          }
         });
 
         livekitRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
           console.log('Participant disconnected:', participant.identity);
+          
+          // Check if this is the agent
+          if (participant.identity.includes('agent-')) {
+            console.log('Agent disconnected!');
+            
+            // Clean up audio element
+            if (audioElementRef.current) {
+              audioElementRef.current.remove();
+              audioElementRef.current = null;
+            }
+            setAgentAudioConnected(false);
+          }
         });
 
         livekitRoom.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
           console.log('Track subscribed:', track.kind, 'from', participant.identity);
+          
+          // Handle audio tracks from the agent
+          if (track.kind === 'audio' && participant.identity.includes('agent-')) {
+            console.log('Agent audio track subscribed, attaching to audio element');
+            
+            // Create audio element if it doesn't exist
+            let audioElement = audioElementRef.current;
+            if (!audioElement) {
+              audioElement = document.createElement('audio');
+              audioElement.id = 'agent-audio';
+              audioElement.autoplay = true;
+              audioElement.controls = false;
+              audioElement.muted = false;
+              audioElement.volume = 1.0;
+              // Add error handling
+              audioElement.onerror = (e) => {
+                console.error('Audio element error:', e);
+              };
+              document.body.appendChild(audioElement);
+              audioElementRef.current = audioElement;
+            }
+            
+            // Attach the track to the audio element with error handling
+            try {
+              track.attach(audioElement);
+              console.log('Agent audio track attached successfully');
+              setAgentAudioConnected(true);
+              
+              // Add track event listeners for stability
+              track.on('ended', () => {
+                console.log('Agent audio track ended');
+                setAgentAudioConnected(false);
+              });
+              
+              track.on('close', () => {
+                console.log('Agent audio track closed');
+                setAgentAudioConnected(false);
+              });
+              
+              track.on('muted', () => {
+                console.log('Agent audio track muted');
+              });
+              
+              track.on('unmuted', () => {
+                console.log('Agent audio track unmuted');
+              });
+              
+            } catch (error) {
+              console.error('Error attaching audio track:', error);
+              setAgentAudioConnected(false);
+            }
+          }
         });
 
         livekitRoom.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
           console.log('Track unsubscribed:', track.kind, 'from', participant.identity);
+          
+          // Handle audio track unsubscription from the agent
+          if (track.kind === 'audio' && participant.identity.includes('agent-')) {
+            console.log('Agent audio track unsubscribed');
+            setAgentAudioConnected(false);
+            
+            // Remove audio element after a delay to prevent rapid create/remove cycles
+            setTimeout(() => {
+              if (!agentAudioConnected && audioElementRef.current) {
+                audioElementRef.current.remove();
+                audioElementRef.current = null;
+              }
+            }, 2000);
+          }
         });
 
         // Request audio permissions before connecting
@@ -124,13 +217,11 @@ const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({
     connectToRoom();
 
     return () => {
-      // if (room) {
-      //   room.disconnect();
-      //   setIsConnected(false);
-      //   if (onDisconnect) {
-      //     onDisconnect();
-      //   }
-      // }
+      // Cleanup on unmount
+      if (audioElementRef.current) {
+        audioElementRef.current.remove();
+        audioElementRef.current = null;
+      }
     };
   }, [token, serverUrl, onConnect, onDisconnect]);
 
@@ -199,6 +290,18 @@ const LiveKitRoom = forwardRef<LiveKitRoomRef, LiveKitRoomProps>(({
       <div className="text-xs text-gray-500">
         Participants: {(room?.participants?.size || 0) + 1} (including you)
       </div>
+      
+      {agentAudioConnected && (
+        <div className="text-xs text-green-600">
+          🔊 Agent audio connected
+        </div>
+      )}
+      
+      {!agentAudioConnected && isConnected && (
+        <div className="text-xs text-yellow-600">
+          ⏳ Waiting for agent audio...
+        </div>
+      )}
     </div>
   );
 });

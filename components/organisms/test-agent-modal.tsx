@@ -12,7 +12,7 @@ import { Play, Square, Mic, MicOff } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import AudioVisualizer from "@/components/molecules/audio-visualizer";
-import LiveKitRoom, { LiveKitRoomRef } from "@/components/molecules/livekit-room";
+import LiveKitRoomOfficial from "@/components/molecules/livekit-room-official";
 import { getLiveKitServerUrl } from "@/lib/livekit-config";
 
 interface TestAgentModalProps {
@@ -33,7 +33,8 @@ export default function TestAgentModal({
   const [error, setError] = useState<string | null>(null);
   const [room, setRoom] = useState<any>(null);
   const [serverUrl] = useState<string>(getLiveKitServerUrl());
-  const liveKitRoomRef = useRef<LiveKitRoomRef>(null);
+  const [roomName, setRoomName] = useState<string>('');
+  const [participantName, setParticipantName] = useState<string>('');
 
   const handleStartTest = async () => {
     if (!agent) return;
@@ -42,36 +43,32 @@ export default function TestAgentModal({
     setError(null);
 
     try {
-      // Get LiveKit token
-      const roomName = `test-${agent._id}-${Date.now()}`;
-      const participantName = `user-${Date.now()}`;
+      // Get LiveKit token from Next.js API
+      const newRoomName = `test-${agent._id}-${Date.now()}`;
+      const newParticipantName = `user-${Date.now()}`;
 
       console.log('Requesting LiveKit token with:', {
-        roomName,
-        participantName,
+        roomName: newRoomName,
+        participantName: newParticipantName,
         agentId: agent._id,
         serverUrl
       });
 
-      const tokenResponse = await apiRequest(
-        `${endpoints.assistants.list}/livekit-token`,
-        "POST",
-        {
-          roomName,
-          participantName,
-          agentId: agent._id,
-        }
-      );
+      // Use the new Next.js token API
+      const tokenResponse = await fetch(`/api/token?room=${newRoomName}&username=${newParticipantName}`);
+      const data = await tokenResponse.json();
 
-      console.log('Token response:', tokenResponse);
+      console.log('Token response:', data);
 
-      if (!tokenResponse.data?.success) {
-        throw new Error(tokenResponse.data?.message || "Failed to get LiveKit token");
+      if (data.error) {
+        throw new Error(data.error || "Failed to get LiveKit token");
       }
 
-      const token = tokenResponse.data.token;
+      const token = data.token;
       console.log('Received token, length:', token.length);
       setLiveKitToken(token);
+      setRoomName(newRoomName);
+      setParticipantName(newParticipantName);
       setIsConnected(true);
 
     } catch (err: any) {
@@ -84,22 +81,20 @@ export default function TestAgentModal({
 
   const handleStopTest = async () => {
     try {
-      // Call the disconnect function from the LiveKitRoom component
-      if (liveKitRoomRef.current) {
-        await liveKitRoomRef.current.disconnect();
-      }
-    } catch (err) {
-      console.error("Error stopping agent:", err);
-    } finally {
+      // The LiveKit component will handle disconnection automatically
       setIsConnected(false);
       setLiveKitToken(null);
       setRoom(null);
+      setRoomName('');
+      setParticipantName('');
+    } catch (err) {
+      console.error("Error stopping agent:", err);
     }
   };
 
   const handleToggleMute = () => {
     setIsMuted(!isMuted);
-    // Mute/unmute will be handled by LiveKitRoom component
+    // Mute/unmute will be handled by LiveKit component
   };
 
   useEffect(() => {
@@ -108,12 +103,14 @@ export default function TestAgentModal({
       setLiveKitToken(null);
       setError(null);
       setRoom(null);
+      setRoomName('');
+      setParticipantName('');
     }
   }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Test Agent: {agent?.agentName}</DialogTitle>
         </DialogHeader>
@@ -157,16 +154,18 @@ export default function TestAgentModal({
                 </p>
               </div>
 
-              {/* LiveKit Room Component */}
+              {/* LiveKit Room Component using official components */}
               {liveKitToken && (
-                <LiveKitRoom
-                  ref={liveKitRoomRef}
-                  token={liveKitToken}
-                  serverUrl={serverUrl}
-                  onConnect={(connectedRoom) => setRoom(connectedRoom)}
-                  onDisconnect={() => setRoom(null)}
-                  onMuteChange={(muted) => setIsMuted(muted)}
-                />
+                <div className="h-96 border rounded-lg overflow-hidden">
+                  <LiveKitRoomOfficial
+                    token={liveKitToken}
+                    serverUrl={serverUrl}
+                    roomName={roomName}
+                    participantName={participantName}
+                    onConnect={(connectedRoom) => setRoom(connectedRoom)}
+                    onDisconnect={() => setRoom(null)}
+                  />
+                </div>
               )}
 
               {/* Audio Visualizer */}
