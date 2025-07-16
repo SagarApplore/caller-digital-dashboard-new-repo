@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +12,7 @@ import { Play, Square, Mic, MicOff } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import AudioVisualizer from "@/components/molecules/audio-visualizer";
-import LiveKitRoom from "@/components/molecules/livekit-room";
+import LiveKitRoom, { LiveKitRoomRef } from "@/components/molecules/livekit-room";
 import { getLiveKitServerUrl } from "@/lib/livekit-config";
 
 interface TestAgentModalProps {
@@ -33,6 +33,7 @@ export default function TestAgentModal({
   const [error, setError] = useState<string | null>(null);
   const [room, setRoom] = useState<any>(null);
   const [serverUrl] = useState<string>(getLiveKitServerUrl());
+  const liveKitRoomRef = useRef<LiveKitRoomRef>(null);
 
   const handleStartTest = async () => {
     if (!agent) return;
@@ -83,16 +84,16 @@ export default function TestAgentModal({
 
   const handleStopTest = async () => {
     try {
-      // Disconnect from LiveKit room
-      if (room) {
-        room.disconnect();
-        setRoom(null);
+      // Call the disconnect function from the LiveKitRoom component
+      if (liveKitRoomRef.current) {
+        await liveKitRoomRef.current.disconnect();
       }
     } catch (err) {
       console.error("Error stopping agent:", err);
     } finally {
       setIsConnected(false);
       setLiveKitToken(null);
+      setRoom(null);
     }
   };
 
@@ -159,6 +160,7 @@ export default function TestAgentModal({
               {/* LiveKit Room Component */}
               {liveKitToken && (
                 <LiveKitRoom
+                  ref={liveKitRoomRef}
                   token={liveKitToken}
                   serverUrl={serverUrl}
                   onConnect={(connectedRoom) => setRoom(connectedRoom)}
