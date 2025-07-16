@@ -1,6 +1,7 @@
 "use client";
 
 import KnowledgeBase, {
+  KnowledgeBaseItem,
   KnowledgeBaseProps,
 } from "@/components/molecules/knowledge-base";
 import { ProtectedRoute } from "@/components/protected-route";
@@ -10,16 +11,20 @@ import apiRequest from "@/utils/api";
 import React, { useEffect, useState } from "react";
 
 const KnowledgeBasePage = () => {
-  const [knowledgeBase, setKnowledgeBase] = useState<
-    KnowledgeBaseProps["knowledgeBase"]
-  >({
-    documents: [],
-  });
+  const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeBaseItem[]>([]);
 
   useEffect(() => {
     const fetchKnowledgeBase = async () => {
-      const response = await apiRequest(endpoints.knowledgeBase.getAll, "GET");
-      setKnowledgeBase(response.data);
+      try {
+        const response = await apiRequest(
+          endpoints.knowledgeBase.getAll,
+          "GET"
+        );
+        setKnowledgeBase(response?.data?.data ?? []);
+      } catch (error) {
+        console.error("Error fetching knowledge base:", error);
+        setKnowledgeBase([]);
+      }
     };
     fetchKnowledgeBase();
   }, []);

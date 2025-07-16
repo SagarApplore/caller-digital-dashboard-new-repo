@@ -3,6 +3,7 @@
 import {
   Brain,
   ChartLine,
+  Loader2,
   Mail,
   MessageCircle,
   MessageSquare,
@@ -49,26 +50,21 @@ const agentSteps = [
     title: "Knowledge Base",
     icon: <Brain />,
   },
+  // {
+  //   id: 4,
+  //   title: "Integrations",
+  //   icon: <Puzzle />,
+  // },
   {
     id: 4,
-    title: "Integrations",
-    icon: <Puzzle />,
-  },
-  {
-    id: 5,
     title: "Voice Integration",
     icon: <Mic />,
   },
-  {
-    id: 6,
-    title: "Routing & Escalation",
-    icon: <Route />,
-  },
-  {
-    id: 7,
-    title: "Analytics Summary",
-    icon: <ChartLine />,
-  },
+  // {
+  //   id: 6,
+  //   title: "Routing & Escalation",
+  //   icon: <Route />,
+  // },
 ];
 
 const rawTones = [
@@ -182,13 +178,32 @@ const CreateAgent = ({
   initialData,
 }: CreateAgentProps) => {
   const [activeStep, setActiveStep] = useState(1);
+  const [loading, setLoading] = useState(true);
 
   const handleStepChange = (step: number) => {
     setActiveStep(step);
   };
 
-  const [selectedKnowledgeBase, setSelectedKnowledgeBase] =
-    useState<KnowledgeBaseItem | null>(null);
+  useEffect(() => {
+    const fetchKnowledgeBases = async () => {
+      setLoading(true);
+      const response = await apiRequest(endpoints.knowledgeBase.getAll, "GET");
+      setKnowledgeBaseData((prev) => ({
+        ...prev,
+        knowledgeBases: response?.data?.data || [],
+      }));
+      setLoading(false);
+    };
+    fetchKnowledgeBases();
+  }, []);
+
+  const [knowledgeBaseData, setKnowledgeBaseData] = useState<{
+    knowledgeBases: KnowledgeBaseItem[];
+    selectedKnowledgeBases: KnowledgeBaseItem[];
+  }>({
+    knowledgeBases: [],
+    selectedKnowledgeBases: [],
+  });
 
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<PersonaAndBehavior>({
@@ -248,8 +263,8 @@ const CreateAgent = ({
   });
 
   const [voiceIntegration, setVoiceIntegration] = useState({
-    voiceProvider: "elevenlabs",
-    voiceModel: "sophia-professional",
+    voiceProvider: null,
+    voiceModel: null,
     speakingSpeed: [1],
     pitch: [1],
     emotion: "neutral",
@@ -363,8 +378,11 @@ const CreateAgent = ({
     );
   };
 
-  const selectKnowledgeBase = (knowledgeBase: KnowledgeBaseItem) => {
-    setSelectedKnowledgeBase(knowledgeBase);
+  const selectKnowledgeBase = (knowledgeBases: KnowledgeBaseItem[]) => {
+    setKnowledgeBaseData((prev) => ({
+      ...prev,
+      selectedKnowledgeBases: knowledgeBases,
+    }));
   };
 
   async function handleCreateAgent(): Promise<void> {
@@ -375,19 +393,25 @@ const CreateAgent = ({
         agentPrompt:
           channels.find((channel) => channel.id === "voice")?.prompt.value ||
           "",
-        knowledgeBase: selectedKnowledgeBase || "",
+        knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
+          (kb) => kb._id
+        ),
       },
       email: {
         agentPrompt:
           channels.find((channel) => channel.id === "email")?.prompt.value ||
           "",
-        knowledgeBase: selectedKnowledgeBase || [],
+        knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
+          (kb) => kb._id
+        ),
       },
       chats: {
         agentPrompt:
           channels.find((channel) => channel.id === "livechat")?.prompt.value ||
           "",
-        knowledgeBase: selectedKnowledgeBase || [],
+        knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
+          (kb) => kb._id
+        ),
       },
       languages: personaAndBehavior.languages
         .filter((lang) => lang.selected)
@@ -420,6 +444,14 @@ const CreateAgent = ({
       )
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full w-full">
+        <Loader2 className="animate-spin h-8 w-8 text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-4 h-full">
@@ -471,29 +503,27 @@ const CreateAgent = ({
 
         {activeStep === 3 && (
           <KnowledgeBase
-            knowledgeBases={initialData?.voice?.knowledgeBase || []}
-            selectedKnowledgeBase={selectedKnowledgeBase}
+            knowledgeBases={knowledgeBaseData.knowledgeBases}
+            selectedKnowledgeBases={knowledgeBaseData.selectedKnowledgeBases}
             selectKnowledgeBase={selectKnowledgeBase}
           />
         )}
 
-        {activeStep === 4 && (
+        {/* {activeStep === 4 && (
           <Integrations
             crmIntegrations={integrations.crmIntegrations}
             communicationIntegrations={integrations.communicationIntegrations}
           />
-        )}
+        )} */}
 
-        {activeStep === 5 && (
+        {activeStep === 4 && (
           <VoiceIntegration
             voiceIntegration={voiceIntegration}
             setVoiceIntegration={setVoiceIntegration}
           />
         )}
 
-        {activeStep === 6 && <RoutingAndEscalation />}
-
-        {/* {activeStep === 7 && <AnalyticsSummary />} */}
+        {/* {activeStep === 6 && <RoutingAndEscalation />} */}
 
         <NavFooter
           activeStep={activeStep}

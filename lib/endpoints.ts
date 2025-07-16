@@ -18,6 +18,18 @@ const endpoints = {
     create: "/knowledgeBase",
     getById: "/knowledgeBase/:id",
   },
+  llmModels: {
+    getModels: "/ai-models",
+    getProviders: "/model-providers",
+  },
+  ttsModels: {
+    getModels: "/voice-models",
+    getProviders: "/voice-model-providers",
+  },
+  sttModels: {
+    getModels: "/stt-models",
+    getProviders: "/stt-model-providers",
+  },
 };
 
 export default endpoints;
