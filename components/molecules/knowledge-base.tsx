@@ -117,6 +117,7 @@ const KnowledgeBase = ({
       setKnowledgeBase((prev) => [...prev, uploadedDocument]);
       setSelectedDocument(uploadedDocument);
       handleCancelPending();
+      setUploading(false);
     } catch (error) {
       console.error(`Error uploading PDF file:`, error);
 
@@ -129,6 +130,7 @@ const KnowledgeBase = ({
       }
 
       toast.error(`Error uploading file: ${errorMessage}`);
+      setUploading(false);
     }
   };
 
@@ -310,50 +312,6 @@ const KnowledgeBase = ({
                 </Card>
               ))}
             </div>
-          </div>
-
-          <div className="space-y-2">
-            {knowledgeBase
-              ?.filter((doc) =>
-                doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((doc) => (
-                <div
-                  key={doc._id}
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedDocument?._id === doc._id
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => handleSelectDocument(doc)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">
-                          {doc.name}
-                        </h4>
-                        <p className="text-sm text-gray-500">
-                          Uploaded:{" "}
-                          {new Date(doc.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Handle delete functionality here
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
           </div>
 
           {knowledgeBase?.length === 0 && (
