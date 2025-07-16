@@ -37,6 +37,7 @@ export default function LiveKitRoomOfficial({
   }));
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(false);
   const disconnectRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -47,10 +48,22 @@ export default function LiveKitRoomOfficial({
         setError(null);
         
         // Set up event listeners
-        roomInstance.on(RoomEvent.Connected, () => {
+        roomInstance.on(RoomEvent.Connected, async () => {
           console.log('Connected to LiveKit room:', roomInstance.name);
           if (mounted) {
             setIsConnected(true);
+            
+            // Enable microphone and publish audio track
+            try {
+              console.log('Enabling microphone...');
+              await roomInstance.localParticipant.setMicrophoneEnabled(true);
+              setIsMicrophoneEnabled(true);
+              console.log('Microphone enabled successfully');
+            } catch (micError) {
+              console.error('Failed to enable microphone:', micError);
+              setError('Failed to enable microphone. Please check permissions.');
+            }
+            
             if (onConnect) {
               onConnect(roomInstance);
             }
@@ -61,6 +74,7 @@ export default function LiveKitRoomOfficial({
           console.log('Disconnected from LiveKit room');
           if (mounted && !disconnectRef.current) {
             setIsConnected(false);
+            setIsMicrophoneEnabled(false);
             if (onDisconnect) {
               onDisconnect();
             }
@@ -69,6 +83,33 @@ export default function LiveKitRoomOfficial({
 
         roomInstance.on(RoomEvent.ConnectionStateChanged, (state) => {
           console.log('Connection state changed:', state);
+        });
+
+        // Set up participant event listeners
+        roomInstance.on(RoomEvent.ParticipantConnected, (participant) => {
+          console.log('Participant connected:', participant.identity);
+          if (participant.identity.includes('agent-')) {
+            console.log('Agent joined the room!');
+          }
+        });
+
+        roomInstance.on(RoomEvent.ParticipantDisconnected, (participant) => {
+          console.log('Participant disconnected:', participant.identity);
+          if (participant.identity.includes('agent-')) {
+            console.log('Agent left the room!');
+          }
+        });
+
+        // Set up track event listeners
+        roomInstance.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+          console.log('Track subscribed:', track.kind, 'from', participant.identity);
+          if (track.kind === 'audio' && participant.identity.includes('agent-')) {
+            console.log('Agent audio track received!');
+          }
+        });
+
+        roomInstance.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+          console.log('Track unsubscribed:', track.kind, 'from', participant.identity);
         });
 
         // Connect to the room
@@ -120,6 +161,16 @@ export default function LiveKitRoomOfficial({
         <RoomAudioRenderer />
         {/* Controls for the user to start/stop audio, video, and screen share tracks */}
         <ControlBar />
+        
+        {/* Status indicators */}
+        <div className="absolute bottom-20 left-4 space-y-1">
+          <div className="text-xs text-gray-600">
+            Microphone: {isMicrophoneEnabled ? '✅ Enabled' : '❌ Disabled'}
+          </div>
+          <div className="text-xs text-gray-600">
+            Room: {roomInstance.name}
+          </div>
+        </div>
       </div>
     </RoomContext.Provider>
   );
