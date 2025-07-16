@@ -12,6 +12,8 @@ import { Play, Square, Mic, MicOff } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import AudioVisualizer from "@/components/molecules/audio-visualizer";
+import LiveKitRoom from "@/components/molecules/livekit-room";
+import { getLiveKitServerUrl } from "@/lib/livekit-config";
 
 interface TestAgentModalProps {
   isOpen: boolean;
@@ -29,6 +31,8 @@ export default function TestAgentModal({
   const [isMuted, setIsMuted] = useState(false);
   const [liveKitToken, setLiveKitToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [room, setRoom] = useState<any>(null);
+  const [serverUrl] = useState<string>(getLiveKitServerUrl());
 
   const handleStartTest = async () => {
     if (!agent) return;
@@ -37,9 +41,16 @@ export default function TestAgentModal({
     setError(null);
 
     try {
-      // Step 1: Get LiveKit token
+      // Get LiveKit token
       const roomName = `test-${agent._id}-${Date.now()}`;
       const participantName = `user-${Date.now()}`;
+
+      console.log('Requesting LiveKit token with:', {
+        roomName,
+        participantName,
+        agentId: agent._id,
+        serverUrl
+      });
 
       const tokenResponse = await apiRequest(
         `${endpoints.assistants.list}/livekit-token`,
@@ -47,35 +58,24 @@ export default function TestAgentModal({
         {
           roomName,
           participantName,
+          agentId: agent._id,
         }
       );
 
+      console.log('Token response:', tokenResponse);
+
       if (!tokenResponse.data?.success) {
-        throw new Error("Failed to get LiveKit token");
+        throw new Error(tokenResponse.data?.message || "Failed to get LiveKit token");
       }
 
-      setLiveKitToken(tokenResponse.data.token);
-
-      // Step 2: Call Python agent endpoint
-      const agentResponse = await apiRequest("/api/test-agent", "POST", {
-        agentId: agent._id,
-        roomName,
-        liveKitToken: tokenResponse.data.token,
-        agentData: {
-          name: agent.agentName,
-          voice: agent.voice,
-          email: agent.email,
-          chats: agent.chats,
-        },
-      });
-
-      if (!agentResponse.data?.success) {
-        throw new Error("Failed to start agent");
-      }
-
+      const token = tokenResponse.data.token;
+      console.log('Received token, length:', token.length);
+      setLiveKitToken(token);
       setIsConnected(true);
+
     } catch (err: any) {
-      setError(err.message || "Failed to start agent test");
+      console.error('Error getting LiveKit token:', err);
+      setError(err.message || "Failed to get LiveKit token");
     } finally {
       setIsConnecting(false);
     }
@@ -83,10 +83,11 @@ export default function TestAgentModal({
 
   const handleStopTest = async () => {
     try {
-      // Call endpoint to stop the agent
-      await apiRequest("/api/stop-agent", "POST", {
-        agentId: agent._id,
-      });
+      // Disconnect from LiveKit room
+      if (room) {
+        room.disconnect();
+        setRoom(null);
+      }
     } catch (err) {
       console.error("Error stopping agent:", err);
     } finally {
@@ -97,7 +98,7 @@ export default function TestAgentModal({
 
   const handleToggleMute = () => {
     setIsMuted(!isMuted);
-    // Implement mute/unmute logic for LiveKit
+    // Mute/unmute will be handled by LiveKitRoom component
   };
 
   useEffect(() => {
@@ -105,6 +106,7 @@ export default function TestAgentModal({
       setIsConnected(false);
       setLiveKitToken(null);
       setError(null);
+      setRoom(null);
     }
   }, [isOpen]);
 
@@ -153,6 +155,17 @@ export default function TestAgentModal({
                   You can now speak with your agent
                 </p>
               </div>
+
+              {/* LiveKit Room Component */}
+              {liveKitToken && (
+                <LiveKitRoom
+                  token={liveKitToken}
+                  serverUrl={serverUrl}
+                  onConnect={(connectedRoom) => setRoom(connectedRoom)}
+                  onDisconnect={() => setRoom(null)}
+                  onMuteChange={(muted) => setIsMuted(muted)}
+                />
+              )}
 
               {/* Audio Visualizer */}
               <div className="h-32 bg-gray-50 rounded-lg flex items-center justify-center">

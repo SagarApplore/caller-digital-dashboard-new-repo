@@ -114,6 +114,7 @@ const CallLogs = () => {
       longDuration: false,
     },
   });
+  const [totalMinutes, setTotalMinutes] = useState<number>(0);
 
   // Fetch call logs data from API
   const fetchCallLogs = async (
@@ -141,6 +142,7 @@ const CallLogs = () => {
       );
       setApiData(response.data.data || []);
       setTotalCount(response.data.totalCount || 0);
+      setTotalMinutes(response.data.totalMinutes || 0);
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
@@ -443,9 +445,6 @@ const CallLogs = () => {
       },
       {
         label: "AI Resolution %",
-        // value: `${(
-        //   (resolvedConversations / totalConversations) * 100 || 0
-        // ).toFixed(1)}%`,
         value: "N/A",
         change: "N/A",
         trend: "up" as const,
@@ -463,13 +462,13 @@ const CallLogs = () => {
         trend: "up" as const,
       },
       {
-        label: "Token Usage",
-        value: "N/A",
+        label: "Total Minutes",
+        value: `${totalMinutes.toFixed(2)} min`,
         change: "N/A",
         trend: "down" as const,
       },
     ];
-  }, [filteredConversations, totalCount]);
+  }, [filteredConversations, totalCount, totalMinutes]);
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
