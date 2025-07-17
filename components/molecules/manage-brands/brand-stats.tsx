@@ -40,14 +40,14 @@ export default function BrandStats({ stats }: BrandStatsProps) {
       bgColor: 'bg-gray-50 dark:bg-gray-900/20',
       borderColor: 'border-gray-200 dark:border-gray-800'
     },
-    {
-      title: 'Suspended Brands',
-      value: stats.suspendedBrands,
-      icon: XCircle,
-      color: 'text-red-600 dark:text-red-400',
-      bgColor: 'bg-red-50 dark:bg-red-900/20',
-      borderColor: 'border-red-200 dark:border-red-800'
-    }
+    // {
+    //   title: 'Suspended Brands',
+    //   value: stats.suspendedBrands,
+    //   icon: XCircle,
+    //   color: 'text-red-600 dark:text-red-400',
+    //   bgColor: 'bg-red-50 dark:bg-red-900/20',
+    //   borderColor: 'border-red-200 dark:border-red-800'
+    // }
   ];
 
   return (

@@ -55,10 +55,11 @@ interface BrandsListProps {
   brands: Brand[];
   onEdit: (brand: Brand) => void;
   onDelete: (brandId: string) => void;
+  onCreateBrand: () => void;
   isLoading: boolean;
 }
 
-export default function BrandsList({ brands, onEdit, onDelete, isLoading }: BrandsListProps) {
+export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, isLoading }: BrandsListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
   const { toast } = useToast();
@@ -138,7 +139,7 @@ export default function BrandsList({ brands, onEdit, onDelete, isLoading }: Bran
         <p className="text-gray-500 dark:text-gray-400 mb-6">
           Create your first brand to get started
         </p>
-        <Button onClick={() => window.location.href = '/manage-brands'}>
+        <Button onClick={onCreateBrand}>
           Create Brand
         </Button>
       </div>
