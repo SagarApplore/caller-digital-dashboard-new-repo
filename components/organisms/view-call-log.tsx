@@ -56,7 +56,7 @@ const Transcript = ({
             .getInitials(
               transcript.role?.toLowerCase() === "user"
                 ? callLog?.clientId?.name
-                : callLog?.agentId?.agentName
+                : callLog?.agentId?.agentName ?? "Agent"
             )
             .toUpperCase()}
         </div>
@@ -322,7 +322,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                     <span className="text-sm font-bold text-gray-500">
                       {utils.string
-                        .getInitials(apiData?.agentId?.agentName)
+                        .getInitials(apiData?.agentId?.agentName ?? "Agent")
                         .toUpperCase()}
                     </span>
                   </div>
