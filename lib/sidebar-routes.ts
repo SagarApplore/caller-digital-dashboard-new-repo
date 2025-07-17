@@ -1,4 +1,4 @@
-import { Home, Megaphone, Brain, Phone, Building2, Bot, Plus } from "lucide-react";
+import { Home, Megaphone, Brain, Phone, Building2, Bot, Plus, Hash } from "lucide-react";
 
 export interface SidebarRouteItem {
   id: string;
@@ -41,7 +41,14 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     id: "agents",
     name: "Agents",
     path: "/agents",
-    icon: Bot,
+    icon:   Bot,
+    isActive: false,
+  },
+  {
+    id: "phone-numbers",
+    name: "Phone Numbers",
+    path: "/phone-numbers",
+    icon: Hash,
     isActive: false,
   },
   {
@@ -74,12 +81,6 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     path: "/knowledge-base",
     icon: Brain,
   },
-  // {
-  //   id: "llm-config",
-  //   name: "LLM Config",
-  //   path: "/llm-provider-config",
-  //   icon: Settings,
-  // },
 ];
 
 // Helper function to update active state
