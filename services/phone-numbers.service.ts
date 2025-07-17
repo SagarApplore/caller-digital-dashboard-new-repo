@@ -124,6 +124,7 @@ export interface PhoneNumberAssignment {
   _id: string;
   phone_number: string;
   api_id: string;
+  client_id: string;
   status: string;
   active: boolean;
   createdAt: string;
@@ -295,6 +296,7 @@ class PhoneNumbersService {
         const numberData = buy_response.numbers[0];
         
         // Call Node.js API to create phone number assignment
+        // Note: client_id will be automatically added by the backend from req.user._id
         const nodeResponse = await backendApiClient.post('/phone-number-assignment', {
           phone_number: `+${numberData.number}`,
           api_id: buy_response.api_id,
@@ -471,6 +473,7 @@ class PhoneNumbersService {
             _id: '1',
             phone_number: '+91 80 3573 5489',
             api_id: 'sample-api-id-1',
+            client_id: 'client-1',
             status: 'active',
             active: true,
             createdAt: new Date().toISOString(),
@@ -480,6 +483,7 @@ class PhoneNumbersService {
             _id: '2',
             phone_number: '+91 80 3573 5518',
             api_id: 'sample-api-id-2',
+            client_id: 'client-1',
             status: 'inactive',
             active: false,
             createdAt: new Date().toISOString(),
