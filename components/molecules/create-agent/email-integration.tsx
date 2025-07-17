@@ -38,7 +38,7 @@ const EmailIntegration = ({
 
   // Helper function to find provider by name
   const findProviderByName = (providers: any[], name: string) => {
-    return providers.find((provider) => provider.companyName === name);
+    return providers.find((provider) => provider.name === name);
   };
 
   // Helper function to find model by name
