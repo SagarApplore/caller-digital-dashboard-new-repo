@@ -110,11 +110,20 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Date not available';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Date not available';
+    }
   };
 
   if (isLoading) {
@@ -233,15 +242,20 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
             <AlertDialogTitle>Delete Brand</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{brandToDelete?.name}"? This action cannot be undone.
-              <br /><br />
-              This will also delete:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>All agents associated with this brand</li>
-                <li>The brand user account</li>
-                <li>All brand data and configurations</li>
-              </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              This will also delete:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>All agents associated with this brand</li>
+              <li>The brand user account</li>
+              <li>All brand data and configurations</li>
+            </ul>
+          </div>
+          
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction 

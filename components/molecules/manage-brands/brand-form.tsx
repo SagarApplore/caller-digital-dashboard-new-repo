@@ -7,6 +7,7 @@ import { Input } from '@/components/atoms/input';
 import { Label } from '@/components/atoms/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, FileText, Eye, EyeOff } from 'lucide-react';
 import apiRequest from '@/utils/api';
@@ -34,7 +35,8 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
     billingEmail: '',
     description: '',
     status: 'active' as 'active' | 'inactive' | 'suspended',
-    password: ''
+    password: '',
+    copyAgents: false
   });
 
   const { toast } = useToast();
@@ -46,7 +48,8 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
         billingEmail: brand.billingEmail,
         description: brand.description || '',
         status: brand.status,
-        password: ''
+        password: '',
+        copyAgents: false // Default to false for existing brands
       });
     }
   }, [brand]);
@@ -189,6 +192,18 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Copy Agents Checkbox */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="copyAgents"
+                  checked={formData.copyAgents}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, copyAgents: checked as boolean }))}
+                />
+                <Label htmlFor="copyAgents" className="text-sm">
+                  Copy all current agents and their configurations to the new brand.
+                </Label>
+              </div>
             </div>
           </div>
 
@@ -199,12 +214,12 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
                 <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-blue-900 dark:text-blue-100">
-                    Agent Copying
+                    Agent Configuration
                   </h4>
                   <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                    When you create a new brand, all your current agents will be copied 
-                    to the new brand with their configurations. The new brand will have 
-                    its own user account and workspace.
+                    You can choose whether to copy all your current agents and their configurations 
+                    to the new brand. If enabled, the new brand will have its own workspace with 
+                    copies of your agents. You can always add agents later.
                   </p>
                 </div>
               </div>
