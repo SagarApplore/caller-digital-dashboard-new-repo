@@ -92,6 +92,8 @@ export interface SearchAvailableNumbersRequest {
   type?: string;
   capabilities?: string[];
   prefix?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface SearchResult {
@@ -104,11 +106,46 @@ export interface SearchResult {
 export interface SearchResponse {
   api_id: string;
   numbers: SearchResult[];
+  total?: number;
+}
+
+export interface SearchAvailableNumbersResponse {
+  api_id: string;
+  numbers: SearchResult[];
+  total?: number;
 }
 
 export interface AssignApplicationRequest {
   phoneNumberId: string;
   applicationId: string;
+}
+
+export interface PhoneNumberAssignment {
+  _id: string;
+  phone_number: string;
+  api_id: string;
+  status: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PhoneNumberAssignmentResponse {
+  success: boolean;
+  data: PhoneNumberAssignment[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+}
+
+export interface PhoneNumberAssignmentFilters {
+  page?: number;
+  limit?: number;
+  phone_number?: string;
+  active?: boolean;
 }
 
 class PhoneNumbersService {
@@ -149,7 +186,7 @@ class PhoneNumbersService {
   }
 
   // Search for available phone numbers
-  async searchAvailableNumbers(request: SearchAvailableNumbersRequest): Promise<SearchResult[]> {
+  async searchAvailableNumbers(request: SearchAvailableNumbersRequest): Promise<SearchAvailableNumbersResponse> {
     try {
       // Convert request to query parameters for GET request
       const params = new URLSearchParams();
@@ -159,38 +196,48 @@ class PhoneNumbersService {
         request.capabilities.forEach(cap => params.append('capabilities', cap));
       }
       if (request.prefix) params.append('prefix', request.prefix);
+      if (request.page) params.append('page', request.page.toString());
+      if (request.limit) params.append('limit', request.limit.toString());
 
       const response = await backendPythonApiClient.get<SearchResponse>(`/get-numbers?${params.toString()}`);
-      return response.data.numbers;
+      return {
+        api_id: response.data.api_id,
+        numbers: response.data.numbers,
+        total: response.data.total
+      };
     } catch (error) {
       console.error('Error searching for available numbers:', error);
       // Return sample data for development
-      return [
-        {
-          monthly_rental_rate: '400 Rs',
-          number: '918035735489',
-          region: 'Bangalore',
-          voice_enabled: true
-        },
-        {
-          monthly_rental_rate: '400 Rs',
-          number: '918035735518',
-          region: 'Bangalore',
-          voice_enabled: true
-        },
-        {
-          monthly_rental_rate: '400 Rs',
-          number: '918035735949',
-          region: 'Bangalore',
-          voice_enabled: true
-        },
-        {
-          monthly_rental_rate: '400 Rs',
-          number: '918035735960',
-          region: 'Bangalore',
-          voice_enabled: true
-        }
-      ];
+      return {
+        api_id: 'sample_api_id',
+        numbers: [
+          {
+            monthly_rental_rate: '400 Rs',
+            number: '918035735489',
+            region: 'Bangalore',
+            voice_enabled: true
+          },
+          {
+            monthly_rental_rate: '400 Rs',
+            number: '918035735518',
+            region: 'Bangalore',
+            voice_enabled: true
+          },
+          {
+            monthly_rental_rate: '400 Rs',
+            number: '918035735949',
+            region: 'Bangalore',
+            voice_enabled: true
+          },
+          {
+            monthly_rental_rate: '400 Rs',
+            number: '918035735960',
+            region: 'Bangalore',
+            voice_enabled: true
+          }
+        ],
+        total: 4
+      };
     }
   }
 
@@ -223,6 +270,45 @@ class PhoneNumbersService {
     } catch (error) {
       console.error('Error verifying payment:', error);
       throw new Error('Failed to verify payment');
+    }
+  }
+
+  // Call Python API after successful payment to register the number
+  async registerNumberWithPythonAPI(phoneNumber: string, paymentDetails: any, api_id: string): Promise<any> {
+    try {
+      // First call Python API to assign the number
+      const pythonResponse = await backendPythonApiClient.post('/assign-number', {
+        phone_number: `+${phoneNumber}`,
+        api_id: `${api_id}`,
+        payment_id: paymentDetails.razorpay_payment_id,
+        order_id: paymentDetails.razorpay_order_id,
+        payment_status: 'success',
+        purchase_date: new Date().toISOString()
+      });
+
+      console.log('Python API response:', pythonResponse.data);
+
+      // Extract data from Python response
+      const { buy_response } = pythonResponse.data;
+      
+      if (buy_response && buy_response.numbers && buy_response.numbers.length > 0) {
+        const numberData = buy_response.numbers[0];
+        
+        // Call Node.js API to create phone number assignment
+        const nodeResponse = await backendApiClient.post('/phone-number-assignment', {
+          phone_number: `+${numberData.number}`,
+          api_id: buy_response.api_id,
+          status: numberData.status === 'Success' ? 'active' : 'inactive'
+        });
+
+        console.log('Node.js API response:', nodeResponse.data);
+        return nodeResponse.data;
+      } else {
+        throw new Error('No number data received from Python API');
+      }
+    } catch (error) {
+      console.error('Error registering number with Python API:', error);
+      throw new Error('Failed to register number with Python API');
     }
   }
 
@@ -357,6 +443,56 @@ class PhoneNumbersService {
     } catch (error) {
       console.error('Error bulk suspending phone numbers:', error);
       console.log('Bulk suspending phone numbers:', phoneNumberIds);
+    }
+  }
+
+  // Get phone number assignments with pagination and filters
+  async getPhoneNumberAssignments(filters: PhoneNumberAssignmentFilters = {}): Promise<PhoneNumberAssignmentResponse> {
+    try {
+      const params = new URLSearchParams();
+      
+      // Add pagination parameters
+      if (filters.page) params.append('page', filters.page.toString());
+      if (filters.limit) params.append('limit', filters.limit.toString());
+      
+      // Add search/filter parameters
+      if (filters.phone_number) params.append('phone_number', filters.phone_number);
+      if (filters.active !== undefined) params.append('active', filters.active.toString());
+
+      const response = await backendApiClient.get<PhoneNumberAssignmentResponse>(`/phone-number-assignment?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching phone number assignments:', error);
+      // Return sample data for development
+      return {
+        success: true,
+        data: [
+          {
+            _id: '1',
+            phone_number: '+91 80 3573 5489',
+            api_id: 'sample-api-id-1',
+            status: 'active',
+            active: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            _id: '2',
+            phone_number: '+91 80 3573 5518',
+            api_id: 'sample-api-id-2',
+            status: 'inactive',
+            active: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ],
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 2,
+          itemsPerPage: 10
+        }
+      };
     }
   }
 }

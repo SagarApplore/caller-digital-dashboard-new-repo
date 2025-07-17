@@ -114,11 +114,14 @@ export default function BuyNumbersPage() {
   });
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [apiId, setApiId] = useState<string>('');
   const [showResults, setShowResults] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalResults, setTotalResults] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -127,13 +130,35 @@ export default function BuyNumbersPage() {
   const selectedCountry = countries.find(c => c.code === formData.country);
 
   // Pagination helpers
-  const totalPages = Math.ceil(searchResults.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedResults = searchResults.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = async (page: number) => {
+    if (page === currentPage) return;
+    
+    setIsLoadingMore(true);
+    try {
+      const request = {
+        country: formData.country,
+        type: formData.type === 'any' ? undefined : formData.type,
+        capabilities: formData.capabilities.includes('any') ? undefined : formData.capabilities,
+        prefix: formData.number || undefined,
+        page: page,
+        limit: itemsPerPage
+      };
+
+      const results = await phoneNumbersService.searchAvailableNumbers(request);
+      setSearchResults(results.numbers);
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Error loading page:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load page',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const handleCountryChange = (value: string) => {
@@ -188,19 +213,27 @@ export default function BuyNumbersPage() {
         country: formData.country,
         type: formData.type === 'any' ? undefined : formData.type,
         capabilities: formData.capabilities.includes('any') ? undefined : formData.capabilities,
-        prefix: formData.number || undefined
+        prefix: formData.number || undefined,
+        page: 1,
+        limit: itemsPerPage
       };
 
       // Call the backend API to search for available numbers
       const results = await phoneNumbersService.searchAvailableNumbers(request);
       
-      setSearchResults(results);
+      console.log('Search results:', results); // Debug log
+      console.log('API ID:', results.api_id); // Debug log
+      
+      setSearchResults(results.numbers);
+      setTotalResults(results.total || results.numbers.length);
+      console.log("results",results)
+      setApiId(results.api_id);
       setShowResults(true);
       setCurrentPage(1); // Reset to first page for new search results
       
       toast({
         title: 'Success',
-        description: `Found ${results.length} available numbers for ${selectedCountry?.name}`,
+        description: `Found ${results.total || results.numbers.length} available numbers for ${selectedCountry?.name}`,
       });
       
     } catch (error) {
@@ -257,6 +290,16 @@ export default function BuyNumbersPage() {
               });
 
               if (verificationResponse.success) {
+                // Call Python API to register the purchased number
+                try {
+                  await phoneNumbersService.registerNumberWithPythonAPI(number.number, response, apiId);
+                  console.log('Successfully registered number with Python API:', number.number, 'API ID:', apiId);
+                } catch (pythonApiError) {
+                  console.error('Failed to register number with Python API:', pythonApiError);
+                  // Don't fail the entire transaction if Python API fails
+                  // Just log the error and continue
+                }
+
                 toast({
                   title: 'Success',
                   description: `Successfully purchased ${number.number}`,
@@ -333,7 +376,7 @@ export default function BuyNumbersPage() {
           ),
         }}
       >
-        <div className="p-6">
+        <div className="p-6 h-full overflow-y-auto">
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Search Form */}
             <Card className="border-0 shadow-lg">
@@ -486,7 +529,7 @@ export default function BuyNumbersPage() {
                 <CardHeader className="pb-6">
                   <CardTitle className="flex items-center gap-2 text-xl font-semibold text-gray-900">
                     <Search className="h-6 w-6 text-green-600" />
-                    Available Numbers ({searchResults.length})
+                    Available Numbers ({totalResults})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -501,7 +544,7 @@ export default function BuyNumbersPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginatedResults.map((number, index) => (
+                        {searchResults.map((number, index) => (
                           <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="py-4 px-4">
                               <div>
@@ -545,7 +588,7 @@ export default function BuyNumbersPage() {
                   {totalPages > 1 && (
                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
                       <div className="text-sm text-gray-600">
-                        Showing {startIndex + 1} to {Math.min(endIndex, searchResults.length)} of {searchResults.length} results
+                        Showing {totalResults > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalResults)} of {totalResults} results
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -553,7 +596,7 @@ export default function BuyNumbersPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 1}
+                          disabled={currentPage === 1 || isLoadingMore}
                           className="flex items-center gap-1"
                         >
                           <ChevronLeft className="h-4 w-4" />
@@ -567,6 +610,7 @@ export default function BuyNumbersPage() {
                               variant={currentPage === page ? "default" : "outline"}
                               size="sm"
                               onClick={() => handlePageChange(page)}
+                              disabled={isLoadingMore}
                               className="w-8 h-8 p-0"
                             >
                               {page}
@@ -578,11 +622,20 @@ export default function BuyNumbersPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage === totalPages}
+                          disabled={currentPage === totalPages || isLoadingMore}
                           className="flex items-center gap-1"
                         >
-                          Next
-                          <ChevronRight className="h-4 w-4" />
+                          {isLoadingMore ? (
+                            <>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-1"></div>
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              Next
+                              <ChevronRight className="h-4 w-4" />
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>

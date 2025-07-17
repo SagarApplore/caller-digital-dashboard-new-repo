@@ -30,7 +30,7 @@ export default function Dashboard({ children, header }: DashboardProps) {
           backRoute={header.backRoute}
           children={header.children}
         />
-        <div className="flex-1 overflow-y-auto transition-all duration-200">
+        <div className="flex-1 overflow-hidden transition-all duration-200">
           {children}
         </div>
       </div>

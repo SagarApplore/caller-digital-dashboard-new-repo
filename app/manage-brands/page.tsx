@@ -83,95 +83,19 @@ export default function ManageBrandsPage() {
     fetchStats();
   }, []);
 
-  const handleBrandCreated = (newBrand: any) => {
-    console.log('handleBrandCreated received:', newBrand);
-    
-    // The API returns the brand in response.data.data.brand
-    // We need to extract and format it properly
-    const brandData = newBrand.brand || newBrand;
-    console.log('brandData extracted:', brandData);
-    
-    // Helper function to ensure proper date formatting
-    const formatDate = (dateString: string | Date | undefined) => {
-      if (!dateString) return new Date().toISOString();
-      try {
-        const date = new Date(dateString);
-        return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-      } catch {
-        return new Date().toISOString();
-      }
-    };
-    
-    // Ensure the brand has all required fields with proper formatting
-    const formattedBrand: Brand = {
-      _id: brandData._id,
-      name: brandData.name,
-      billingEmail: brandData.billingEmail,
-      description: brandData.description || '',
-      status: brandData.status || 'active',
-      brandUser: {
-        _id: brandData.brandUser?._id || brandData.brandUser?._id,
-        name: brandData.brandUser?.name || 'Brand User',
-        email: brandData.brandUser?.email || brandData.billingEmail,
-        role: brandData.brandUser?.role || 'BRAND_USER'
-      },
-      agentCount: newBrand.copiedAgentsCount || 0,
-      createdAt: formatDate(brandData.createdAt),
-      updatedAt: formatDate(brandData.updatedAt)
-    };
-
-    console.log('formattedBrand:', formattedBrand);
-
-    setBrands(prev => [formattedBrand, ...prev]);
+  const handleBrandCreated = (newBrand: Brand) => {
+    setBrands(prev => [newBrand, ...prev]);
     setShowForm(false);
     fetchStats(); // Refresh stats
-    
-    const message = newBrand.agentsCopied 
-      ? `Brand created successfully with ${newBrand.copiedAgentsCount} agents copied!`
-      : 'Brand created successfully!';
-      
     toast({
       title: 'Success',
-      description: message,
+      description: 'Brand created successfully!',
     });
   };
 
-  const handleBrandUpdated = (updatedBrand: any) => {
-    // The API returns the brand in response.data.data
-    // We need to extract and format it properly
-    const brandData = updatedBrand.brand || updatedBrand;
-    
-    // Helper function to ensure proper date formatting
-    const formatDate = (dateString: string | Date | undefined) => {
-      if (!dateString) return new Date().toISOString();
-      try {
-        const date = new Date(dateString);
-        return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-      } catch {
-        return new Date().toISOString();
-      }
-    };
-    
-    // Ensure the brand has all required fields with proper formatting
-    const formattedBrand: Brand = {
-      _id: brandData._id,
-      name: brandData.name,
-      billingEmail: brandData.billingEmail,
-      description: brandData.description || '',
-      status: brandData.status || 'active',
-      brandUser: {
-        _id: brandData.brandUser?._id || brandData.brandUser?._id,
-        name: brandData.brandUser?.name || 'Brand User',
-        email: brandData.brandUser?.email || brandData.billingEmail,
-        role: brandData.brandUser?.role || 'BRAND_USER'
-      },
-      agentCount: brandData.agentCount || 0,
-      createdAt: formatDate(brandData.createdAt),
-      updatedAt: formatDate(brandData.updatedAt)
-    };
-
+  const handleBrandUpdated = (updatedBrand: Brand) => {
     setBrands(prev => prev.map(brand => 
-      brand._id === formattedBrand._id ? formattedBrand : brand
+      brand._id === updatedBrand._id ? updatedBrand : brand
     ));
     setEditingBrand(null);
     setShowForm(false);
