@@ -1,6 +1,13 @@
 "use client";
 
-import { Loader2, Mail, MessageSquare, Phone } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  MessageSquare,
+  Phone,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   Language,
@@ -11,6 +18,7 @@ import ChannelsAndPhoneMapping, {
   Channel,
 } from "../molecules/create-agent/channels-and-phone-mapping";
 import { KnowledgeBaseItem } from "../molecules/knowledge-base";
+import { IFunctionTool } from "@/types/common";
 import KnowledgeBase from "../molecules/create-agent/knowledge-base";
 import { Integration } from "../molecules/create-agent/integrations";
 import VoiceIntegration from "../molecules/create-agent/voice-integration";
@@ -61,6 +69,15 @@ const CreateAgent = ({
     knowledgeBases: [],
     selectedKnowledgeBases: [],
   });
+
+  const [functionToolsData, setFunctionToolsData] = useState<{
+    functionTools: IFunctionTool[];
+    selectedFunctionTools: IFunctionTool[];
+  }>({
+    functionTools: [],
+    selectedFunctionTools: [],
+  });
+
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<IPersonaAndBehavior>({
       languages: [],
@@ -70,11 +87,27 @@ const CreateAgent = ({
       successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
       failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
     });
-  const [channels, setChannels] = useState<Channel[]>(
-    initialChannels.map((channel) => ({
-      ...channel,
-    }))
-  );
+
+  // Initialize channels with existing data
+  const initializeChannels = (): Channel[] => {
+    return initialChannels.map((channel) => {
+      const channelId = channel.id.toLowerCase();
+      const existingChannel = initialData?.[channelId];
+
+      return {
+        ...channel,
+        active: initialData?.channels?.includes(channelId) || false,
+        prompt: {
+          ...channel.prompt,
+          value: existingChannel?.agentPrompt || channel.prompt.value,
+        },
+        firstMessage: existingChannel?.firstMessage || channel.firstMessage,
+      };
+    });
+  };
+
+  const [channels, setChannels] = useState<Channel[]>(initializeChannels());
+
   const [integrations, setIntegrations] = useState<{
     crmIntegrations: Integration[];
     communicationIntegrations: Integration[];
@@ -82,57 +115,348 @@ const CreateAgent = ({
     crmIntegrations: crmIntegrations,
     communicationIntegrations: communicationIntegrations,
   });
-  const [voiceIntegration, setVoiceIntegration] = useState({
-    selectedTTSModel: null,
-    selectedTTSModelName: null,
-    selectedTTSProvider: null,
-    selectedTTSProviderName: null,
-    selectedSTTModel: null,
-    selectedSTTModelName: null,
-    selectedSTTProvider: null,
-    selectedSTTProviderName: null,
-    selectedLLMModel: null,
-    selectedLLMModelName: null,
-    selectedLLMProvider: null,
-    selectedLLMProviderName: null,
+
+  // Initialize voice integration with existing data
+  const initializeVoiceIntegration = () => ({
+    selectedTTSModel: initialData?.voice?.voiceProvider?.model || null,
+    selectedTTSModelName: initialData?.voice?.voiceProvider?.model || null,
+    selectedTTSProvider:
+      initialData?.voice?.voiceProvider?.providerName || null,
+    selectedTTSProviderName:
+      initialData?.voice?.voiceProvider?.providerName || null,
+    selectedSTTModel: initialData?.voice?.transcriberProvider?.model || null,
+    selectedSTTModelName:
+      initialData?.voice?.transcriberProvider?.model || null,
+    selectedSTTProvider:
+      initialData?.voice?.transcriberProvider?.providerName || null,
+    selectedSTTProviderName:
+      initialData?.voice?.transcriberProvider?.providerName || null,
+    selectedLLMModel: initialData?.voice?.llmProvider?.model || null,
+    selectedLLMModelName: initialData?.voice?.llmProvider?.model || null,
+    selectedLLMProvider: initialData?.voice?.llmProvider?.providerName || null,
+    selectedLLMProviderName:
+      initialData?.voice?.llmProvider?.providerName || null,
   });
-  const [emailIntegration, setEmailIntegration] = useState({
-    selectedLLMModel: null,
-    selectedLLMModelName: null,
-    selectedLLMProvider: null,
-    selectedLLMProviderName: null,
+
+  const [voiceIntegration, setVoiceIntegration] = useState(
+    initializeVoiceIntegration()
+  );
+
+  // Initialize email integration with existing data
+  const initializeEmailIntegration = () => ({
+    selectedLLMModel: initialData?.email?.llmProvider?.model || null,
+    selectedLLMModelName: initialData?.email?.llmProvider?.model || null,
+    selectedLLMProvider: initialData?.email?.llmProvider?.providerName || null,
+    selectedLLMProviderName:
+      initialData?.email?.llmProvider?.providerName || null,
   });
-  const [chatIntegration, setChatIntegration] = useState({
-    selectedLLMModel: null,
-    selectedLLMModelName: null,
-    selectedLLMProvider: null,
-    selectedLLMProviderName: null,
+
+  const [emailIntegration, setEmailIntegration] = useState(
+    initializeEmailIntegration()
+  );
+
+  // Initialize chat integration with existing data
+  const initializeChatIntegration = () => ({
+    selectedLLMModel: initialData?.chats?.llmProvider?.model || null,
+    selectedLLMModelName: initialData?.chats?.llmProvider?.model || null,
+    selectedLLMProvider: initialData?.chats?.llmProvider?.providerName || null,
+    selectedLLMProviderName:
+      initialData?.chats?.llmProvider?.providerName || null,
   });
+
+  const [chatIntegration, setChatIntegration] = useState(
+    initializeChatIntegration()
+  );
 
   const router = useRouter();
   const { user } = useAuth();
 
+  // Validation functions for each step
+  const validateStep1 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    if (!personaAndBehavior.agentName.trim()) {
+      errors.push("Agent name is required");
+    }
+
+    if (!personaAndBehavior.summaryPrompt.trim()) {
+      errors.push("Summary prompt is required");
+    }
+
+    if (!personaAndBehavior.successEvaluationPrompt.trim()) {
+      errors.push("Success evaluation prompt is required");
+    }
+
+    if (!personaAndBehavior.failureEvaluationPrompt.trim()) {
+      errors.push("Failure evaluation prompt is required");
+    }
+
+    const selectedLanguages = personaAndBehavior.languages.filter(
+      (lang) => lang.selected
+    );
+    if (selectedLanguages.length === 0) {
+      errors.push("At least one language must be selected");
+    }
+
+    const selectedTones = personaAndBehavior.tones.filter(
+      (tone) => tone.selected
+    );
+    if (selectedTones.length === 0) {
+      errors.push("At least one tone must be selected");
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const validateStep2 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    const activeChannels = channels.filter((channel) => channel.active);
+    if (activeChannels.length === 0) {
+      errors.push("At least one channel must be selected");
+      return { isValid: false, errors };
+    }
+
+    // Validate each active channel
+    activeChannels.forEach((channel) => {
+      if (!channel.prompt.value.trim()) {
+        errors.push(`${channel.name} prompt is required`);
+      }
+      if (!channel.firstMessage.trim()) {
+        errors.push(`${channel.name} first message is required`);
+      }
+    });
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const validateStep3 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Knowledge base is optional, so no validation needed
+    return { isValid: true, errors };
+  };
+
+  const validateStep4 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    const voiceChannel = channels.find(
+      (channel) => channel.id.toLowerCase() === "voice"
+    );
+    if (voiceChannel?.active) {
+      if (!voiceIntegration.selectedLLMModelName) {
+        errors.push("Voice LLM model is required");
+      }
+      if (!voiceIntegration.selectedLLMProviderName) {
+        errors.push("Voice LLM provider is required");
+      }
+      if (!voiceIntegration.selectedTTSModelName) {
+        errors.push("Voice TTS model is required");
+      }
+      if (!voiceIntegration.selectedTTSProviderName) {
+        errors.push("Voice TTS provider is required");
+      }
+      if (!voiceIntegration.selectedSTTModelName) {
+        errors.push("Voice STT model is required");
+      }
+      if (!voiceIntegration.selectedSTTProviderName) {
+        errors.push("Voice STT provider is required");
+      }
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const validateStep5 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    const chatChannel = channels.find(
+      (channel) => channel.id.toLowerCase() === "chat"
+    );
+    if (chatChannel?.active) {
+      if (!chatIntegration.selectedLLMModelName) {
+        errors.push("Chat LLM model is required");
+      }
+      if (!chatIntegration.selectedLLMProviderName) {
+        errors.push("Chat LLM provider is required");
+      }
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const validateStep6 = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    const emailChannel = channels.find(
+      (channel) => channel.id.toLowerCase() === "email"
+    );
+    if (emailChannel?.active) {
+      if (!emailIntegration.selectedLLMModelName) {
+        errors.push("Email LLM model is required");
+      }
+      if (!emailIntegration.selectedLLMProviderName) {
+        errors.push("Email LLM provider is required");
+      }
+    }
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  // Additional validation for final submission
+  const validateAllSteps = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // Check if at least one channel is active
+    const activeChannels = channels.filter((channel) => channel.active);
+    if (activeChannels.length === 0) {
+      errors.push("At least one channel must be selected");
+    }
+
+    // Validate that each active channel has its corresponding integration configured
+    activeChannels.forEach((channel) => {
+      const channelId = channel.id.toLowerCase();
+
+      if (channelId === "voice") {
+        if (
+          !voiceIntegration.selectedLLMModelName ||
+          !voiceIntegration.selectedLLMProviderName
+        ) {
+          errors.push("Voice integration is incomplete");
+        }
+      } else if (channelId === "chat") {
+        if (
+          !chatIntegration.selectedLLMModelName ||
+          !chatIntegration.selectedLLMProviderName
+        ) {
+          errors.push("Chat integration is incomplete");
+        }
+      } else if (channelId === "email") {
+        if (
+          !emailIntegration.selectedLLMModelName ||
+          !emailIntegration.selectedLLMProviderName
+        ) {
+          errors.push("Email integration is incomplete");
+        }
+      }
+    });
+
+    return { isValid: errors.length === 0, errors };
+  };
+
+  const validateCurrentStep = (): { isValid: boolean; errors: string[] } => {
+    switch (activeStep) {
+      case 1:
+        return validateStep1();
+      case 2:
+        return validateStep2();
+      case 3:
+        return validateStep3();
+      case 4:
+        return validateStep4();
+      case 5:
+        return validateStep5();
+      case 6:
+        return validateStep6();
+      default:
+        return { isValid: true, errors: [] };
+    }
+  };
+
+  const isStepValid = (stepNumber: number): boolean => {
+    switch (stepNumber) {
+      case 1:
+        return validateStep1().isValid;
+      case 2:
+        return validateStep2().isValid;
+      case 3:
+        return validateStep3().isValid;
+      case 4:
+        return validateStep4().isValid;
+      case 5:
+        return validateStep5().isValid;
+      case 6:
+        return validateStep6().isValid;
+      default:
+        return true;
+    }
+  };
+
   const handleStepChange = (step: number) => {
+    // Only allow navigation to next step if current step is valid
+    if (step > activeStep) {
+      const validation = validateCurrentStep();
+      if (!validation.isValid) {
+        toast.error(
+          `Please complete all required fields: ${validation.errors.join(", ")}`
+        );
+        return;
+      }
+    }
     setActiveStep(step);
   };
 
   useEffect(() => {
     const fetchKnowledgeBases = async () => {
       setLoading(true);
-      const response = await apiRequest(endpoints.knowledgeBase.getAll, "GET");
-      setKnowledgeBaseData((prev) => ({
-        ...prev,
-        knowledgeBases: response?.data?.data || [],
-      }));
+      try {
+        const response = await apiRequest(
+          endpoints.knowledgeBase.getAll,
+          "GET"
+        );
+        const knowledgeBases = response?.data?.data || [];
+
+        // If in edit mode, find and select existing knowledge bases
+        let selectedKnowledgeBases: KnowledgeBaseItem[] = [];
+        if (mode === "edit" && initialData?.knowledgeBase) {
+          selectedKnowledgeBases = knowledgeBases.filter(
+            (kb: KnowledgeBaseItem) =>
+              initialData.knowledgeBase.includes(kb._id)
+          );
+        }
+
+        setKnowledgeBaseData({
+          knowledgeBases,
+          selectedKnowledgeBases,
+        });
+      } catch (error) {
+        console.error("Error fetching knowledge bases:", error);
+      }
       setLoading(false);
     };
     fetchKnowledgeBases();
-  }, []);
+  }, [mode, initialData]);
+
+  useEffect(() => {
+    const fetchFunctionTools = async () => {
+      try {
+        const response = await apiRequest(
+          endpoints.functionTools.getAll,
+          "GET"
+        );
+        const functionTools = response?.data?.data || [];
+
+        // If in edit mode, find and select existing function tools
+        let selectedFunctionTools: IFunctionTool[] = [];
+        if (mode === "edit" && initialData?.functionTools) {
+          selectedFunctionTools = functionTools.filter((tool: IFunctionTool) =>
+            initialData.functionTools.includes(tool._id)
+          );
+        }
+
+        setFunctionToolsData({
+          functionTools,
+          selectedFunctionTools,
+        });
+      } catch (error) {
+        console.error("Error fetching function tools:", error);
+      }
+    };
+    fetchFunctionTools();
+  }, [mode, initialData]);
 
   useEffect(() => {
     const fetchLanguages = async () => {
-      //   const response = await fetch("/api/languages");
-      //   const data = await response.json();
       const response = [
         {
           id: 1,
@@ -150,19 +474,32 @@ const CreateAgent = ({
           key: "FR",
         },
       ];
+
       setPersonaAndBehavior((prev) => ({
         ...prev,
         languages: response.map((language) => ({
           ...language,
-          selected: initialData?.languages?.includes(language.name) || false,
+          selected:
+            mode === "edit" && initialData?.languages
+              ? initialData.languages.includes(language.key)
+              : false,
         })),
       }));
     };
+
     const fetchTones = async () => {
-      const response = rawTones;
+      // Initialize tones with existing selections
+      const tones = rawTones.map((tone) => ({
+        ...tone,
+        selected:
+          mode === "edit" && initialData?.tone
+            ? initialData.tone.includes(tone.name.toLowerCase())
+            : false,
+      }));
+
       setPersonaAndBehavior((prev) => ({
         ...prev,
-        tones: response,
+        tones,
       }));
     };
 
@@ -175,19 +512,114 @@ const CreateAgent = ({
           );
           const agentData = response.data?.data;
 
+          // Update all state with fetched data
           setPersonaAndBehavior((prev) => ({
             ...prev,
+            agentName: agentData.agentName || "",
+            summaryPrompt: agentData.summaryPrompt || "",
+            successEvaluationPrompt: agentData.successEvaluationPrompt || "",
+            failureEvaluationPrompt: agentData.failureEvaluationPrompt || "",
+            languages: prev.languages.map((language) => ({
+              ...language,
+              selected: agentData.languages?.includes(language.key) || false,
+            })),
+            tones: prev.tones.map((tone) => ({
+              ...tone,
+              selected:
+                agentData.tone?.includes(tone.name.toLowerCase()) || false,
+            })),
           }));
 
-          setChannels((prev) =>
-            prev.map((channel) => ({
-              ...channel,
-              prompt: {
-                ...channel.prompt,
-                value: agentData[channel.id]?.agentPrompt || "",
-              },
-            }))
+          // Update channels
+          setChannels(
+            initialChannels.map((channel) => {
+              const channelId = channel.id.toLowerCase();
+              const existingChannel = agentData[channelId];
+
+              return {
+                ...channel,
+                active: agentData.channels?.includes(channelId) || false,
+                prompt: {
+                  ...channel.prompt,
+                  value: existingChannel?.agentPrompt || channel.prompt.value,
+                },
+                firstMessage:
+                  existingChannel?.firstMessage || channel.firstMessage,
+              };
+            })
           );
+
+          // Update integrations
+          setVoiceIntegration({
+            selectedTTSModel: agentData.voice?.voiceProvider?.model || null,
+            selectedTTSModelName: agentData.voice?.voiceProvider?.model || null,
+            selectedTTSProvider:
+              agentData.voice?.voiceProvider?.providerName || null,
+            selectedTTSProviderName:
+              agentData.voice?.voiceProvider?.providerName || null,
+            selectedSTTModel:
+              agentData.voice?.transcriberProvider?.model || null,
+            selectedSTTModelName:
+              agentData.voice?.transcriberProvider?.model || null,
+            selectedSTTProvider:
+              agentData.voice?.transcriberProvider?.providerName || null,
+            selectedSTTProviderName:
+              agentData.voice?.transcriberProvider?.providerName || null,
+            selectedLLMModel: agentData.voice?.llmProvider?.model || null,
+            selectedLLMModelName: agentData.voice?.llmProvider?.model || null,
+            selectedLLMProvider:
+              agentData.voice?.llmProvider?.providerName || null,
+            selectedLLMProviderName:
+              agentData.voice?.llmProvider?.providerName || null,
+          });
+
+          setEmailIntegration({
+            selectedLLMModel: agentData.email?.llmProvider?.model || null,
+            selectedLLMModelName: agentData.email?.llmProvider?.model || null,
+            selectedLLMProvider:
+              agentData.email?.llmProvider?.providerName || null,
+            selectedLLMProviderName:
+              agentData.email?.llmProvider?.providerName || null,
+          });
+
+          setChatIntegration({
+            selectedLLMModel: agentData.chats?.llmProvider?.model || null,
+            selectedLLMModelName: agentData.chats?.llmProvider?.model || null,
+            selectedLLMProvider:
+              agentData.chats?.llmProvider?.providerName || null,
+            selectedLLMProviderName:
+              agentData.chats?.llmProvider?.providerName || null,
+          });
+
+          // Update knowledge base selection
+          if (
+            agentData.knowledgeBase &&
+            knowledgeBaseData.knowledgeBases.length > 0
+          ) {
+            const selectedKnowledgeBases =
+              knowledgeBaseData.knowledgeBases.filter((kb: KnowledgeBaseItem) =>
+                agentData.knowledgeBase.includes(kb._id)
+              );
+            setKnowledgeBaseData((prev) => ({
+              ...prev,
+              selectedKnowledgeBases,
+            }));
+          }
+
+          // Update function tools selection
+          if (
+            agentData.functionTools &&
+            functionToolsData.functionTools.length > 0
+          ) {
+            const selectedFunctionTools =
+              functionToolsData.functionTools.filter((tool: IFunctionTool) =>
+                agentData.functionTools.includes(tool._id)
+              );
+            setFunctionToolsData((prev) => ({
+              ...prev,
+              selectedFunctionTools,
+            }));
+          }
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -198,6 +630,23 @@ const CreateAgent = ({
     fetchTones();
     fetchAgentData();
   }, [mode, agentId, initialData]);
+
+  // Real-time validation feedback
+  useEffect(() => {
+    const validation = validateCurrentStep();
+    if (!validation.isValid && validation.errors.length > 0) {
+      // You can add additional visual feedback here if needed
+      // For now, we'll just log the validation errors for debugging
+      console.log(`Step ${activeStep} validation errors:`, validation.errors);
+    }
+  }, [
+    activeStep,
+    personaAndBehavior,
+    channels,
+    voiceIntegration,
+    chatIntegration,
+    emailIntegration,
+  ]);
 
   const handleLanguageClick = (id: number) => {
     setPersonaAndBehavior((prev) => ({
@@ -256,7 +705,24 @@ const CreateAgent = ({
     }));
   };
 
+  const selectFunctionTools = (functionTools: IFunctionTool[]) => {
+    setFunctionToolsData((prev) => ({
+      ...prev,
+      selectedFunctionTools: functionTools,
+    }));
+  };
+
   async function handleCreateAgent(): Promise<void> {
+    // Validate all steps before creating/updating
+    const validation = validateAllSteps();
+    if (!validation.isValid) {
+      toast.error(
+        `Please complete all required fields: ${validation.errors.join(", ")}`
+      );
+      setCreating(false);
+      return;
+    }
+
     setCreating(true);
     const agentData = {
       agentName: personaAndBehavior.agentName,
@@ -281,7 +747,9 @@ const CreateAgent = ({
       knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
         (selectKnowledgeBase) => selectKnowledgeBase._id
       ), // Array of knowledge base ObjectIds
-      functionTools: [], // Array of function tool ObjectIds
+      functionTools: functionToolsData.selectedFunctionTools.map(
+        (tool) => tool._id
+      ), // Array of function tool ObjectIds // Array of function tool ObjectIds
       voice: {
         llmProvider: {
           model: voiceIntegration.selectedLLMModelName,
@@ -355,8 +823,12 @@ const CreateAgent = ({
     }
 
     setCreating(false);
-    toast.success(responseMessages.agent.create);
-    // router.back();
+    toast.success(
+      mode === "edit"
+        ? responseMessages.agent.update
+        : responseMessages.agent.create
+    );
+    router.back();
   }
 
   const updatePrompt = (channelId: string, prompt: string) => {
@@ -397,13 +869,23 @@ const CreateAgent = ({
               className={`flex items-center gap-2 p-4 rounded-md cursor-pointer ${
                 activeStep === step.id
                   ? "bg-purple-100 text-purple-700"
+                  : step.id < activeStep
+                  ? "bg-green-50 text-green-700 border border-green-200"
                   : "bg-white text-gray-500"
               }`}
-              // onClick={() => setActiveStep(step.id)}
+              onClick={() => setActiveStep(step.id)}
             >
-              <div className="flex items-center gap-2">
-                <step.icon />
-                <span>{step.title}</span>
+              <div className="flex items-center gap-2 w-full justify-between">
+                <div className="flex items-center gap-2">
+                  <step.icon />
+                  <span>{step.title}</span>
+                </div>
+                {step.id < activeStep && isStepValid(step.id) && (
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                )}
+                {step.id === activeStep && !isStepValid(step.id) && (
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                )}
               </div>
             </li>
           ))}
@@ -452,6 +934,8 @@ const CreateAgent = ({
               knowledgeBases={knowledgeBaseData.knowledgeBases}
               selectedKnowledgeBases={knowledgeBaseData.selectedKnowledgeBases}
               selectKnowledgeBase={selectKnowledgeBase}
+              selectedFunctionTools={functionToolsData.selectedFunctionTools}
+              selectFunctionTools={selectFunctionTools}
             />
           )}
 
@@ -459,6 +943,7 @@ const CreateAgent = ({
             <VoiceIntegration
               voiceIntegration={voiceIntegration}
               setVoiceIntegration={setVoiceIntegration}
+              mode={mode}
             />
           )}
 
@@ -466,6 +951,7 @@ const CreateAgent = ({
             <ChatIntegration
               chatIntegration={chatIntegration}
               setChatIntegration={setChatIntegration}
+              mode={mode}
             />
           )}
 
@@ -473,6 +959,7 @@ const CreateAgent = ({
             <EmailIntegration
               emailIntegration={emailIntegration}
               setEmailIntegration={setEmailIntegration}
+              mode={mode}
             />
           )}
 
@@ -493,6 +980,7 @@ const CreateAgent = ({
           handleCreateAgent={handleCreateAgent}
           mode={mode}
           creating={creating}
+          validateCurrentStep={validateCurrentStep}
         />
       </div>
     </div>

@@ -1,7 +1,6 @@
 import { Channel } from "@/components/molecules/create-agent/channels-and-phone-mapping";
 import { Integration } from "@/components/molecules/create-agent/integrations";
 import {
-  Brain,
   ChartBar,
   Mail,
   MailIcon,
@@ -10,6 +9,7 @@ import {
   Phone,
   RadioTower,
   User,
+  Wrench,
 } from "lucide-react";
 
 export const rawTones = [
@@ -118,8 +118,8 @@ export const agentSteps = [
   },
   {
     id: 3,
-    title: "Knowledge Base",
-    icon: Brain,
+    title: "Tools",
+    icon: Wrench,
   },
   {
     id: 4,

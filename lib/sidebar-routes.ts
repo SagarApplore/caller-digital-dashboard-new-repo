@@ -1,4 +1,13 @@
-import { Home, Megaphone, Brain, Phone, Building2, Bot } from "lucide-react";
+import {
+  Home,
+  Megaphone,
+  Brain,
+  Phone,
+  Building2,
+  Bot,
+  Wrench,
+  CodeXml,
+} from "lucide-react";
 
 export interface SidebarRouteItem {
   id: string;
@@ -61,6 +70,12 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     name: "Knowledge Base",
     path: "/knowledge-base",
     icon: Brain,
+  },
+  {
+    id: "function-tools",
+    name: "Function Tools",
+    path: "/function-tools",
+    icon: CodeXml,
   },
   // {
   //   id: "llm-config",

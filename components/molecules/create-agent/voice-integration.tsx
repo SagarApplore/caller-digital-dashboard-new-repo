@@ -15,9 +15,11 @@ import endpoints from "@/lib/endpoints";
 const VoiceIntegration = ({
   voiceIntegration,
   setVoiceIntegration,
+  mode = "create",
 }: {
   voiceIntegration: any;
   setVoiceIntegration: (voiceIntegration: any) => void;
+  mode?: "create" | "edit";
 }) => {
   const [configs, setConfigs] = useState<{
     stt: {
@@ -49,43 +51,189 @@ const VoiceIntegration = ({
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getData = async () =>
-      Promise.all([
-        new Promise((resolve) => {
-          apiRequest(endpoints.ttsModels.getProviders, "GET").then((res) => {
-            resolve(res.data?.data ?? []);
-          });
-        }),
-        new Promise((resolve) => {
-          apiRequest(endpoints.sttModels.getProviders, "GET").then((res) => {
-            resolve(res.data?.data ?? []);
-          });
-        }),
-        new Promise((resolve) => {
-          apiRequest(endpoints.llmModels.getProviders, "GET").then((res) => {
-            resolve(res.data?.data ?? []);
-          });
-        }),
-      ]).then((results) => {
-        setConfigs({
-          tts: {
-            providers: results[0] as any,
-            models: [],
-          },
-          stt: {
-            providers: results[1] as any,
-            models: [],
-          },
-          llm: {
-            providers: results[2] as any,
-            models: [],
-          },
-        });
-        setLoading(false);
+  // Helper function to find provider by name
+  const findProviderByName = (providers: any[], name: string) => {
+    return providers.find((provider) => provider.companyName === name);
+  };
+
+  // Helper function to find model by name
+  const findModelByName = (models: any[], name: string) => {
+    return models.find((model) => model.name === name);
+  };
+
+  // Helper function to fetch models by provider name (for edit mode)
+  const fetchModelsByName = async (endpoint: string, providerName: string) => {
+    try {
+      // Try to fetch by name first using POST with provider name in body
+      const response = await apiRequest(endpoint, "POST", {
+        name: providerName,
       });
+      return response?.data?.data || [];
+    } catch (error) {
+      console.warn(
+        `Failed to fetch models by name for ${providerName}, falling back to ID-based approach`
+      );
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const [ttsProviders, sttProviders, llmProviders] = await Promise.all([
+          apiRequest(endpoints.ttsModels.getProviders, "GET").then(
+            (res) => res.data?.data ?? []
+          ),
+          apiRequest(endpoints.sttModels.getProviders, "GET").then(
+            (res) => res.data?.data ?? []
+          ),
+          apiRequest(endpoints.llmModels.getProviders, "GET").then(
+            (res) => res.data?.data ?? []
+          ),
+        ]);
+
+        setConfigs({
+          tts: { providers: ttsProviders, models: [] },
+          stt: { providers: sttProviders, models: [] },
+          llm: { providers: llmProviders, models: [] },
+        });
+
+        // If in edit mode and we have existing selections, fetch the models
+        if (mode === "edit") {
+          const promises = [];
+
+          // Fetch TTS models if provider name is available
+          if (voiceIntegration.selectedTTSProviderName) {
+            const ttsProvider = findProviderByName(
+              ttsProviders,
+              voiceIntegration.selectedTTSProviderName
+            );
+            if (ttsProvider) {
+              promises.push(
+                fetchModelsByName(
+                  endpoints.ttsModels.getModelsByName,
+                  voiceIntegration.selectedTTSProviderName
+                ).then((models) => ({
+                  type: "tts",
+                  models,
+                  providerId: ttsProvider._id,
+                }))
+              );
+            }
+          }
+
+          // Fetch STT models if provider name is available
+          if (voiceIntegration.selectedSTTProviderName) {
+            const sttProvider = findProviderByName(
+              sttProviders,
+              voiceIntegration.selectedSTTProviderName
+            );
+            if (sttProvider) {
+              promises.push(
+                fetchModelsByName(
+                  endpoints.sttModels.getModelsByName,
+                  voiceIntegration.selectedSTTProviderName
+                ).then((models) => ({
+                  type: "stt",
+                  models,
+                  providerId: sttProvider._id,
+                }))
+              );
+            }
+          }
+
+          // Fetch LLM models if provider name is available
+          if (voiceIntegration.selectedLLMProviderName) {
+            const llmProvider = findProviderByName(
+              llmProviders,
+              voiceIntegration.selectedLLMProviderName
+            );
+            if (llmProvider) {
+              promises.push(
+                fetchModelsByName(
+                  endpoints.llmModels.getModelsByName,
+                  voiceIntegration.selectedLLMProviderName
+                ).then((models) => ({
+                  type: "llm",
+                  models,
+                  providerId: llmProvider._id,
+                }))
+              );
+            }
+          }
+
+          // Wait for all model fetching to complete
+          const results = await Promise.all(promises);
+
+          // Update configs with fetched models and set the provider IDs
+          let updatedVoiceIntegration = { ...voiceIntegration };
+
+          results.forEach((result) => {
+            if (result.type === "tts") {
+              setConfigs((prev) => ({
+                ...prev,
+                tts: { ...prev.tts, models: result.models },
+              }));
+              updatedVoiceIntegration.selectedTTSProvider = result.providerId;
+            } else if (result.type === "stt") {
+              setConfigs((prev) => ({
+                ...prev,
+                stt: { ...prev.stt, models: result.models },
+              }));
+              updatedVoiceIntegration.selectedSTTProvider = result.providerId;
+            } else if (result.type === "llm") {
+              setConfigs((prev) => ({
+                ...prev,
+                llm: { ...prev.llm, models: result.models },
+              }));
+              updatedVoiceIntegration.selectedLLMProvider = result.providerId;
+            }
+          });
+
+          // Set model IDs based on model names
+          if (voiceIntegration.selectedTTSModelName) {
+            const ttsModel = findModelByName(
+              configs.tts.models,
+              voiceIntegration.selectedTTSModelName
+            );
+            if (ttsModel) {
+              updatedVoiceIntegration.selectedTTSModel = ttsModel._id;
+            }
+          }
+
+          if (voiceIntegration.selectedSTTModelName) {
+            const sttModel = findModelByName(
+              configs.stt.models,
+              voiceIntegration.selectedSTTModelName
+            );
+            if (sttModel) {
+              updatedVoiceIntegration.selectedSTTModel = sttModel._id;
+            }
+          }
+
+          if (voiceIntegration.selectedLLMModelName) {
+            const llmModel = findModelByName(
+              configs.llm.models,
+              voiceIntegration.selectedLLMModelName
+            );
+            if (llmModel) {
+              updatedVoiceIntegration.selectedLLMModel = llmModel._id;
+            }
+          }
+
+          // Update the voice integration state
+          setVoiceIntegration(updatedVoiceIntegration);
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching providers:", error);
+        setLoading(false);
+      }
+    };
+
     getData();
-  }, []);
+  }, [mode]);
 
   // FETCH TTS MODELS
   useEffect(() => {
