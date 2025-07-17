@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/organisms/card";
 import {
   Select,
@@ -29,6 +29,7 @@ const VoiceIntegration = ({
     tts: {
       models: any[];
       providers: any[];
+      voices: any[];
     };
     llm: {
       models: any[];
@@ -42,6 +43,7 @@ const VoiceIntegration = ({
     tts: {
       models: [],
       providers: [],
+      voices: [],
     },
     llm: {
       models: [],
@@ -77,6 +79,19 @@ const VoiceIntegration = ({
     }
   };
 
+  // Helper function to get voices from provider data
+  const getVoicesFromProvider = (providerId: string) => {
+    const provider = configs.tts.providers.find(
+      (p: any) => p._id === providerId
+    );
+    return provider?.voiceIds || [];
+  };
+
+  // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
+  const hasSetTTSModel = useRef(false);
+  const hasSetSTTModel = useRef(false);
+  const hasSetLLMModel = useRef(false);
+
   useEffect(() => {
     const getData = async () => {
       try {
@@ -92,8 +107,9 @@ const VoiceIntegration = ({
           ),
         ]);
 
+        // Set providers first, models will be set after fetching
         setConfigs({
-          tts: { providers: ttsProviders, models: [] },
+          tts: { providers: ttsProviders, models: [], voices: [] },
           stt: { providers: sttProviders, models: [] },
           llm: { providers: llmProviders, models: [] },
         });
@@ -165,63 +181,33 @@ const VoiceIntegration = ({
           // Wait for all model fetching to complete
           const results = await Promise.all(promises);
 
-          // Update configs with fetched models and set the provider IDs
+          // Prepare updated configs and voiceIntegration
           let updatedVoiceIntegration = { ...voiceIntegration };
+          let updatedConfigs = {
+            tts: { providers: ttsProviders, models: [], voices: [] },
+            stt: { providers: sttProviders, models: [] },
+            llm: { providers: llmProviders, models: [] },
+          };
 
           results.forEach((result) => {
             if (result.type === "tts") {
-              setConfigs((prev) => ({
-                ...prev,
-                tts: { ...prev.tts, models: result.models },
-              }));
+              updatedConfigs.tts.models = result.models;
               updatedVoiceIntegration.selectedTTSProvider = result.providerId;
             } else if (result.type === "stt") {
-              setConfigs((prev) => ({
-                ...prev,
-                stt: { ...prev.stt, models: result.models },
-              }));
+              updatedConfigs.stt.models = result.models;
               updatedVoiceIntegration.selectedSTTProvider = result.providerId;
             } else if (result.type === "llm") {
-              setConfigs((prev) => ({
-                ...prev,
-                llm: { ...prev.llm, models: result.models },
-              }));
+              updatedConfigs.llm.models = result.models;
               updatedVoiceIntegration.selectedLLMProvider = result.providerId;
             }
           });
 
-          // Set model IDs based on model names
-          if (voiceIntegration.selectedTTSModelName) {
-            const ttsModel = findModelByName(
-              configs.tts.models,
-              voiceIntegration.selectedTTSModelName
-            );
-            if (ttsModel) {
-              updatedVoiceIntegration.selectedTTSModel = ttsModel._id;
-            }
-          }
+          setConfigs(updatedConfigs);
 
-          if (voiceIntegration.selectedSTTModelName) {
-            const sttModel = findModelByName(
-              configs.stt.models,
-              voiceIntegration.selectedSTTModelName
-            );
-            if (sttModel) {
-              updatedVoiceIntegration.selectedSTTModel = sttModel._id;
-            }
-          }
+          // Set model IDs based on model names (after models are loaded)
+          // We'll do this in a separate useEffect below, after configs are updated
 
-          if (voiceIntegration.selectedLLMModelName) {
-            const llmModel = findModelByName(
-              configs.llm.models,
-              voiceIntegration.selectedLLMModelName
-            );
-            if (llmModel) {
-              updatedVoiceIntegration.selectedLLMModel = llmModel._id;
-            }
-          }
-
-          // Update the voice integration state
+          // Update the voice integration state with provider IDs (model IDs will be set in next effect)
           setVoiceIntegration(updatedVoiceIntegration);
         }
 
@@ -233,25 +219,116 @@ const VoiceIntegration = ({
     };
 
     getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // Set model IDs based on model names after models are loaded (for edit mode)
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    // TTS
+    if (
+      voiceIntegration.selectedTTSModelName &&
+      configs.tts.models.length > 0 &&
+      !voiceIntegration.selectedTTSModel &&
+      !hasSetTTSModel.current
+    ) {
+      const ttsModel = findModelByName(
+        configs.tts.models,
+        voiceIntegration.selectedTTSModelName
+      );
+      if (ttsModel) {
+        setVoiceIntegration((prev: any) => ({
+          ...prev,
+          selectedTTSModel: ttsModel._id,
+        }));
+        hasSetTTSModel.current = true;
+      }
+    }
+
+    // STT
+    if (
+      voiceIntegration.selectedSTTModelName &&
+      configs.stt.models.length > 0 &&
+      !voiceIntegration.selectedSTTModel &&
+      !hasSetSTTModel.current
+    ) {
+      const sttModel = findModelByName(
+        configs.stt.models,
+        voiceIntegration.selectedSTTModelName
+      );
+      if (sttModel) {
+        setVoiceIntegration((prev: any) => ({
+          ...prev,
+          selectedSTTModel: sttModel._id,
+        }));
+        hasSetSTTModel.current = true;
+      }
+    }
+
+    // LLM
+    if (
+      voiceIntegration.selectedLLMModelName &&
+      configs.llm.models.length > 0 &&
+      !voiceIntegration.selectedLLMModel &&
+      !hasSetLLMModel.current
+    ) {
+      const llmModel = findModelByName(
+        configs.llm.models,
+        voiceIntegration.selectedLLMModelName
+      );
+      if (llmModel) {
+        setVoiceIntegration((prev: any) => ({
+          ...prev,
+          selectedLLMModel: llmModel._id,
+        }));
+        hasSetLLMModel.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    configs.tts.models,
+    configs.stt.models,
+    configs.llm.models,
+    mode,
+    voiceIntegration.selectedTTSModelName,
+    voiceIntegration.selectedSTTModelName,
+    voiceIntegration.selectedLLMModelName,
+  ]);
 
   // FETCH TTS MODELS
   useEffect(() => {
+    // Don't fetch if in edit mode and models are already loaded
+    if (
+      mode === "edit" &&
+      configs.tts.models.length > 0 &&
+      voiceIntegration.selectedTTSProvider
+    ) {
+      return;
+    }
     const fetchTTSModels = async () => {
       try {
-        const response = await apiRequest(
-          endpoints.ttsModels.getModels +
-            "/" +
-            voiceIntegration.selectedTTSProvider,
-          "GET"
-        );
-        console.log(response?.data?.data);
-
+        let response;
+        if (mode === "edit") {
+          response = await apiRequest(
+            endpoints.ttsModels.getModelsByName,
+            "POST",
+            { name: voiceIntegration.selectedTTSProviderName }
+          );
+        } else {
+          response = await apiRequest(
+            endpoints.ttsModels.getModels +
+              "/" +
+              voiceIntegration.selectedTTSProvider,
+            "GET"
+          );
+        }
         setConfigs((prev) => ({
           ...prev,
           tts: {
             models: response?.data?.data,
             providers: prev.tts.providers,
+            voices: prev.tts.voices,
           },
         }));
       } catch (error) {
@@ -260,6 +337,7 @@ const VoiceIntegration = ({
           tts: {
             models: [],
             providers: prev.tts.providers,
+            voices: prev.tts.voices,
           },
         }));
       }
@@ -268,18 +346,35 @@ const VoiceIntegration = ({
     if (voiceIntegration.selectedTTSProvider) {
       fetchTTSModels();
     }
-  }, [voiceIntegration.selectedTTSProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceIntegration.selectedTTSProvider, mode]);
 
   // FETCH STT MODELS
   useEffect(() => {
+    if (
+      mode === "edit" &&
+      configs.stt.models.length > 0 &&
+      voiceIntegration.selectedSTTProvider
+    ) {
+      return;
+    }
     const fetchSTTModels = async () => {
       try {
-        const response = await apiRequest(
-          endpoints.sttModels.getModels +
-            "/" +
-            voiceIntegration.selectedSTTProvider,
-          "GET"
-        );
+        let response;
+        if (mode === "edit") {
+          response = await apiRequest(
+            endpoints.sttModels.getModelsByName,
+            "POST",
+            { name: voiceIntegration.selectedSTTProviderName }
+          );
+        } else {
+          response = await apiRequest(
+            endpoints.sttModels.getModels +
+              "/" +
+              voiceIntegration.selectedSTTProvider,
+            "GET"
+          );
+        }
         setConfigs((prev) => ({
           ...prev,
           stt: {
@@ -300,18 +395,35 @@ const VoiceIntegration = ({
     if (voiceIntegration.selectedSTTProvider) {
       fetchSTTModels();
     }
-  }, [voiceIntegration.selectedSTTProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceIntegration.selectedSTTProvider, mode]);
 
   // FETCH LLM MODELS
   useEffect(() => {
+    if (
+      mode === "edit" &&
+      configs.llm.models.length > 0 &&
+      voiceIntegration.selectedLLMProvider
+    ) {
+      return;
+    }
     const fetchLLMModels = async () => {
       try {
-        const response = await apiRequest(
-          endpoints.llmModels.getModels +
-            "/" +
-            voiceIntegration.selectedLLMProvider,
-          "GET"
-        );
+        let response;
+        if (mode === "edit") {
+          response = await apiRequest(
+            endpoints.llmModels.getModelsByName,
+            "POST",
+            { name: voiceIntegration.selectedLLMProviderName }
+          );
+        } else {
+          response = await apiRequest(
+            endpoints.llmModels.getModels +
+              "/" +
+              voiceIntegration.selectedLLMProvider,
+            "GET"
+          );
+        }
         setConfigs((prev) => ({
           ...prev,
           llm: {
@@ -332,7 +444,8 @@ const VoiceIntegration = ({
     if (voiceIntegration.selectedLLMProvider) {
       fetchLLMModels();
     }
-  }, [voiceIntegration.selectedLLMProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceIntegration.selectedLLMProvider, mode]);
 
   if (loading) {
     return (
@@ -366,13 +479,35 @@ const VoiceIntegration = ({
                         const selectedProvider = configs.tts.providers.find(
                           (provider: any) => provider._id === value
                         );
+
+                        // Get voices from the selected provider
+                        let voices = [];
+                        if (selectedProvider) {
+                          voices = getVoicesFromProvider(selectedProvider._id);
+                        }
+
                         setVoiceIntegration({
                           ...voiceIntegration,
                           selectedTTSProvider: value,
                           selectedTTSProviderName: selectedProvider
                             ? selectedProvider.companyName
                             : null,
+                          selectedTTSModel: null,
+                          selectedTTSModelName: null,
+                          selectedTTSVoiceId: null,
+                          selectedTTSVoiceName: null,
                         });
+
+                        // Update configs with voices
+                        setConfigs((prev) => ({
+                          ...prev,
+                          tts: {
+                            ...prev.tts,
+                            voices,
+                          },
+                        }));
+
+                        hasSetTTSModel.current = false;
                       }}
                     >
                       <SelectTrigger className="flex-1">
@@ -423,7 +558,43 @@ const VoiceIntegration = ({
                     </Select>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Voice
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <Select
+                      value={voiceIntegration.selectedTTSVoiceId}
+                      disabled={!voiceIntegration.selectedTTSProvider}
+                      onValueChange={(value) => {
+                        const selectedVoice = configs.tts.voices?.find(
+                          (voice: any) => voice.voiceId === value
+                        );
+                        setVoiceIntegration({
+                          ...voiceIntegration,
+                          selectedTTSVoiceId: value,
+                          selectedTTSVoiceName: selectedVoice
+                            ? selectedVoice.voiceName
+                            : null,
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select a voice..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {configs.tts.voices?.map((voice: any) => (
+                          <SelectItem key={voice.voiceId} value={voice.voiceId}>
+                            {voice.voiceName}
+                          </SelectItem>
+                        )) || []}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
+
               <div className="flex flex-col items-center justify-center gap-2 flex-1 bg-gray-100 rounded-lg">
                 <div className="flex items-center justify-center w-12 h-12 bg-purple-200 rounded-full">
                   <Volume2 className="w-6 h-6 text-purple-700" />
@@ -459,13 +630,18 @@ const VoiceIntegration = ({
                       const selectedProvider = configs.stt.providers.find(
                         (provider: any) => provider._id === value
                       );
+
                       setVoiceIntegration({
                         ...voiceIntegration,
                         selectedSTTProvider: value,
                         selectedSTTProviderName: selectedProvider
                           ? selectedProvider.companyName
                           : null,
+                        selectedSTTModel: null,
+                        selectedSTTModelName: null,
                       });
+
+                      hasSetSTTModel.current = false;
                     }}
                   >
                     <SelectTrigger className="flex-1">
@@ -546,7 +722,10 @@ const VoiceIntegration = ({
                         selectedLLMProviderName: selectedProvider
                           ? selectedProvider.companyName
                           : null,
+                        selectedLLMModel: null,
+                        selectedLLMModelName: null,
                       });
+                      hasSetLLMModel.current = false;
                     }}
                   >
                     <SelectTrigger className="flex-1">

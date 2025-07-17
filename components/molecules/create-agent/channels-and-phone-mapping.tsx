@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Phone, MapPin, Plus, Tag, LucideProps } from "lucide-react";
+import { Phone, MapPin, Plus, Tag, LucideProps, Users } from "lucide-react";
 import React, {
   ForwardRefExoticComponent,
   RefAttributes,
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/organisms/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/atoms/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/atoms/label";
 
 export interface Channel {
   id: string;
@@ -36,16 +38,26 @@ export interface PhoneNumber {
   channels: string[];
 }
 
+export interface HandoffConfig {
+  enabled: boolean;
+  countryCode: string;
+  phoneNumber: string;
+}
+
 const ChannelsAndPhoneMapping = ({
   channels,
   toggleChannel,
   updatePrompt,
   updateFirstMessage,
+  handoffConfig,
+  updateHandoffConfig,
 }: {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
   updatePrompt: (channelId: string, prompt: string) => void;
   updateFirstMessage: (channelId: string, firstMessage: string) => void;
+  handoffConfig: HandoffConfig;
+  updateHandoffConfig: (config: HandoffConfig) => void;
 }) => {
   const [phoneNumbers] = useState<PhoneNumber[]>([
     {
@@ -70,6 +82,30 @@ const ChannelsAndPhoneMapping = ({
       default:
         return "bg-gray-100 text-gray-800 border-gray-300";
     }
+  };
+
+  const handleHandoffToggle = (enabled: boolean) => {
+    updateHandoffConfig({
+      ...handoffConfig,
+      enabled,
+      // Reset phone number when disabling handoff
+      phoneNumber: enabled ? handoffConfig.phoneNumber : "",
+      countryCode: enabled ? handoffConfig.countryCode : "",
+    });
+  };
+
+  const handleCountryCodeChange = (countryCode: string) => {
+    updateHandoffConfig({
+      ...handoffConfig,
+      countryCode,
+    });
+  };
+
+  const handlePhoneNumberChange = (phoneNumber: string) => {
+    updateHandoffConfig({
+      ...handoffConfig,
+      phoneNumber,
+    });
   };
 
   return (
@@ -152,6 +188,81 @@ const ChannelsAndPhoneMapping = ({
             </Card>
           ))}
         </div>
+      </div>
+
+      {/* Handoff Configuration Section */}
+      <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Handoff Configuration</h3>
+          <p className="text-gray-600 text-sm">
+            Configure call handoff to human agent
+          </p>
+        </div>
+
+        <Card className="bg-white">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                <Users className="w-5 h-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900">Human Handoff</h3>
+                <p className="text-gray-600 text-sm">
+                  Enable handoff to human agent when AI cannot handle the call
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="handoff-enabled"
+                  checked={handoffConfig.enabled}
+                  onCheckedChange={handleHandoffToggle}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+                <Label
+                  htmlFor="handoff-enabled"
+                  className="text-sm font-medium"
+                >
+                  Enable Handoff
+                </Label>
+              </div>
+            </div>
+
+            {/* Phone Number Input - Only show when handoff is enabled */}
+            {handoffConfig.enabled && (
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-sm font-medium text-gray-700">
+                    Handoff Phone Number <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <div className="w-24">
+                      <Input
+                        placeholder="+91"
+                        value={handoffConfig.countryCode}
+                        onChange={(e: any) =>
+                          handleCountryCodeChange(e.target.value)
+                        }
+                        className="text-center"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        placeholder="xxxxxxxx77"
+                        value={handoffConfig.phoneNumber}
+                        onChange={(e: any) =>
+                          handlePhoneNumberChange(e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Format: Country code + Phone number (e.g., +91xxxxxxxx77)
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Phone Number Mapping Section */}

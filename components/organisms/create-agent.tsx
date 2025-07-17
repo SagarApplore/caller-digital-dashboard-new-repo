@@ -16,6 +16,7 @@ import {
 } from "../molecules/create-agent/persona-and-behavior";
 import ChannelsAndPhoneMapping, {
   Channel,
+  HandoffConfig,
 } from "../molecules/create-agent/channels-and-phone-mapping";
 import { KnowledgeBaseItem } from "../molecules/knowledge-base";
 import { IFunctionTool } from "@/types/common";
@@ -131,6 +132,8 @@ const CreateAgent = ({
       initialData?.voice?.transcriberProvider?.providerName || null,
     selectedSTTProviderName:
       initialData?.voice?.transcriberProvider?.providerName || null,
+    selectedTTSVoiceId: initialData?.voice?.voiceProvider?.voiceId || null,
+    selectedTTSVoiceName: initialData?.voice?.voiceProvider?.voiceName || null,
     selectedLLMModel: initialData?.voice?.llmProvider?.model || null,
     selectedLLMModelName: initialData?.voice?.llmProvider?.model || null,
     selectedLLMProvider: initialData?.voice?.llmProvider?.providerName || null,
@@ -166,6 +169,34 @@ const CreateAgent = ({
 
   const [chatIntegration, setChatIntegration] = useState(
     initializeChatIntegration()
+  );
+
+  // Initialize handoff configuration
+  const initializeHandoffConfig = (): HandoffConfig => {
+    if (initialData?.handoff) {
+      const handoffNumber = initialData.handoff.handoff_number || "";
+      const countryCode = handoffNumber.startsWith("+")
+        ? handoffNumber.substring(0, 3)
+        : "";
+      const phoneNumber = handoffNumber.startsWith("+")
+        ? handoffNumber.substring(3)
+        : handoffNumber;
+
+      return {
+        enabled: initialData.handoff.enabled || false,
+        countryCode: countryCode,
+        phoneNumber: phoneNumber,
+      };
+    }
+    return {
+      enabled: false,
+      countryCode: "",
+      phoneNumber: "",
+    };
+  };
+
+  const [handoffConfig, setHandoffConfig] = useState<HandoffConfig>(
+    initializeHandoffConfig()
   );
 
   const router = useRouter();
@@ -226,6 +257,16 @@ const CreateAgent = ({
         errors.push(`${channel.name} first message is required`);
       }
     });
+
+    // Validate handoff configuration
+    if (handoffConfig.enabled) {
+      if (!handoffConfig.countryCode.trim()) {
+        errors.push("Handoff country code is required");
+      }
+      if (!handoffConfig.phoneNumber.trim()) {
+        errors.push("Handoff phone number is required");
+      }
+    }
 
     return { isValid: errors.length === 0, errors };
   };
@@ -565,6 +606,9 @@ const CreateAgent = ({
               agentData.voice?.transcriberProvider?.providerName || null,
             selectedSTTProviderName:
               agentData.voice?.transcriberProvider?.providerName || null,
+            selectedTTSVoiceId: agentData.voice?.voiceProvider?.voiceId || null,
+            selectedTTSVoiceName:
+              agentData.voice?.voiceProvider?.voiceName || null,
             selectedLLMModel: agentData.voice?.llmProvider?.model || null,
             selectedLLMModelName: agentData.voice?.llmProvider?.model || null,
             selectedLLMProvider:
@@ -620,6 +664,23 @@ const CreateAgent = ({
               selectedFunctionTools,
             }));
           }
+
+          // Update handoff configuration
+          if (agentData.handoff) {
+            const handoffNumber = agentData.handoff.handoff_number || "";
+            const countryCode = handoffNumber.startsWith("+")
+              ? handoffNumber.substring(0, 3)
+              : "";
+            const phoneNumber = handoffNumber.startsWith("+")
+              ? handoffNumber.substring(3)
+              : handoffNumber;
+
+            setHandoffConfig({
+              enabled: agentData.handoff.enabled || false,
+              countryCode: countryCode,
+              phoneNumber: phoneNumber,
+            });
+          }
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -646,6 +707,7 @@ const CreateAgent = ({
     voiceIntegration,
     chatIntegration,
     emailIntegration,
+    handoffConfig,
   ]);
 
   const handleLanguageClick = (id: number) => {
@@ -749,7 +811,16 @@ const CreateAgent = ({
       ), // Array of knowledge base ObjectIds
       functionTools: functionToolsData.selectedFunctionTools.map(
         (tool) => tool._id
-      ), // Array of function tool ObjectIds // Array of function tool ObjectIds
+      ), // Array of function tool ObjectIds
+      handoff: handoffConfig.enabled
+        ? {
+            enabled: handoffConfig.enabled,
+            handoff_number: `${handoffConfig.countryCode}${handoffConfig.phoneNumber}`,
+          }
+        : {
+            enabled: false,
+            handoff_number: null,
+          },
       voice: {
         llmProvider: {
           model: voiceIntegration.selectedLLMModelName,
@@ -758,6 +829,8 @@ const CreateAgent = ({
         voiceProvider: {
           model: voiceIntegration.selectedTTSModelName,
           providerName: voiceIntegration.selectedTTSProviderName,
+          voiceId: voiceIntegration.selectedTTSVoiceId,
+          voiceName: voiceIntegration.selectedTTSVoiceName,
         },
         transcriberProvider: {
           model: voiceIntegration.selectedSTTModelName,
@@ -873,7 +946,6 @@ const CreateAgent = ({
                   ? "bg-green-50 text-green-700 border border-green-200"
                   : "bg-white text-gray-500"
               }`}
-              onClick={() => setActiveStep(step.id)}
             >
               <div className="flex items-center gap-2 w-full justify-between">
                 <div className="flex items-center gap-2">
@@ -926,6 +998,8 @@ const CreateAgent = ({
               toggleChannel={toggleChannel}
               updatePrompt={updatePrompt}
               updateFirstMessage={updateFirstMessage}
+              handoffConfig={handoffConfig}
+              updateHandoffConfig={setHandoffConfig}
             />
           )}
 
