@@ -177,6 +177,7 @@ export default function ManageBrandsPage() {
                     brands={brands}
                     onEdit={handleEditBrand}
                     onDelete={handleBrandDeleted}
+                    onCreateBrand={() => setShowForm(true)}
                     isLoading={isLoading}
                   />
                 </CardContent>
@@ -185,7 +186,7 @@ export default function ManageBrandsPage() {
 
             {/* Quick Actions */}
             <div className="space-y-6">
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5" />
@@ -210,10 +211,10 @@ export default function ManageBrandsPage() {
                     Manage Agents
                   </Button>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Info Card */}
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>About Brands</CardTitle>
                 </CardHeader>
@@ -227,7 +228,7 @@ export default function ManageBrandsPage() {
                     copied to the new brand with their configurations.
                   </p>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
 
