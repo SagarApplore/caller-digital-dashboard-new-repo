@@ -186,12 +186,14 @@ const CreateAgent = ({
         enabled: initialData.handoff.enabled || false,
         countryCode: countryCode,
         phoneNumber: phoneNumber,
+        phoneNumberId: initialData.handoff.phoneNumberId || "",
       };
     }
     return {
       enabled: false,
       countryCode: "",
       phoneNumber: "",
+      phoneNumberId: "",
     };
   };
 
@@ -679,6 +681,7 @@ const CreateAgent = ({
               enabled: agentData.handoff.enabled || false,
               countryCode: countryCode,
               phoneNumber: phoneNumber,
+              phoneNumberId: agentData.handoff.phoneNumberId || "",
             });
           }
         } catch (error) {
@@ -816,10 +819,12 @@ const CreateAgent = ({
         ? {
             enabled: handoffConfig.enabled,
             handoff_number: `${handoffConfig.countryCode}${handoffConfig.phoneNumber}`,
+            phoneNumberId: handoffConfig.phoneNumberId,
           }
         : {
             enabled: false,
             handoff_number: null,
+            phoneNumberId: null,
           },
       voice: {
         llmProvider: {

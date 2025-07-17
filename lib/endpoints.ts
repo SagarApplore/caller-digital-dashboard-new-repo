@@ -38,6 +38,10 @@ const endpoints = {
     getProviders: "/stt-model-providers",
     getModelsByName: "/stt-models/get-by-name",
   },
+  phoneNumbers: {
+    assign: "/phone-number-assignment",
+    get: "/phone-number",
+  },
 };
 
 export default endpoints;
