@@ -44,9 +44,6 @@ interface IPersonaAndBehavior {
   languages: Language[];
   tones: Tone[];
   agentName: string;
-  summaryPrompt: string;
-  successEvaluationPrompt: string;
-  failureEvaluationPrompt: string;
 }
 
 interface CreateAgentProps {
@@ -84,10 +81,13 @@ const CreateAgent = ({
       languages: [],
       tones: [],
       agentName: initialData?.agentName || "",
-      summaryPrompt: initialData?.summaryPrompt || "",
-      successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
-      failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
     });
+
+  const [extraPrompts, setExtraPrompts] = useState({
+    summaryPrompt: initialData?.summaryPrompt || "",
+    successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
+    failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
+  });
 
   // Initialize channels with existing data
   const initializeChannels = (): Channel[] => {
@@ -210,18 +210,6 @@ const CreateAgent = ({
 
     if (!personaAndBehavior.agentName.trim()) {
       errors.push("Agent name is required");
-    }
-
-    if (!personaAndBehavior.summaryPrompt.trim()) {
-      errors.push("Summary prompt is required");
-    }
-
-    if (!personaAndBehavior.successEvaluationPrompt.trim()) {
-      errors.push("Success evaluation prompt is required");
-    }
-
-    if (!personaAndBehavior.failureEvaluationPrompt.trim()) {
-      errors.push("Failure evaluation prompt is required");
     }
 
     const selectedLanguages = personaAndBehavior.languages.filter(
@@ -733,26 +721,6 @@ const CreateAgent = ({
     }));
   };
 
-  const handleSummaryPrompt = (message: string) => {
-    setPersonaAndBehavior((prev) => ({
-      ...prev,
-      summaryPrompt: message,
-    }));
-  };
-
-  const handleSuccessEvaluationPrompt = (message: string) => {
-    setPersonaAndBehavior((prev) => ({
-      ...prev,
-      successEvaluationPrompt: message,
-    }));
-  };
-  const handleFailureEvaluationPrompt = (message: string) => {
-    setPersonaAndBehavior((prev) => ({
-      ...prev,
-      failureEvaluationPrompt: message,
-    }));
-  };
-
   const toggleChannel = (channelId: string) => {
     setChannels((prev) =>
       prev.map((channel) =>
@@ -806,9 +774,9 @@ const CreateAgent = ({
         .map((tone) => tone.name.toLowerCase()),
       call_type: "OUTBOUND", // or "inbound", etc.
       agent_number: "+15550123", // Phone number for the agent
-      summaryPrompt: personaAndBehavior.summaryPrompt,
-      successEvaluationPrompt: personaAndBehavior.successEvaluationPrompt,
-      failureEvaluationPrompt: personaAndBehavior.failureEvaluationPrompt,
+      summaryPrompt: extraPrompts.summaryPrompt,
+      successEvaluationPrompt: extraPrompts.successEvaluationPrompt,
+      failureEvaluationPrompt: extraPrompts.failureEvaluationPrompt,
       knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
         (selectKnowledgeBase) => selectKnowledgeBase._id
       ), // Array of knowledge base ObjectIds
@@ -984,16 +952,6 @@ const CreateAgent = ({
                   agentName,
                 }))
               }
-              summaryPrompt={personaAndBehavior.summaryPrompt}
-              failureEvaluationPrompt={
-                personaAndBehavior.failureEvaluationPrompt
-              }
-              successEvaluationPrompt={
-                personaAndBehavior.successEvaluationPrompt
-              }
-              handleSummaryPrompt={handleSummaryPrompt}
-              handleSuccessEvaluationPrompt={handleSuccessEvaluationPrompt}
-              hanldeFailureEvaluationPrompt={handleFailureEvaluationPrompt}
             />
           )}
 
@@ -1005,6 +963,8 @@ const CreateAgent = ({
               updateFirstMessage={updateFirstMessage}
               handoffConfig={handoffConfig}
               updateHandoffConfig={setHandoffConfig}
+              extraPrompts={extraPrompts}
+              updateExtraPrompts={setExtraPrompts}
             />
           )}
 
