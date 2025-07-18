@@ -496,14 +496,10 @@ const CreateAgent = ({
         },
         {
           id: 2,
-          name: "Spanish",
-          key: "ES",
+          name: "Hindi",
+          key: "HI",
         },
-        {
-          id: 3,
-          name: "French",
-          key: "FR",
-        },
+        
       ];
 
       setPersonaAndBehavior((prev) => ({

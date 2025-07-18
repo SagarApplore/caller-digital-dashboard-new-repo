@@ -158,10 +158,10 @@ export const initialChannels: Channel[] = [
     active: false,
     prompt: {
       title: "Voice Instructions",
-      value: "Test",
+      value: "",
       allowedCharacters: 2000,
     },
-    firstMessage: "What's up?",
+    firstMessage: "",
   },
   {
     id: "chat",
@@ -172,10 +172,10 @@ export const initialChannels: Channel[] = [
     active: false,
     prompt: {
       title: "Live Chat Instructions",
-      value: "Test",
+      value: "",
       allowedCharacters: 2000,
     },
-    firstMessage: "What's up?",
+    firstMessage: "",
   },
   {
     id: "email",
@@ -186,9 +186,9 @@ export const initialChannels: Channel[] = [
     active: false,
     prompt: {
       title: "Email Instructions",
-      value: "Test",
+      value: "",
       allowedCharacters: 2000,
     },
-    firstMessage: "What's up?",
+    firstMessage: "",
   },
 ];

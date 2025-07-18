@@ -161,6 +161,41 @@ const KnowledgeBase = ({
     document.body.removeChild(link);
   };
 
+  const handleDelete = async (doc: KnowledgeBaseItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${doc.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Call the delete API
+      const response = await apiRequest(
+        endpoints.knowledgeBase.delete.replace(':id', doc._id),
+        "DELETE"
+      );
+
+      if (response?.data?.success) {
+        // Remove from local state
+        setKnowledgeBase((prev) => prev.filter((d) => d._id !== doc._id));
+        
+        // Clear selection if this was the selected document
+        if (selectedDocument && selectedDocument._id === doc._id) {
+          setSelectedDocument(null);
+          setPendingFile(null);
+        }
+        
+        toast.success("Knowledge base deleted successfully");
+      } else {
+        throw new Error(response?.data?.message || "Failed to delete knowledge base");
+      }
+    } catch (error) {
+      console.error("Error deleting knowledge base:", error);
+      toast.error("Failed to delete knowledge base. Please try again.");
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto">
       {/* Upload Document */}
@@ -290,19 +325,7 @@ const KnowledgeBase = ({
                           variant="ghost"
                           size="sm"
                           className="text-red-600 hover:text-red-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setKnowledgeBase((prev) =>
-                              prev.filter((d) => d._id !== doc._id)
-                            );
-                            if (
-                              selectedDocument &&
-                              selectedDocument._id === doc._id
-                            ) {
-                              setSelectedDocument(null);
-                              setPendingFile(null);
-                            }
-                          }}
+                          onClick={(e) => handleDelete(doc, e)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
