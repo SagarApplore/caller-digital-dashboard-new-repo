@@ -5,7 +5,7 @@ import {
   Phone,
   Building2,
   Bot,
-  Plus,
+  Hash,
   PhoneCall,
   CodeXml,
 } from "lucide-react";
@@ -58,7 +58,7 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     id: "phone-numbers",
     name: "Phone Numbers",
     path: "/phone-numbers",
-    icon: PhoneCall,
+    icon: Hash,
     isActive: false,
   },
   {

@@ -39,6 +39,7 @@ import { toast } from "react-toastify";
 import responseMessages from "@/lib/responseMessages";
 import ChatIntegration from "../molecules/create-agent/chat-integration";
 import EmailIntegration from "../molecules/create-agent/email-integration";
+import { Button } from "@/components/ui/button";
 
 interface IPersonaAndBehavior {
   languages: Language[];
@@ -424,6 +425,25 @@ const CreateAgent = ({
         return;
       }
     }
+
+    // Check if the target step should be skipped based on channel activation
+    const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
+    const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+
+    // If trying to navigate to step 5 (Chat Integration) but chat is not active, skip to next available step
+    if (step === 5 && !chatChannelActive) {
+      // If email is active, go to step 6, otherwise go to step 7 (or the last step)
+      const nextStep = emailChannelActive ? 6 : 7;
+      setActiveStep(nextStep);
+      return;
+    }
+
+    // If trying to navigate to step 6 (Email Integration) but email is not active, skip to next available step
+    if (step === 6 && !emailChannelActive) {
+      setActiveStep(7); // Go to the next step after email integration
+      return;
+    }
+
     setActiveStep(step);
   };
 
@@ -718,13 +738,30 @@ const CreateAgent = ({
   };
 
   const toggleChannel = (channelId: string) => {
-    setChannels((prev) =>
-      prev.map((channel) =>
+    setChannels((prev) => {
+      const updatedChannels = prev.map((channel) =>
         channel.id === channelId
           ? { ...channel, active: !channel.active }
           : channel
-      )
-    );
+      );
+
+      // Check if we need to handle step navigation after toggling
+      const chatChannelActive = updatedChannels.find(ch => ch.id.toLowerCase() === "chat")?.active;
+      const emailChannelActive = updatedChannels.find(ch => ch.id.toLowerCase() === "email")?.active;
+
+      // If user is on step 5 (Chat Integration) and chat is being disabled, move to next available step
+      if (activeStep === 5 && channelId.toLowerCase() === "chat" && !chatChannelActive) {
+        const nextStep = emailChannelActive ? 6 : 7;
+        setActiveStep(nextStep);
+      }
+
+      // If user is on step 6 (Email Integration) and email is being disabled, move to next available step
+      if (activeStep === 6 && channelId.toLowerCase() === "email" && !emailChannelActive) {
+        setActiveStep(7);
+      }
+
+      return updatedChannels;
+    });
   };
 
   const selectKnowledgeBase = (knowledgeBases: KnowledgeBaseItem[]) => {
@@ -893,6 +930,24 @@ const CreateAgent = ({
     );
   };
 
+  // Calculate actual total steps based on channel activation
+  const getTotalSteps = () => {
+    const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
+    const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+    
+    let totalSteps = 4; // Base steps: 1, 2, 3, 4
+    
+    if (chatChannelActive) {
+      totalSteps++;
+    }
+    
+    if (emailChannelActive) {
+      totalSteps++;
+    }
+    
+    return totalSteps;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full w-full">
@@ -905,31 +960,48 @@ const CreateAgent = ({
     <div className="flex gap-4 h-full">
       <div className="bg-white p-4 w-full max-w-[250px] h-full">
         <ul className="flex flex-col gap-2 list-none">
-          {agentSteps.map((step) => (
-            <li
-              key={step.id}
-              className={`flex items-center gap-2 p-4 rounded-md cursor-pointer ${
-                activeStep === step.id
-                  ? "bg-purple-100 text-purple-700"
-                  : step.id < activeStep
-                  ? "bg-green-50 text-green-700 border border-green-200"
-                  : "bg-white text-gray-500"
-              }`}
-            >
-              <div className="flex items-center gap-2 w-full justify-between">
-                <div className="flex items-center gap-2">
-                  <step.icon />
-                  <span>{step.title}</span>
+          {agentSteps.map((step) => {
+            // Check if step should be shown based on channel activation
+            const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
+            const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+            
+            // Hide step 5 if chat is not active
+            if (step.id === 5 && !chatChannelActive) {
+              return null;
+            }
+            
+            // Hide step 6 if email is not active
+            if (step.id === 6 && !emailChannelActive) {
+              return null;
+            }
+
+            return (
+              <li
+                key={step.id}
+                className={`flex items-center gap-2 p-4 rounded-md cursor-pointer ${
+                  activeStep === step.id
+                    ? "bg-purple-100 text-purple-700"
+                    : step.id < activeStep
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-white text-gray-500"
+                }`}
+                onClick={() => handleStepChange(step.id)}
+              >
+                <div className="flex items-center gap-2 w-full justify-between">
+                  <div className="flex items-center gap-2">
+                    <step.icon />
+                    <span>{step.title}</span>
+                  </div>
+                  {step.id < activeStep && isStepValid(step.id) && (
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  )}
+                  {step.id === activeStep && !isStepValid(step.id) && (
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  )}
                 </div>
-                {step.id < activeStep && isStepValid(step.id) && (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                )}
-                {step.id === activeStep && !isStepValid(step.id) && (
-                  <AlertCircle className="w-4 h-4 text-red-600" />
-                )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
@@ -982,7 +1054,7 @@ const CreateAgent = ({
             />
           )}
 
-          {activeStep === 5 && (
+          {activeStep === 5 && channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
             <ChatIntegration
               chatIntegration={chatIntegration}
               setChatIntegration={setChatIntegration}
@@ -990,12 +1062,42 @@ const CreateAgent = ({
             />
           )}
 
-          {activeStep === 6 && (
+          {activeStep === 5 && !channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
+            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chat Integration Not Available</h3>
+              <p className="text-gray-600 mb-4">
+                Please enable the Live Chat channel in the Channels & Phone Mapping step to configure chat integration.
+              </p>
+              <Button 
+                onClick={() => handleStepChange(2)}
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+              >
+                Go to Channels & Phone Mapping
+              </Button>
+            </div>
+          )}
+
+          {activeStep === 6 && channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
             <EmailIntegration
               emailIntegration={emailIntegration}
               setEmailIntegration={setEmailIntegration}
               mode={mode}
             />
+          )}
+
+          {activeStep === 6 && !channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
+            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration Not Available</h3>
+              <p className="text-gray-600 mb-4">
+                Please enable the Email Support channel in the Channels & Phone Mapping step to configure email integration.
+              </p>
+              <Button 
+                onClick={() => handleStepChange(2)}
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+              >
+                Go to Channels & Phone Mapping
+              </Button>
+            </div>
           )}
 
           {/* {activeStep === 4 && (
@@ -1011,7 +1113,7 @@ const CreateAgent = ({
         <NavFooter
           activeStep={activeStep}
           handleStepChange={handleStepChange}
-          totalSteps={agentSteps.length}
+          totalSteps={getTotalSteps()}
           handleCreateAgent={handleCreateAgent}
           mode={mode}
           creating={creating}

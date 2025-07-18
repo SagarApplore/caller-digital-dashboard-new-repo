@@ -177,7 +177,7 @@ export default function Agents({ assistants }: { assistants: any[] }) {
       {/* Filters */}
       <div className="flex items-center space-x-4 px-4 pb-4 pt-2 bg-white">
         {/* Status Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -213,10 +213,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
 
         {/* Channels Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -240,10 +240,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
 
         {/* Languages Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -267,10 +267,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
 
         {/* Regions Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -294,10 +294,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
 
         {/* Sort Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
@@ -321,7 +321,7 @@ export default function Agents({ assistants }: { assistants: any[] }) {
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu> */}
       </div>
 
       {/* Agents */}

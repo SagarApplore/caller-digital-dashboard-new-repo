@@ -30,6 +30,7 @@ const KnowledgeBase = ({
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [uploading, setUploading] = useState<boolean>(false);
+  const [downloading, setDownloading] = useState<string | null>(null); // Track which file is downloading
   const [selectedDocument, setSelectedDocument] =
     useState<KnowledgeBaseItem | null>(null);
   const [prompt, setPrompt] = useState<string>("");
@@ -58,8 +59,10 @@ const KnowledgeBase = ({
   // Only validates and sets pendingFile, does not update knowledgeBase
   const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] as File;
-    if (file && file.type === "application/pdf") {
+    if (file && isValidFileType(file)) {
       setPendingFile(file);
+    } else if (file) {
+      toast.error("Please select a valid PDF or CSV file");
     }
   };
 
@@ -79,7 +82,12 @@ const KnowledgeBase = ({
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-      setPendingFile(files[0]);
+      const file = files[0];
+      if (isValidFileType(file)) {
+        setPendingFile(file);
+      } else {
+        toast.error("Please drop a valid PDF or CSV file");
+      }
     }
   };
 
@@ -91,7 +99,7 @@ const KnowledgeBase = ({
       return;
     }
     if (pendingFile.size > 5 * 1024 * 1024) {
-      alert("File size exceeds 5MB limit. Please upload a smaller PDF file.");
+      alert("File size exceeds 5MB limit. Please upload a smaller file.");
       return;
     }
     setUploading(true);
@@ -119,7 +127,7 @@ const KnowledgeBase = ({
       handleCancelPending();
       setUploading(false);
     } catch (error) {
-      console.error(`Error uploading PDF file:`, error);
+      console.error(`Error uploading file:`, error);
 
       // Better error handling
       let errorMessage = "Unknown error occurred";
@@ -150,15 +158,35 @@ const KnowledgeBase = ({
     }
   };
 
-  const handleDownload = (fileUri: string) => {
-    //  TODO
-    // URI is not working, need to fix it
-    const link = document.createElement("a");
-    link.href = fileUri;
-    link.download = "";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (doc: KnowledgeBaseItem) => {
+    setDownloading(doc._id);
+    try {
+      // Call the backend to get a signed download URL
+      const response = await apiRequest(
+        endpoints.knowledgeBase.download.replace(':id', doc._id),
+        "GET"
+      );
+
+      if (response?.data?.success && response?.data?.data?.downloadUrl) {
+        // Create a temporary link and trigger download
+        const link = document.createElement("a");
+        link.href = response.data.data.downloadUrl;
+        link.download = doc.name; // Use the original filename
+        link.target = "_blank"; // Open in new tab for better UX
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success("Download started");
+      } else {
+        throw new Error("Failed to get download URL");
+      }
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Failed to download file. Please try again.");
+    } finally {
+      setDownloading(null);
+    }
   };
 
   const handleDelete = async (doc: KnowledgeBaseItem, e: React.MouseEvent) => {
@@ -317,9 +345,17 @@ const KnowledgeBase = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDownload(doc.fileUri)}
+                          disabled={downloading === doc._id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(doc);
+                          }}
                         >
-                          <Download className="w-4 h-4" />
+                          {downloading === doc._id ? (
+                            <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
