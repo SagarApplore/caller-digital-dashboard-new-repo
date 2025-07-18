@@ -163,14 +163,14 @@ export default function LiveKitRoomOfficial({
         <ControlBar />
         
         {/* Status indicators */}
-        <div className="absolute bottom-20 left-4 space-y-1">
+        {/* <div className="absolute bottom-20 left-4 space-y-1">
           <div className="text-xs text-gray-600">
             Microphone: {isMicrophoneEnabled ? '✅ Enabled' : '❌ Disabled'}
           </div>
           <div className="text-xs text-gray-600">
-            Room: {roomInstance.name}
+            Roomssss: {roomInstance.name}
           </div>
-        </div>
+        </div> */}
       </div>
     </RoomContext.Provider>
   );
@@ -191,9 +191,9 @@ function MyVideoConference() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600">
+      {/* <div className="text-sm text-gray-600">
         Room: {room?.name} | Participants: {participants.length + 1} (including you)
-      </div>
+      </div> */}
       
       <GridLayout 
         tracks={tracks} 
