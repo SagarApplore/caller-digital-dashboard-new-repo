@@ -22,9 +22,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@radix-ui/react-dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import TestAgentModal from "./test-agent-modal";
+import apiRequest from "@/utils/api";
 
 export interface AssistantStats {
   conversations: number;
@@ -123,6 +124,36 @@ export default function Agents({ assistants }: { assistants: any[] }) {
   });
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const [agentMetrics, setAgentMetrics] = useState<{[key: string]: {totalMinutes: number, totalHandoffs: number}}>({});
+
+  // Fetch agent metrics for all agents
+  useEffect(() => {
+    const fetchAgentMetrics = async () => {
+      const metrics: {[key: string]: {totalMinutes: number, totalHandoffs: number}} = {};
+      
+      for (const assistant of assistants) {
+        try {
+          const response = await apiRequest(`/vapi/call-logs/agent/${assistant._id}/metrics`, "GET");
+          metrics[assistant._id] = {
+            totalMinutes: response.data.totalMinutes || 0,
+            totalHandoffs: response.data.totalHandoffs || 0,
+          };
+        } catch (error) {
+          console.error(`Error fetching metrics for agent ${assistant._id}:`, error);
+          metrics[assistant._id] = {
+            totalMinutes: 0,
+            totalHandoffs: 0,
+          };
+        }
+      }
+      
+      setAgentMetrics(metrics);
+    };
+
+    if (assistants.length > 0) {
+      fetchAgentMetrics();
+    }
+  }, [assistants]);
 
   const updateFilter = (key: keyof FilterState, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -443,14 +474,9 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-600 mb-1">CSAT Score</div>
-                    <div
-                      className={`text-2xl font-bold ${getScoreColor(
-                        assistant?.stats?.csatScore ?? 0
-                      )}`}
-                    >
-                      {/* {assistant?.stats?.csatScore ?? 0}% */}
-                      N/A
+                    <div className="text-sm text-gray-600 mb-1">Total Minutes</div>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {agentMetrics[assistant._id]?.totalMinutes?.toFixed(2) || "0.00"}
                     </div>
                   </div>
                   <div>
@@ -468,15 +494,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                   </div>
                   <div>
                     <div className="text-sm text-gray-600 mb-1">
-                      Last Active
+                      Total Handoffs
                     </div>
-                    <div
-                      className={`text-2xl font-bold ${getActiveColor(
-                        assistant?.stats?.lastActive ?? ""
-                      )}`}
-                    >
-                      {/* {assistant?.stats?.lastActive ?? ""} */}
-                      N/A
+                    <div className="text-2xl font-bold text-gray-900">
+                      {agentMetrics[assistant._id]?.totalHandoffs || 0}
                     </div>
                   </div>
                 </div>

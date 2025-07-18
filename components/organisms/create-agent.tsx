@@ -208,6 +208,13 @@ const CreateAgent = ({
     phoneNumberId: initialData?.phone_number_assignment || "",
   });
 
+  // Debug logging for agent phone number initialization
+  console.log("Agent phone number state:", {
+    initialData: initialData,
+    agentPhoneNumber: agentPhoneNumber,
+    mode: mode
+  });
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -714,6 +721,11 @@ const CreateAgent = ({
           }
 
           // Update agent phone number mapping
+          console.log("Setting agent phone number:", {
+            agent_number: agentData.agent_number,
+            phone_number_assignment: agentData.phone_number_assignment,
+            agentData: agentData
+          });
           setAgentPhoneNumber({
             phoneNumber: agentData.agent_number || "",
             phoneNumberId: agentData.phone_number_assignment || "",
@@ -728,6 +740,17 @@ const CreateAgent = ({
     fetchTones();
     fetchAgentData();
   }, [mode, agentId, initialData]);
+
+  // Ensure agent phone number is properly set when initialData changes
+  useEffect(() => {
+    if (mode === "edit" && initialData?.agent_number) {
+      console.log("Setting agent phone number from initialData:", initialData.agent_number);
+      setAgentPhoneNumber({
+        phoneNumber: initialData.agent_number || "",
+        phoneNumberId: initialData.phone_number_assignment || "",
+      });
+    }
+  }, [mode, initialData]);
 
   // Real-time validation feedback
   useEffect(() => {

@@ -83,6 +83,10 @@ const ChannelsAndPhoneMapping = ({
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Debug logging for agent phone number
+  console.log("ChannelsAndPhoneMapping - agentPhoneNumber:", agentPhoneNumber);
+  console.log("ChannelsAndPhoneMapping - phoneNumbers:", phoneNumbers);
+
   const getChannelBadgeColor = (channel: string) => {
     switch (channel.toLowerCase()) {
       case "voice":
@@ -362,6 +366,10 @@ const ChannelsAndPhoneMapping = ({
               <Label className="text-sm font-medium text-gray-700">
                 Assign Phone Number
               </Label>
+              {/* Debug display */}
+              <div className="text-xs text-gray-500 mb-2">
+                Current agent phone number: "{agentPhoneNumber.phoneNumber}"
+              </div>
               <select
                 className="border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
                 value={agentPhoneNumber.phoneNumber}
@@ -369,6 +377,12 @@ const ChannelsAndPhoneMapping = ({
                   const selectedPhoneNumber = phoneNumbers.find(
                     (pn) => pn.phone_number === e.target.value
                   );
+                  console.log("Phone number selection changed:", {
+                    selectedValue: e.target.value,
+                    agentPhoneNumber: agentPhoneNumber.phoneNumber,
+                    selectedPhoneNumber,
+                    allPhoneNumbers: phoneNumbers
+                  });
                   updateAgentPhoneNumber(
                     e.target.value,
                     selectedPhoneNumber?._id || ""
@@ -376,6 +390,13 @@ const ChannelsAndPhoneMapping = ({
                 }}
               >
                 <option value="">Select a phone number...</option>
+                {/* Add the current agent's phone number if it's not in the list */}
+                {agentPhoneNumber.phoneNumber && 
+                 !phoneNumbers.find(pn => pn.phone_number === agentPhoneNumber.phoneNumber) && (
+                  <option value={agentPhoneNumber.phoneNumber}>
+                    {agentPhoneNumber.phoneNumber} (Current)
+                  </option>
+                )}
                 {phoneNumbers.map((phoneNumber) => (
                   <option
                     key={phoneNumber._id}
