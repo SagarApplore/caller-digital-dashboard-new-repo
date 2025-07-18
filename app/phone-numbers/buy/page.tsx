@@ -566,7 +566,7 @@ export default function BuyNumbersPage() {
                             </td>
                             <td className="py-4 px-4">
                               <div className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4 text-gray-400" />
+                                
                                 <span className="font-medium text-gray-900">{number.monthly_rental_rate}</span>
                               </div>
                             </td>
