@@ -18,6 +18,7 @@ const endpoints = {
     create: "/knowledgeBase",
     getById: "/knowledgeBase/:id",
     delete: "/knowledgeBase/:id",
+    download: "/knowledgeBase/:id/download",
   },
   functionTools: {
     getAll: "/functionTools",
