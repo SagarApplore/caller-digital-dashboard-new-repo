@@ -170,13 +170,13 @@ const KnowledgeBase = ({
                 <span className="text-gray-500 mb-2">
                   No function tools found.
                 </span>
-                <Button
+                {/* <Button
                   className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
                   onClick={() => router.push("/function-tools")}
                 >
                   <Plus className="w-4 h-4" />
                   Create New Function Tool
-                </Button>
+                </Button> */}
               </div>
             ) : (
               <div>
