@@ -10,7 +10,7 @@ export interface IAIProvider {
 export interface IFunctionTool {
   _id: string;
   name: string;
-  type: "API" | "QUERY";
+  type: "API";
   prompt: string;
   api?: {
     url: string;

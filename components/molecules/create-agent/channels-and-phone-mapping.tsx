@@ -68,6 +68,8 @@ const ChannelsAndPhoneMapping = ({
   updateHandoffConfig,
   extraPrompts,
   updateExtraPrompts,
+  agentPhoneNumber,
+  updateAgentPhoneNumber,
 }: {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
@@ -77,6 +79,8 @@ const ChannelsAndPhoneMapping = ({
   updateHandoffConfig: (config: HandoffConfig) => void;
   extraPrompts: ExtraPrompts;
   updateExtraPrompts: (prompts: ExtraPrompts) => void;
+  agentPhoneNumber: { phoneNumber: string; phoneNumberId: string };
+  updateAgentPhoneNumber: (phoneNumber: string, phoneNumberId: string) => void;
 }) => {
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -381,12 +385,12 @@ const ChannelsAndPhoneMapping = ({
               </Label>
               <select
                 className="border border-green-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-300"
-                value={handoffConfig.phoneNumber}
+                value={agentPhoneNumber.phoneNumber}
                 onChange={(e) => {
                   const selectedPhoneNumber = phoneNumbers.find(
                     (pn) => pn.phone_number === e.target.value
                   );
-                  handlePhoneNumberChange(
+                  updateAgentPhoneNumber(
                     e.target.value,
                     selectedPhoneNumber?._id || ""
                   );

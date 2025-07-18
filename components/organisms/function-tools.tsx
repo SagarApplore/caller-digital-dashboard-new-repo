@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "./card";
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectContent, SelectTrigger } from "../ui/select";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { toast } from "react-toastify";
@@ -69,10 +70,11 @@ const validateApi = (api: typeof initialApi) => {
 };
 
 const FunctionTools = () => {
+  const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [existingTools, setExistingTools] = useState<
     {
       name: string;
-      type: "API" | "QUERY";
+      type: "API";
       prompt: string;
       api: {
         url: string;
@@ -91,7 +93,7 @@ const FunctionTools = () => {
   >([]);
   const [newTool, setNewTool] = useState<{
     name: string;
-    type: "API" | "QUERY";
+    type: "API";
     prompt: string;
     api: typeof initialApi;
   }>({
@@ -170,6 +172,7 @@ const FunctionTools = () => {
       });
       setErrors({});
       setApiErrors({});
+      setIsCreateFormOpen(false); // Close the form after successful addition
       toast.success("Tool added successfully");
     } catch (err) {
       // Optionally handle error
@@ -209,295 +212,321 @@ const FunctionTools = () => {
     <div className="h-full overflow-y-auto p-4">
       <Card className="border-none p-4">
         <CardContent className="p-0 space-y-4">
-          <h2 className="text-lg font-bold">Create new Function Tool</h2>
-          <form
-            className="space-y-4"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              await handleAddTool();
-            }}
-          >
-            <div className="flex gap-2 w-full">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  className={`border rounded px-3 py-2 w-full ${
-                    errors.name ? "border-red-500" : ""
-                  }`}
-                  placeholder="Enter function tool name"
-                  value={newTool.name}
-                  onChange={(e) =>
-                    setNewTool({ ...newTool, name: e.target.value })
-                  }
-                  required
-                />
-                {errors.name && (
-                  <div className="text-xs text-red-500 mt-1">{errors.name}</div>
+          {/* Collapsible Create New Function Tool Section */}
+          <div className="border rounded-lg bg-white shadow-sm">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors rounded-lg"
+              onClick={() => setIsCreateFormOpen(!isCreateFormOpen)}
+            >
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Create new Function Tool</h2>
+                {!isCreateFormOpen && (
+                  <p className="text-sm text-gray-500 mt-1">Click to expand and add a new function tool</p>
                 )}
               </div>
-              <Select
-                value={newTool.type}
-                onValueChange={(value) =>
-                  setNewTool({
-                    ...newTool,
-                    type: value as "API" | "QUERY",
-                  })
-                }
-              >
-                <SelectTrigger
-                  className={`border rounded px-3 py-2 w-fit ${
-                    errors.type ? "border-red-500" : ""
-                  }`}
+              {isCreateFormOpen ? (
+                <ChevronDown className="w-5 h-5 text-gray-500" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-500" />
+              )}
+            </button>
+            
+            {isCreateFormOpen && (
+              <div className="px-4 pb-4 border-t">
+                <form
+                  className="space-y-4 pt-4"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    await handleAddTool();
+                  }}
                 >
-                  {newTool.type}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="API">API</SelectItem>
-                  <SelectItem value="QUERY">QUERY</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Prompt</label>
-              <input
-                type="text"
-                className="border rounded px-3 py-2 w-full"
-                placeholder="Enter prompt"
-                value={newTool.prompt}
-                onChange={(e) =>
-                  setNewTool({ ...newTool, prompt: e.target.value })
-                }
-              />
-            </div>
-            {newTool.type === "API" && (
-              <div className="space-y-3 border rounded p-3 bg-gray-50">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    API URL <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`border rounded px-3 py-2 w-full ${
-                      apiErrors.url ? "border-red-500" : ""
-                    }`}
-                    placeholder="https://api.example.com/endpoint"
-                    value={newTool.api.url}
-                    onChange={(e) => updateApiField("url", e.target.value)}
-                  />
-                  {apiErrors.url && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.url}
+                  <div className="flex gap-2 w-full">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        className={`border rounded px-3 py-2 w-full ${
+                          errors.name ? "border-red-500" : ""
+                        }`}
+                        placeholder="Enter function tool name"
+                        value={newTool.name}
+                        onChange={(e) =>
+                          setNewTool({ ...newTool, name: e.target.value })
+                        }
+                        required
+                      />
+                      {errors.name && (
+                        <div className="text-xs text-red-500 mt-1">{errors.name}</div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Headers (JSON)
-                  </label>
-                  <input
-                    type="text"
-                    className={`border rounded px-3 py-2 w-full font-mono ${
-                      apiErrors.Headers ? "border-red-500" : ""
-                    }`}
-                    placeholder='e.g. {"Authorization": "Bearer ..."}'
-                    value={newTool.api.Headers}
-                    onChange={(e) => updateApiField("Headers", e.target.value)}
-                  />
-                  {apiErrors.Headers && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.Headers}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Auth Type <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={newTool.api.auth}
-                    onValueChange={(value) => updateApiField("auth", value)}
-                  >
-                    <SelectTrigger
-                      className={`border rounded px-3 py-2 min-w-[100px] ${
-                        apiErrors.auth ? "border-red-500" : ""
-                      }`}
+                    <Select
+                      value={newTool.type}
+                      onValueChange={(value) =>
+                        setNewTool({
+                          ...newTool,
+                          type: value as "API",
+                        })
+                      }
                     >
-                      {newTool.api.auth}
-                    </SelectTrigger>
-                    <SelectContent>
-                      {apiAuthTypeOptions.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {apiErrors.auth && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.auth}
-                    </div>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">
-                      Username
-                    </label>
+                      <SelectTrigger
+                        className={`border rounded px-3 py-2 w-fit ${
+                          errors.type ? "border-red-500" : ""
+                        }`}
+                      >
+                        {newTool.type}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="API">API</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Prompt</label>
                     <input
                       type="text"
                       className="border rounded px-3 py-2 w-full"
-                      value={newTool.api.username}
+                      placeholder="Enter prompt"
+                      value={newTool.prompt}
                       onChange={(e) =>
-                        updateApiField("username", e.target.value)
+                        setNewTool({ ...newTool, prompt: e.target.value })
                       }
                     />
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium mb-1">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      className="border rounded px-3 py-2 w-full"
-                      value={newTool.api.password}
-                      onChange={(e) =>
-                        updateApiField("password", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Method <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    className={`border rounded px-3 py-2 w-full ${
-                      apiErrors.Method ? "border-red-500" : ""
-                    }`}
-                    value={newTool.api.Method}
-                    onChange={(e) =>
-                      updateApiField(
-                        "Method",
-                        e.target.value as (typeof apiMethodOptions)[number]
-                      )
-                    }
-                  >
-                    {apiMethodOptions.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  {apiErrors.Method && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.Method}
+                  {newTool.type === "API" && (
+                    <div className="space-y-3 border rounded p-3 bg-gray-50">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          API URL <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`border rounded px-3 py-2 w-full ${
+                            apiErrors.url ? "border-red-500" : ""
+                          }`}
+                          placeholder="https://api.example.com/endpoint"
+                          value={newTool.api.url}
+                          onChange={(e) => updateApiField("url", e.target.value)}
+                        />
+                        {apiErrors.url && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.url}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Headers (JSON)
+                        </label>
+                        <input
+                          type="text"
+                          className={`border rounded px-3 py-2 w-full font-mono ${
+                            apiErrors.Headers ? "border-red-500" : ""
+                          }`}
+                          placeholder='e.g. {"Authorization": "Bearer ..."}'
+                          value={newTool.api.Headers}
+                          onChange={(e) => updateApiField("Headers", e.target.value)}
+                        />
+                        {apiErrors.Headers && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.Headers}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Auth Type <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={newTool.api.auth}
+                          onValueChange={(value) => updateApiField("auth", value)}
+                        >
+                          <SelectTrigger
+                            className={`border rounded px-3 py-2 min-w-[100px] ${
+                              apiErrors.auth ? "border-red-500" : ""
+                            }`}
+                          >
+                            {newTool.api.auth}
+                          </SelectTrigger>
+                          <SelectContent>
+                            {apiAuthTypeOptions.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {apiErrors.auth && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.auth}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium mb-1">
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            className="border rounded px-3 py-2 w-full"
+                            value={newTool.api.username}
+                            onChange={(e) =>
+                              updateApiField("username", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium mb-1">
+                            Password
+                          </label>
+                          <input
+                            type="password"
+                            className="border rounded px-3 py-2 w-full"
+                            value={newTool.api.password}
+                            onChange={(e) =>
+                              updateApiField("password", e.target.value)
+                            }
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Method <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          className={`border rounded px-3 py-2 w-full ${
+                            apiErrors.Method ? "border-red-500" : ""
+                          }`}
+                          value={newTool.api.Method}
+                          onChange={(e) =>
+                            updateApiField(
+                              "Method",
+                              e.target.value as (typeof apiMethodOptions)[number]
+                            )
+                          }
+                        >
+                          {apiMethodOptions.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        {apiErrors.Method && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.Method}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Body (JSON)
+                        </label>
+                        <textarea
+                          className={`border rounded px-3 py-2 w-full font-mono ${
+                            apiErrors.Body ? "border-red-500" : ""
+                          }`}
+                          rows={2}
+                          placeholder='e.g. {"key": "value"}'
+                          value={
+                            newTool.api.Body && Object.keys(newTool.api.Body).length
+                              ? JSON.stringify(newTool.api.Body, null, 2)
+                              : ""
+                          }
+                          onChange={(e) =>
+                            handleJsonFieldChange("Body", e.target.value)
+                          }
+                        />
+                        {apiErrors.Body && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.Body}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Response Type <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          className={`border rounded px-3 py-2 w-full ${
+                            apiErrors.ResponseType ? "border-red-500" : ""
+                          }`}
+                          value={newTool.api.ResponseType}
+                          onChange={(e) =>
+                            updateApiField("ResponseType", e.target.value)
+                          }
+                        >
+                          {apiResponseTypeOptions.map((rt) => (
+                            <option key={rt} value={rt}>
+                              {rt}
+                            </option>
+                          ))}
+                        </select>
+                        {apiErrors.ResponseType && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.ResponseType}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Response Headers (JSON)
+                        </label>
+                        <input
+                          type="text"
+                          className={`border rounded px-3 py-2 w-full font-mono ${
+                            apiErrors.ResponseHeaders ? "border-red-500" : ""
+                          }`}
+                          placeholder='e.g. {"Content-Type": "application/json"}'
+                          value={newTool.api.ResponseHeaders}
+                          onChange={(e) =>
+                            updateApiField("ResponseHeaders", e.target.value)
+                          }
+                        />
+                        {apiErrors.ResponseHeaders && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.ResponseHeaders}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Response Body (JSON)
+                        </label>
+                        <textarea
+                          className={`border rounded px-3 py-2 w-full font-mono ${
+                            apiErrors.ResponseBody ? "border-red-500" : ""
+                          }`}
+                          rows={2}
+                          placeholder='e.g. {"result": "value"}'
+                          value={
+                            newTool.api.ResponseBody &&
+                            Object.keys(newTool.api.ResponseBody).length
+                              ? JSON.stringify(newTool.api.ResponseBody, null, 2)
+                              : ""
+                          }
+                          onChange={(e) =>
+                            handleJsonFieldChange("ResponseBody", e.target.value)
+                          }
+                        />
+                        {apiErrors.ResponseBody && (
+                          <div className="text-xs text-red-500 mt-1">
+                            {apiErrors.ResponseBody}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Body (JSON)
-                  </label>
-                  <textarea
-                    className={`border rounded px-3 py-2 w-full font-mono ${
-                      apiErrors.Body ? "border-red-500" : ""
-                    }`}
-                    rows={2}
-                    placeholder='e.g. {"key": "value"}'
-                    value={
-                      newTool.api.Body && Object.keys(newTool.api.Body).length
-                        ? JSON.stringify(newTool.api.Body, null, 2)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      handleJsonFieldChange("Body", e.target.value)
-                    }
-                  />
-                  {apiErrors.Body && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.Body}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Response Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    className={`border rounded px-3 py-2 w-full ${
-                      apiErrors.ResponseType ? "border-red-500" : ""
-                    }`}
-                    value={newTool.api.ResponseType}
-                    onChange={(e) =>
-                      updateApiField("ResponseType", e.target.value)
-                    }
-                  >
-                    {apiResponseTypeOptions.map((rt) => (
-                      <option key={rt} value={rt}>
-                        {rt}
-                      </option>
-                    ))}
-                  </select>
-                  {apiErrors.ResponseType && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.ResponseType}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Response Headers (JSON)
-                  </label>
-                  <input
-                    type="text"
-                    className={`border rounded px-3 py-2 w-full font-mono ${
-                      apiErrors.ResponseHeaders ? "border-red-500" : ""
-                    }`}
-                    placeholder='e.g. {"Content-Type": "application/json"}'
-                    value={newTool.api.ResponseHeaders}
-                    onChange={(e) =>
-                      updateApiField("ResponseHeaders", e.target.value)
-                    }
-                  />
-                  {apiErrors.ResponseHeaders && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.ResponseHeaders}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Response Body (JSON)
-                  </label>
-                  <textarea
-                    className={`border rounded px-3 py-2 w-full font-mono ${
-                      apiErrors.ResponseBody ? "border-red-500" : ""
-                    }`}
-                    rows={2}
-                    placeholder='e.g. {"result": "value"}'
-                    value={
-                      newTool.api.ResponseBody &&
-                      Object.keys(newTool.api.ResponseBody).length
-                        ? JSON.stringify(newTool.api.ResponseBody, null, 2)
-                        : ""
-                    }
-                    onChange={(e) =>
-                      handleJsonFieldChange("ResponseBody", e.target.value)
-                    }
-                  />
-                  {apiErrors.ResponseBody && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {apiErrors.ResponseBody}
-                    </div>
-                  )}
-                </div>
+                  <Button type="submit" className="bg-purple-600 text-white">
+                    Add
+                  </Button>
+                </form>
               </div>
             )}
-            <Button type="submit" className="bg-purple-600 text-white">
-              Add
-            </Button>
-          </form>
+          </div>
+
+          {/* Existing Tools Section */}
           <div>
+            <h3 className="text-lg font-bold mb-3">Existing Function Tools</h3>
             {existingTools.length === 0 ? (
               <div className="text-gray-500">No function tools added yet.</div>
             ) : (
