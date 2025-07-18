@@ -127,6 +127,11 @@ export interface PhoneNumberAssignment {
   client_id: string;
   status: string;
   active: boolean;
+  agentId?: {
+    _id: string;
+    agentName: string;
+    status: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -476,6 +481,11 @@ class PhoneNumbersService {
             client_id: 'client-1',
             status: 'active',
             active: true,
+            agentId: {
+              _id: 'agent-1',
+              agentName: 'Customer Support Agent',
+              status: 'active'
+            },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           },
@@ -486,6 +496,11 @@ class PhoneNumbersService {
             client_id: 'client-1',
             status: 'inactive',
             active: false,
+            agentId: {
+              _id: 'agent-1',
+              agentName: 'Customer Support Agent',
+              status: 'active'
+            }, // This number is not linked to any agent
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           }

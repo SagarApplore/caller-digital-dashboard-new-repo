@@ -94,7 +94,16 @@ const CreateAgent = ({
   const initializeChannels = (): Channel[] => {
     return initialChannels.map((channel) => {
       const channelId = channel.id.toLowerCase();
-      const existingChannel = initialData?.[channelId];
+      let existingChannel;
+
+      // Map channel IDs to the correct data structure
+      if (channelId === "voice") {
+        existingChannel = initialData?.voice;
+      } else if (channelId === "chat") {
+        existingChannel = initialData?.chats;
+      } else if (channelId === "email") {
+        existingChannel = initialData?.email;
+      }
 
       return {
         ...channel,
@@ -529,12 +538,12 @@ const CreateAgent = ({
         {
           id: 1,
           name: "English",
-          key: "EN",
+          key: "en",
         },
         {
           id: 2,
           name: "Hindi",
-          key: "HI",
+          key: "hi",
         },
         
       ];
@@ -576,13 +585,17 @@ const CreateAgent = ({
           );
           const agentData = response.data?.data;
 
+          console.log("Fetched agent data:", agentData);
+          console.log("Voice data:", agentData?.voice);
+          console.log("Voice provider:", agentData?.voice?.voiceProvider);
+          console.log("Transcriber provider:", agentData?.voice?.transcriberProvider);
+          console.log("LLM provider:", agentData?.voice?.llmProvider);
+          console.log("Channels:", agentData?.channels);
+
           // Update all state with fetched data
           setPersonaAndBehavior((prev) => ({
             ...prev,
             agentName: agentData.agentName || "",
-            summaryPrompt: agentData.summaryPrompt || "",
-            successEvaluationPrompt: agentData.successEvaluationPrompt || "",
-            failureEvaluationPrompt: agentData.failureEvaluationPrompt || "",
             languages: prev.languages.map((language) => ({
               ...language,
               selected: agentData.languages?.includes(language.key) || false,
@@ -594,11 +607,27 @@ const CreateAgent = ({
             })),
           }));
 
+          // Update extra prompts separately
+          setExtraPrompts({
+            summaryPrompt: agentData.summaryPrompt || "",
+            successEvaluationPrompt: agentData.successEvaluationPrompt || "",
+            failureEvaluationPrompt: agentData.failureEvaluationPrompt || "",
+          });
+
           // Update channels
           setChannels(
             initialChannels.map((channel) => {
               const channelId = channel.id.toLowerCase();
-              const existingChannel = agentData[channelId];
+              let existingChannel;
+
+              // Map channel IDs to the correct data structure
+              if (channelId === "voice") {
+                existingChannel = agentData.voice;
+              } else if (channelId === "chat") {
+                existingChannel = agentData.chats;
+              } else if (channelId === "email") {
+                existingChannel = agentData.email;
+              }
 
               return {
                 ...channel,

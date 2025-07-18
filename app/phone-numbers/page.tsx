@@ -438,6 +438,7 @@ export default function PhoneNumbersPage() {
                           S.No.
                         </th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Phone Number</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-700">Agent Linked</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Active</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Assigned Date</th>
                       </tr>
@@ -455,6 +456,25 @@ export default function PhoneNumbersPage() {
                           </td>
                           <td className="py-4 px-6">
                             <div className="font-medium text-gray-900 text-base">{assignment.phone_number}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            {assignment.agentId ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-900 text-sm">{assignment.agentId.agentName}</span>
+                                <Badge 
+                                  variant={assignment.agentId.status === 'active' ? 'default' : 'secondary'}
+                                  className={`w-fit mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
+                                    assignment.agentId.status === 'active'
+                                      ? 'bg-blue-100 text-blue-800 border-blue-200' 
+                                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                                  }`}
+                                >
+                                  {assignment.agentId.status}
+                                </Badge>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500 text-sm font-medium">Not Linked</span>
+                            )}
                           </td>
                           <td className="py-4 px-6">
                             <Badge 

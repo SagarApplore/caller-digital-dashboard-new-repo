@@ -55,25 +55,30 @@ const VoiceIntegration = ({
 
   // Helper function to find provider by name
   const findProviderByName = (providers: any[], name: string) => {
-    return providers.find((provider) => provider.companyName === name);
+    return providers.find((provider) => 
+      provider.companyName === name || 
+      provider.name === name ||
+      provider.providerName === name
+    );
   };
 
   // Helper function to find model by name
   const findModelByName = (models: any[], name: string) => {
-    return models.find((model) => model.name === name);
+    return models.find((model) => 
+      model.name === name || 
+      model.model === name
+    );
   };
 
   // Helper function to fetch models by provider name (for edit mode)
-  const fetchModelsByName = async (endpoint: string, providerName: string) => {
+  const fetchModelsByName = async (endpoint: string, providerId: string) => {
     try {
-      // Try to fetch by name first using POST with provider name in body
-      const response = await apiRequest(endpoint, "POST", {
-        name: providerName,
-      });
+      // Use the provider ID-based endpoint to fetch models
+      const response = await apiRequest(endpoint + "/" + providerId, "GET");
       return response?.data?.data || [];
     } catch (error) {
       console.warn(
-        `Failed to fetch models by name for ${providerName}, falling back to ID-based approach`
+        `Failed to fetch models for provider ${providerId}, error:`, error
       );
       return [];
     }
@@ -84,7 +89,7 @@ const VoiceIntegration = ({
     const provider = configs.tts.providers.find(
       (p: any) => p._id === providerId
     );
-    return provider?.voiceIds || [];
+    return provider?.voiceIds || provider?.voices || [];
   };
 
   // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
@@ -116,6 +121,14 @@ const VoiceIntegration = ({
 
         // If in edit mode and we have existing selections, fetch the models
         if (mode === "edit") {
+          console.log("Edit mode - voice integration data:", voiceIntegration);
+          console.log("TTS Provider Name:", voiceIntegration.selectedTTSProviderName);
+          console.log("STT Provider Name:", voiceIntegration.selectedSTTProviderName);
+          console.log("LLM Provider Name:", voiceIntegration.selectedLLMProviderName);
+          console.log("TTS Model Name:", voiceIntegration.selectedTTSModelName);
+          console.log("STT Model Name:", voiceIntegration.selectedSTTModelName);
+          console.log("LLM Model Name:", voiceIntegration.selectedLLMModelName);
+          
           const promises = [];
 
           // Fetch TTS models if provider name is available
@@ -127,8 +140,8 @@ const VoiceIntegration = ({
             if (ttsProvider) {
               promises.push(
                 fetchModelsByName(
-                  endpoints.ttsModels.getModelsByName,
-                  voiceIntegration.selectedTTSProviderName
+                  endpoints.ttsModels.getModels,
+                  ttsProvider._id
                 ).then((models) => ({
                   type: "tts",
                   models,
@@ -147,8 +160,8 @@ const VoiceIntegration = ({
             if (sttProvider) {
               promises.push(
                 fetchModelsByName(
-                  endpoints.sttModels.getModelsByName,
-                  voiceIntegration.selectedSTTProviderName
+                  endpoints.sttModels.getModels,
+                  sttProvider._id
                 ).then((models) => ({
                   type: "stt",
                   models,
@@ -167,8 +180,8 @@ const VoiceIntegration = ({
             if (llmProvider) {
               promises.push(
                 fetchModelsByName(
-                  endpoints.llmModels.getModelsByName,
-                  voiceIntegration.selectedLLMProviderName
+                  endpoints.llmModels.getModels,
+                  llmProvider._id
                 ).then((models) => ({
                   type: "llm",
                   models,
@@ -193,6 +206,12 @@ const VoiceIntegration = ({
             if (result.type === "tts") {
               updatedConfigs.tts.models = result.models;
               updatedVoiceIntegration.selectedTTSProvider = result.providerId;
+              
+              // Load voices for TTS provider
+              const ttsProvider = ttsProviders.find((p: any) => p._id === result.providerId);
+              if (ttsProvider) {
+                updatedConfigs.tts.voices = ttsProvider.voiceIds || ttsProvider.voices || [];
+              }
             } else if (result.type === "stt") {
               updatedConfigs.stt.models = result.models;
               updatedVoiceIntegration.selectedSTTProvider = result.providerId;
@@ -226,6 +245,17 @@ const VoiceIntegration = ({
   useEffect(() => {
     if (mode !== "edit") return;
 
+    console.log("Model setting useEffect triggered");
+    console.log("TTS Model Name:", voiceIntegration.selectedTTSModelName);
+    console.log("TTS Models loaded:", configs.tts.models.length);
+    console.log("TTS Models:", configs.tts.models);
+    console.log("STT Model Name:", voiceIntegration.selectedSTTModelName);
+    console.log("STT Models loaded:", configs.stt.models.length);
+    console.log("STT Models:", configs.stt.models);
+    console.log("LLM Model Name:", voiceIntegration.selectedLLMModelName);
+    console.log("LLM Models loaded:", configs.llm.models.length);
+    console.log("LLM Models:", configs.llm.models);
+
     // TTS
     if (
       voiceIntegration.selectedTTSModelName &&
@@ -233,10 +263,12 @@ const VoiceIntegration = ({
       !voiceIntegration.selectedTTSModel &&
       !hasSetTTSModel.current
     ) {
+      console.log("Setting TTS model for:", voiceIntegration.selectedTTSModelName);
       const ttsModel = findModelByName(
         configs.tts.models,
         voiceIntegration.selectedTTSModelName
       );
+      console.log("Found TTS model:", ttsModel);
       if (ttsModel) {
         setVoiceIntegration((prev: any) => ({
           ...prev,
@@ -253,10 +285,12 @@ const VoiceIntegration = ({
       !voiceIntegration.selectedSTTModel &&
       !hasSetSTTModel.current
     ) {
+      console.log("Setting STT model for:", voiceIntegration.selectedSTTModelName);
       const sttModel = findModelByName(
         configs.stt.models,
         voiceIntegration.selectedSTTModelName
       );
+      console.log("Found STT model:", sttModel);
       if (sttModel) {
         setVoiceIntegration((prev: any) => ({
           ...prev,
@@ -273,10 +307,12 @@ const VoiceIntegration = ({
       !voiceIntegration.selectedLLMModel &&
       !hasSetLLMModel.current
     ) {
+      console.log("Setting LLM model for:", voiceIntegration.selectedLLMModelName);
       const llmModel = findModelByName(
         configs.llm.models,
         voiceIntegration.selectedLLMModelName
       );
+      console.log("Found LLM model:", llmModel);
       if (llmModel) {
         setVoiceIntegration((prev: any) => ({
           ...prev,
@@ -294,6 +330,58 @@ const VoiceIntegration = ({
     voiceIntegration.selectedTTSModelName,
     voiceIntegration.selectedSTTModelName,
     voiceIntegration.selectedLLMModelName,
+  ]);
+
+  // Set voice ID based on voice name after voices are loaded (for edit mode)
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    if (
+      voiceIntegration.selectedTTSVoiceName &&
+      configs.tts.voices.length > 0 &&
+      !voiceIntegration.selectedTTSVoiceId
+    ) {
+      const voice = configs.tts.voices.find(
+        (v: any) => v.voiceName === voiceIntegration.selectedTTSVoiceName
+      );
+      if (voice) {
+        setVoiceIntegration((prev: any) => ({
+          ...prev,
+          selectedTTSVoiceId: voice.voiceId,
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    configs.tts.voices,
+    mode,
+    voiceIntegration.selectedTTSVoiceName,
+  ]);
+
+  // Set voice name based on voice ID after voices are loaded (for edit mode)
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    if (
+      voiceIntegration.selectedTTSVoiceId &&
+      configs.tts.voices.length > 0 &&
+      !voiceIntegration.selectedTTSVoiceName
+    ) {
+      const voice = configs.tts.voices.find(
+        (v: any) => v.voiceId === voiceIntegration.selectedTTSVoiceId
+      );
+      if (voice) {
+        setVoiceIntegration((prev: any) => ({
+          ...prev,
+          selectedTTSVoiceName: voice.voiceName,
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    configs.tts.voices,
+    mode,
+    voiceIntegration.selectedTTSVoiceId,
   ]);
 
   // FETCH TTS MODELS
@@ -483,7 +571,7 @@ const VoiceIntegration = ({
                         // Get voices from the selected provider
                         let voices = [];
                         if (selectedProvider) {
-                          voices = getVoicesFromProvider(selectedProvider._id);
+                          voices = selectedProvider.voiceIds || selectedProvider.voices || [];
                         }
 
                         setVoiceIntegration({
@@ -522,6 +610,12 @@ const VoiceIntegration = ({
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Display the provider name from backend if available */}
+                  {voiceIntegration.selectedTTSProviderName && (
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                      <strong>Selected Provider:</strong> {voiceIntegration.selectedTTSProviderName}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -557,6 +651,12 @@ const VoiceIntegration = ({
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Display the model name from backend if available */}
+                  {voiceIntegration.selectedTTSModelName && (
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                      <strong>Selected Model:</strong> {voiceIntegration.selectedTTSModelName}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -592,6 +692,12 @@ const VoiceIntegration = ({
                       </SelectContent>
                     </Select>
                   </div>
+                  {/* Display the voice name from backend if available */}
+                  {voiceIntegration.selectedTTSVoiceName && (
+                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                      <strong>Selected Voice:</strong> {voiceIntegration.selectedTTSVoiceName}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -656,6 +762,12 @@ const VoiceIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the provider name from backend if available */}
+                {voiceIntegration.selectedSTTProviderName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Provider:</strong> {voiceIntegration.selectedSTTProviderName}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -691,6 +803,12 @@ const VoiceIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the model name from backend if available */}
+                {voiceIntegration.selectedSTTModelName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Model:</strong> {voiceIntegration.selectedSTTModelName}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -740,6 +858,12 @@ const VoiceIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the provider name from backend if available */}
+                {voiceIntegration.selectedLLMProviderName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Provider:</strong> {voiceIntegration.selectedLLMProviderName}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -775,6 +899,12 @@ const VoiceIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the model name from backend if available */}
+                {voiceIntegration.selectedLLMModelName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Model:</strong> {voiceIntegration.selectedLLMModelName}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
