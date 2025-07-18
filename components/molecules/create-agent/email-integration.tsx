@@ -162,7 +162,7 @@ const EmailIntegration = ({
         <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Text-to-Speech</h2>
+              <h2 className="text-lg font-semibold">LLM</h2>
               <span className="text-gray-600 text-sm">
                 Choose AI  characteristics
               </span>
