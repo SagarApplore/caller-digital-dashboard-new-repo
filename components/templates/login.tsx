@@ -139,7 +139,7 @@ export default function Login() {
                 </div>
 
                 {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -158,7 +158,7 @@ export default function Login() {
                   >
                     Forgot password?
                   </Button>
-                </div>
+                </div> */}
 
                 {/* Error Message */}
                 {error && (
