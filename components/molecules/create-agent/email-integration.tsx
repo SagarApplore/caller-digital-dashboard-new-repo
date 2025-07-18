@@ -164,14 +164,14 @@ const EmailIntegration = ({
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Text-to-Speech</h2>
               <span className="text-gray-600 text-sm">
-                Choose AI voice characteristics
+                Choose AI  characteristics
               </span>
             </div>
 
             <div className="flex flex-col gap-4 flex-1">
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Voice Provider
+                   Provider
                 </label>
                 <div className="flex items-center space-x-3">
                   <Select
@@ -205,7 +205,7 @@ const EmailIntegration = ({
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Voice Model
+                   Model
                 </label>
                 <div className="flex items-center space-x-3">
                   <Select
