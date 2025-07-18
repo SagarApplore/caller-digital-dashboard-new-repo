@@ -881,9 +881,6 @@ const CreateAgent = ({
             model: chatIntegration.selectedLLMModelName,
             providerName: chatIntegration.selectedLLMProviderName,
           },
-          firstMessage: channels.filter(
-            (channel) => channel.id.toLowerCase() === "chat"
-          )?.[0]?.firstMessage,
           agentPrompt: channels.filter(
             (channel) => channel.id.toLowerCase() === "chat"
           )?.[0]?.prompt?.value,
@@ -897,9 +894,6 @@ const CreateAgent = ({
             model: emailIntegration.selectedLLMModelName,
             providerName: emailIntegration.selectedLLMProviderName,
           },
-          firstMessage: channels.filter(
-            (channel) => channel.id.toLowerCase() === "email"
-          )?.[0]?.firstMessage,
           agentPrompt: channels.filter(
             (channel) => channel.id.toLowerCase() === "email"
           )?.[0]?.prompt?.value,
