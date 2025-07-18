@@ -538,12 +538,12 @@ const CreateAgent = ({
         {
           id: 1,
           name: "English",
-          key: "EN",
+          key: "en",
         },
         {
           id: 2,
           name: "Hindi",
-          key: "HI",
+          key: "hi",
         },
         
       ];
@@ -586,7 +586,10 @@ const CreateAgent = ({
           const agentData = response.data?.data;
 
           console.log("Fetched agent data:", agentData);
-          console.log("Chat data:", agentData?.chats);
+          console.log("Voice data:", agentData?.voice);
+          console.log("Voice provider:", agentData?.voice?.voiceProvider);
+          console.log("Transcriber provider:", agentData?.voice?.transcriberProvider);
+          console.log("LLM provider:", agentData?.voice?.llmProvider);
           console.log("Channels:", agentData?.channels);
 
           // Update all state with fetched data
