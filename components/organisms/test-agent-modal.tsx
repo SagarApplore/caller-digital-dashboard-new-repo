@@ -148,7 +148,7 @@ export default function TestAgentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Test Agent: {agent?.agentName}</DialogTitle>
+          <DialogTitle>Agent: {agent?.agentName}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">

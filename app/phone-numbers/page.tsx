@@ -350,14 +350,14 @@ export default function PhoneNumbersPage() {
                         </>
                       )}
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="outline"
                       onClick={handleFilter}
                       className="border-gray-300 text-gray-700 hover:bg-gray-50 h-11 px-4 rounded-lg font-medium"
                     >
                       <Filter className="h-4 w-4 mr-2" />
                       Filter
-                    </Button>
+                    </Button> */}
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -430,11 +430,12 @@ export default function PhoneNumbersPage() {
                     <thead>
                       <tr className="border-b border-gray-200 bg-gray-50">
                         <th className="text-left py-4 px-6 font-medium text-gray-700">
-                          <Checkbox
+                          {/* <Checkbox
                             checked={selectedAssignments.length === assignments.length && assignments.length > 0}
                             onCheckedChange={handleSelectAll}
                             className="border-gray-300"
-                          />
+                          /> */}
+                          S.No.
                         </th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Phone Number</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Active</th>
@@ -442,14 +443,15 @@ export default function PhoneNumbersPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {assignments.map((assignment) => (
+                      {assignments.map((assignment,index) => (
                         <tr key={assignment._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                           <td className="py-4 px-6">
-                            <Checkbox
+                            {/* <Checkbox
                               checked={selectedAssignments.includes(assignment._id)}
                               onCheckedChange={(checked) => handleSelectAssignment(assignment._id, checked as boolean)}
                               className="border-gray-300"
-                            />
+                            /> */}
+                            {index + 1}
                           </td>
                           <td className="py-4 px-6">
                             <div className="font-medium text-gray-900 text-base">{assignment.phone_number}</div>
