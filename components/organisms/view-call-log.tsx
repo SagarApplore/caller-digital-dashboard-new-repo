@@ -20,11 +20,6 @@ import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import axios from "axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  analyzeText,
-  generateShortSummary,
-  TextAnalysisResult,
-} from "@/utils/openai.util";
 
 interface SenderDetails {
   name: string;
@@ -105,13 +100,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const [apiData, setApiData] = useState<any>({});
   const [transcripts, setTranscripts] = useState<any[]>([]);
   const [summary, setSummary] = useState<string>("");
-  const [shortSummary, setShortSummary] = useState<string>("");
-  const [analysis, setAnalysis] = useState<TextAnalysisResult>({
-    sentiment: "positive",
-    intent: "",
-    keywords: [],
-    aiAnalysis: "",
-  });
+  const [showAllTags, setShowAllTags] = useState(false);
 
   const fetchCallLog = async () => {
     try {
@@ -139,10 +128,6 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const fetchSummary = async (summaryUri: string) => {
     try {
       const response = await axios.get(summaryUri);
-      const shortSummary = await generateShortSummary(response.data, 100);
-      const analysis = await analyzeText(response.data);
-      setAnalysis(analysis);
-      setShortSummary(shortSummary);
       setSummary(response.data);
     } catch (err) {
       console.error("Error fetching summary:", err);
@@ -248,7 +233,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
                   <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
                     <span className="text-sm font-bold text-gray-500">
                       {utils.string
-                        .getInitials(apiData?.clientId?.name)
+                        .getInitials(apiData?.clientId?.name ?? "Customer")
                         .toUpperCase()}
                     </span>
                   </div>
@@ -257,20 +242,20 @@ const ViewCallLog = ({ id }: { id: string }) => {
                   <span className="text-sm  text-gray-500">
                     {apiData?.clientId?.name}
                   </span>
-                  <span className="text-sm font-bold">
-                    {apiData?.customer_phone_number}
-                  </span>
+                  <span className="text-sm font-bold">web</span>
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm  text-gray-500">Customer ID</span>
+                <span className="text-sm  text-gray-500">Customer Number</span>
                 <span className="text-sm font-bold">
-                  {apiData?.clientId?._id}
+                  {apiData?.customer_phone_number || "Not available"}
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-sm  text-gray-500">Location</span>
-                <span className="text-sm font-bold">Delhi, India</span>
+                <span className="text-sm  text-gray-500">Agent Number</span>
+                <span className="text-sm font-bold">
+                  {apiData?.agent_phone_number || "Not available"}
+                </span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Language</span>
@@ -354,29 +339,68 @@ const ViewCallLog = ({ id }: { id: string }) => {
               <h2 className="text-lg font-bold">Call Summary</h2>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Intent</span>
-                <span className="text-sm font-bold">{analysis.intent}</span>
+                <span className="text-sm font-bold">{apiData.intent || "Not available"}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Resolution</span>
-                <span className="text-sm font-bold">{shortSummary}</span>
+                <span className="text-sm font-bold">{apiData.ai_analysis || summary || "Not available"}</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-sm  text-gray-500">Sentiment</span>
+                <div className="flex items-center gap-2">
+                  {(apiData.sentiment || "positive") === "positive" && (
+                    <Smile className="text-green-500 w-5 h-5" />
+                  )}
+                  {(apiData.sentiment || "neutral") === "neutral" && (
+                    <Smile className="text-gray-400 w-5 h-5" />
+                  )}
+                  {(apiData.sentiment || "negative") === "negative" && (
+                    <Frown className="text-red-500 -scale-x-100 w-5 h-5" />
+                  )}
+                  <span className="text-sm font-bold capitalize">
+                    {apiData.sentiment || "Not available"}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-sm  text-gray-500">Tags</span>
-                <div className="">
+                <div className="max-h-24 overflow-hidden">
                   <ul className="flex flex-wrap gap-2">
-                    {analysis?.keywords?.map((keyword: string) => (
+                    {apiData.tags ? (
+                      apiData.tags.split(',').slice(0, showAllTags ? undefined : 6).map((tag: string, index: number) => (
+                        <li
+                          key={index}
+                          className={`text-xs font-bold px-2 py-1 rounded-full max-w-[120px] truncate`}
+                          style={{
+                            backgroundColor: "#F3F4F6", // static light gray bg
+                            color: "#4B5563", // static gray text
+                          }}
+                          title={tag.trim()}
+                        >
+                          {tag.trim()}
+                        </li>
+                      ))
+                    ) : (
                       <li
-                        key={keyword}
-                        className={`text-xs font-bold px-2 py-1 rounded-full`}
+                        className={`text-xs font-bold px-2 py-1 rounded-full max-w-[120px] truncate`}
                         style={{
                           backgroundColor: "#F3F4F6", // static light gray bg
                           color: "#4B5563", // static gray text
                         }}
+                        title="No tags available"
                       >
-                        {keyword}
+                        No tags available
                       </li>
-                    ))}
+                    )}
                   </ul>
+                  {apiData.tags && apiData.tags.split(',').length > 6 && (
+                    <button
+                      onClick={() => setShowAllTags(!showAllTags)}
+                      className="text-xs text-blue-600 hover:text-blue-800 mt-2 font-medium"
+                    >
+                      {showAllTags ? "Show less" : `View ${apiData.tags.split(',').length - 6} more`}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -477,25 +501,6 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     <span className="text-sm">Copy</span>
                   </div>
                 </div> */}
-              </div>
-
-              <div className="p-2 bg-gray-100 rounded-md text-sm text-gray-600">
-                AI analysis: {analysis.aiAnalysis}
-              </div>
-              <div className="flex flex-col items-center space-y-4 p-4 bg-gray-100 rounded-md w-fit">
-                <div className="text-lg font-bold">Sentiment Analysis</div>
-                <div className="flex flex-col gap-2 items-center">
-                  {analysis.sentiment === "positive" && (
-                    <Smile className="text-green-500 w-10 h-10" />
-                  )}
-                  {analysis.sentiment === "neutral" && (
-                    <Smile className="text-gray-400 w-10 h-10" />
-                  )}
-                  {analysis.sentiment === "negative" && (
-                    <Frown className="text-red-500 -scale-x-100 w-10 h-10" />
-                  )}
-                  <span>{analysis.sentiment}</span>
-                </div>
               </div>
             </div>
           </div>

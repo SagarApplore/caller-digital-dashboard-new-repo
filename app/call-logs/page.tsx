@@ -8,7 +8,7 @@ const CallLogsPage = () => {
       <Dashboard
         header={{
           title: "Conversation Logs",
-          subtitle: { text: "Live", className: "text-gray-700 bg-green-200" },
+          // subtitle: { text: "Live", className: "text-gray-700 bg-green-200" },
         }}
       >
         <CallLogs />

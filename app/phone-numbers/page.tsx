@@ -461,7 +461,7 @@ export default function PhoneNumbersPage() {
                             {assignment.agentId ? (
                               <div className="flex flex-col">
                                 <span className="font-medium text-gray-900 text-sm">{assignment.agentId.agentName}</span>
-                                <Badge 
+                                {/* <Badge 
                                   variant={assignment.agentId.status === 'active' ? 'default' : 'secondary'}
                                   className={`w-fit mt-1 px-2 py-0.5 text-xs font-medium rounded-full ${
                                     assignment.agentId.status === 'active'
@@ -470,7 +470,7 @@ export default function PhoneNumbersPage() {
                                   }`}
                                 >
                                   {assignment.agentId.status}
-                                </Badge>
+                                </Badge> */}
                               </div>
                             ) : (
                               <span className="text-gray-500 text-sm font-medium">Not Linked</span>
