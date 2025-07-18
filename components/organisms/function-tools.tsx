@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "./card";
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectContent, SelectTrigger } from "../ui/select";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { toast } from "react-toastify";
@@ -181,6 +181,35 @@ const FunctionTools = () => {
       toast.success("Tool added successfully");
     } catch (err) {
       // Optionally handle error
+    }
+  };
+
+  // Delete tool handler
+  const handleDelete = async (tool: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${tool.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Call the delete API
+      const response = await apiRequest(
+        endpoints.functionTools.delete.replace(':id', tool._id),
+        "DELETE"
+      );
+
+      if (response?.data?.success) {
+        // Remove from local state
+        setExistingTools((prev) => prev.filter((t) => t._id !== tool._id));
+        toast.success("Function tool deleted successfully");
+      } else {
+        throw new Error(response?.data?.message || "Failed to delete function tool");
+      }
+    } catch (error) {
+      console.error("Error deleting function tool:", error);
+      toast.error("Failed to delete function tool. Please try again.");
     }
   };
 
