@@ -188,7 +188,7 @@ export default function Login() {
               </form>
 
               {/* Divider */}
-              <div className="my-4">
+              {/* <div className="my-4">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300"></div>
@@ -199,10 +199,10 @@ export default function Login() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               {/* Social Login Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
                   className="flex items-center justify-center space-x-2 py-2.5 border-gray-300 hover:bg-gray-50 bg-transparent"
@@ -239,10 +239,10 @@ export default function Login() {
                   </svg>
                   <span className="text-gray-700">Microsoft</span>
                 </Button>
-              </div>
+              </div> */}
 
               {/* Contact Sales */}
-              <div className="mt-4 text-center">
+              {/* <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600">
                   {"Don't have an account? "}
                   <Button
@@ -252,7 +252,7 @@ export default function Login() {
                     Contact Sales
                   </Button>
                 </p>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
 

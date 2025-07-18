@@ -53,6 +53,12 @@ export interface HandoffConfig {
   phoneNumberId: string;
 }
 
+export interface ExtraPrompts {
+  summaryPrompt: string;
+  successEvaluationPrompt: string;
+  failureEvaluationPrompt: string;
+}
+
 const ChannelsAndPhoneMapping = ({
   channels,
   toggleChannel,
@@ -60,6 +66,8 @@ const ChannelsAndPhoneMapping = ({
   updateFirstMessage,
   handoffConfig,
   updateHandoffConfig,
+  extraPrompts,
+  updateExtraPrompts,
 }: {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
@@ -67,6 +75,8 @@ const ChannelsAndPhoneMapping = ({
   updateFirstMessage: (channelId: string, firstMessage: string) => void;
   handoffConfig: HandoffConfig;
   updateHandoffConfig: (config: HandoffConfig) => void;
+  extraPrompts: ExtraPrompts;
+  updateExtraPrompts: (prompts: ExtraPrompts) => void;
 }) => {
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +122,27 @@ const ChannelsAndPhoneMapping = ({
       ...handoffConfig,
       phoneNumber,
       phoneNumberId,
+    });
+  };
+
+  const handleSummaryPrompt = (value: string) => {
+    updateExtraPrompts({
+      ...extraPrompts,
+      summaryPrompt: value,
+    });
+  };
+
+  const handleSuccessEvaluationPrompt = (value: string) => {
+    updateExtraPrompts({
+      ...extraPrompts,
+      successEvaluationPrompt: value,
+    });
+  };
+
+  const handleFailureEvaluationPrompt = (value: string) => {
+    updateExtraPrompts({
+      ...extraPrompts,
+      failureEvaluationPrompt: value,
     });
   };
 
@@ -207,6 +238,55 @@ const ChannelsAndPhoneMapping = ({
               </CardContent>
             </Card>
           ))}
+        </div>
+      </div>
+
+      {/* Extra Prompts Section */}
+      <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold">Extra Prompts</h3>
+          <p className="text-gray-600 text-sm">
+            Optional prompts for enhanced agent behavior
+          </p>
+        </div>
+
+        <div className="w-full flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="summary-prompt" className="text-sm font-medium">
+              Summary Prompt
+            </Label>
+            <Textarea
+              id="summary-prompt"
+              className="h-32"
+              placeholder="Enter summary prompt (optional)"
+              value={extraPrompts.summaryPrompt}
+              onChange={(e) => handleSummaryPrompt(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="success-evaluation-prompt" className="text-sm font-medium">
+              Success Evaluation Prompt
+            </Label>
+            <Textarea
+              id="success-evaluation-prompt"
+              className="h-32"
+              placeholder="Enter Success Evaluation Prompt (optional)"
+              value={extraPrompts.successEvaluationPrompt}
+              onChange={(e) => handleSuccessEvaluationPrompt(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="failure-evaluation-prompt" className="text-sm font-medium">
+              Failure Evaluation Prompt
+            </Label>
+            <Textarea
+              id="failure-evaluation-prompt"
+              className="h-32"
+              placeholder="Failure Evaluation Prompt (optional)"
+              value={extraPrompts.failureEvaluationPrompt}
+              onChange={(e) => handleFailureEvaluationPrompt(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
