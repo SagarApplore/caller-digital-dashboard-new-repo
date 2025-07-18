@@ -6,7 +6,7 @@ import {
   Building2,
   Bot,
   Plus,
-  Hash,
+  PhoneCall,
   CodeXml,
 } from "lucide-react";
 
@@ -58,7 +58,7 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     id: "phone-numbers",
     name: "Phone Numbers",
     path: "/phone-numbers",
-    icon: Hash,
+    icon: PhoneCall,
     isActive: false,
   },
   {
@@ -67,18 +67,18 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     path: "/call-logs",
     icon: Phone,
   },
-  {
-    id: "inbound-trunks",
-    name: "Inbound Trunks",
-    path: "/inbound-trunks",
-    icon: Building2,
-  },
-  {
-    id: "create-inbound-trunk",
-    name: "Create Inbound Trunk",
-    path: "/inbound-trunks/new",
-    icon: Plus,
-  },
+  // {
+  //   id: "inbound-trunks",
+  //   name: "Inbound Trunks",
+  //   path: "/inbound-trunks",
+  //   icon: Building2,
+  // },
+  // {
+  //   id: "create-inbound-trunk",
+  //   name: "Create Inbound Trunk",
+  //   path: "/inbound-trunks/new",
+  //   icon: Plus,
+  // },
   {
     id: "manage-brands",
     name: "Manage Brands",
