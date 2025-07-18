@@ -48,9 +48,7 @@ export interface PhoneNumber {
 
 export interface HandoffConfig {
   enabled: boolean;
-  countryCode: string;
-  phoneNumber: string;
-  phoneNumberId: string;
+  handoff_number: string;
 }
 
 export interface ExtraPrompts {
@@ -105,27 +103,14 @@ const ChannelsAndPhoneMapping = ({
       ...handoffConfig,
       enabled,
       // Reset phone number when disabling handoff
-      phoneNumber: enabled ? handoffConfig.phoneNumber : "",
-      countryCode: enabled ? handoffConfig.countryCode : "",
-      phoneNumberId: enabled ? handoffConfig.phoneNumberId : "",
+      handoff_number: enabled ? handoffConfig.handoff_number : "",
     });
   };
 
-  const handleCountryCodeChange = (countryCode: string) => {
+  const handleHandoffNumberChange = (handoff_number: string) => {
     updateHandoffConfig({
       ...handoffConfig,
-      countryCode,
-    });
-  };
-
-  const handlePhoneNumberChange = (
-    phoneNumber: string,
-    phoneNumberId: string = ""
-  ) => {
-    updateHandoffConfig({
-      ...handoffConfig,
-      phoneNumber,
-      phoneNumberId,
+      handoff_number,
     });
   };
 
@@ -348,27 +333,11 @@ const ChannelsAndPhoneMapping = ({
                   <Label className="text-sm font-medium text-gray-700">
                     Handoff Phone Number
                   </Label>
-                  <div className="flex gap-2">
-                    <div className="w-24">
-                      <Input
-                        placeholder="+91"
-                        value={handoffConfig.countryCode}
-                        onChange={(e: any) =>
-                          handleCountryCodeChange(e.target.value)
-                        }
-                        className="text-center"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        placeholder="xxxxxxxx77"
-                        value={handoffConfig.phoneNumber}
-                        onChange={(e: any) =>
-                          handlePhoneNumberChange(e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
+                  <Input
+                    placeholder="Enter handoff phone number (e.g., +91xxxxxxxx77)"
+                    value={handoffConfig.handoff_number}
+                    onChange={(e: any) => handleHandoffNumberChange(e.target.value)}
+                  />
                   <p className="text-xs text-gray-500">
                     Format: Country code + Phone number (e.g., +91xxxxxxxx77)
                   </p>
