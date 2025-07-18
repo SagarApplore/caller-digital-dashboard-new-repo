@@ -202,6 +202,15 @@ const CreateAgent = ({
     initializeHandoffConfig()
   );
 
+  // Add separate state for agent phone number mapping
+  const [agentPhoneNumber, setAgentPhoneNumber] = useState<{
+    phoneNumber: string;
+    phoneNumberId: string;
+  }>({
+    phoneNumber: initialData?.agent_number || "",
+    phoneNumberId: initialData?.phone_number_assignment || "",
+  });
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -257,6 +266,12 @@ const CreateAgent = ({
       if (!handoffConfig.phoneNumber.trim()) {
         errors.push("Handoff phone number is required");
       }
+    }
+
+    // Validate agent phone number mapping (optional but recommended for voice channel)
+    const voiceChannel = channels.find((channel) => channel.id.toLowerCase() === "voice");
+    if (voiceChannel?.active && !agentPhoneNumber.phoneNumber.trim()) {
+      errors.push("Agent phone number is recommended for voice channel");
     }
 
     return { isValid: errors.length === 0, errors };
@@ -688,6 +703,12 @@ const CreateAgent = ({
               phoneNumberId: agentData.handoff.phoneNumberId || "",
             });
           }
+
+          // Update agent phone number mapping
+          setAgentPhoneNumber({
+            phoneNumber: agentData.agent_number || "",
+            phoneNumberId: agentData.phone_number_assignment || "",
+          });
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -715,6 +736,7 @@ const CreateAgent = ({
     chatIntegration,
     emailIntegration,
     handoffConfig,
+    agentPhoneNumber,
   ]);
 
   const handleLanguageClick = (id: number) => {
@@ -806,7 +828,8 @@ const CreateAgent = ({
         .filter((tone) => tone.selected)
         .map((tone) => tone.name.toLowerCase()),
       call_type: "OUTBOUND", // or "inbound", etc.
-      agent_number: "+15550123", // Phone number for the agent
+      agent_number: agentPhoneNumber.phoneNumber || "", // Phone number for the agent
+      phone_number_assignment: agentPhoneNumber.phoneNumberId || null, // Phone number assignment ID
       summaryPrompt: extraPrompts.summaryPrompt,
       successEvaluationPrompt: extraPrompts.successEvaluationPrompt,
       failureEvaluationPrompt: extraPrompts.failureEvaluationPrompt,
@@ -1033,6 +1056,10 @@ const CreateAgent = ({
               updateHandoffConfig={setHandoffConfig}
               extraPrompts={extraPrompts}
               updateExtraPrompts={setExtraPrompts}
+              agentPhoneNumber={agentPhoneNumber}
+              updateAgentPhoneNumber={(phoneNumber, phoneNumberId) => 
+                setAgentPhoneNumber({ phoneNumber, phoneNumberId })
+              }
             />
           )}
 
