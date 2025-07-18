@@ -115,6 +115,17 @@ const CallLogs = () => {
     },
   });
   const [totalMinutes, setTotalMinutes] = useState<number>(0);
+  const [escalationMetrics, setEscalationMetrics] = useState<{
+    totalCalls: number;
+    escalatedCalls: number;
+    escalationRate: number;
+    aiResolutionPercentage: number;
+  }>({
+    totalCalls: 0,
+    escalatedCalls: 0,
+    escalationRate: 0,
+    aiResolutionPercentage: 100,
+  });
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -155,6 +166,12 @@ const CallLogs = () => {
       setTotalMinutes(response.data.totalMinutes || 0);
       setCurrentPage(response.data.currentPage || 1);
       setTotalPages(response.data.totalPages || 1);
+      setEscalationMetrics(response.data.escalationMetrics || {
+        totalCalls: 0,
+        escalatedCalls: 0,
+        escalationRate: 0,
+        aiResolutionPercentage: 100,
+      });
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
@@ -465,13 +482,13 @@ const CallLogs = () => {
       },
       {
         label: "AI Resolution %",
-        value: "N/A",
+        value: escalationMetrics.totalCalls > 0 ? `${escalationMetrics.aiResolutionPercentage}%` : "N/A",
         change: "N/A",
         trend: "up" as const,
       },
       {
         label: "Escalation Rate",
-        value: "N/A",
+        value: escalationMetrics.totalCalls > 0 ? `${escalationMetrics.escalationRate}%` : "N/A",
         change: "N/A",
         trend: "down" as const,
       },
@@ -488,7 +505,7 @@ const CallLogs = () => {
         trend: "down" as const,
       },
     ];
-  }, [filteredConversations, totalCount, totalMinutes]);
+  }, [filteredConversations, totalCount, totalMinutes, escalationMetrics]);
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
