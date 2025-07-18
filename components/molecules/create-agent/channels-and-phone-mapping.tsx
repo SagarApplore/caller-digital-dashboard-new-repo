@@ -216,6 +216,11 @@ const ChannelsAndPhoneMapping = ({
                 {/* Voice Prompt */}
                 {channel.active && (
                   <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        {channel.name} Instructions <span className="text-red-500">*</span>
+                      </Label>
+                    </div>
                     <Textarea
                       id="voice-instructions"
                       placeholder="Enter voice-specific instructions for phone calls..."
@@ -226,9 +231,14 @@ const ChannelsAndPhoneMapping = ({
                   </div>
                 )}
 
-                {/* First Message - Only for Voice Channel */}
-                {channel.active && channel.id.toLowerCase() === "voice" && (
+                {/* First Message - Only for Voice and Chat Channels */}
+                {channel.active && (channel.id.toLowerCase() === "voice" || channel.id.toLowerCase() === "chat") && (
                   <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        First Message <span className="text-red-500">*</span>
+                      </Label>
+                    </div>
                     <Input
                       id="first-message"
                       placeholder="First Message..."
@@ -336,7 +346,7 @@ const ChannelsAndPhoneMapping = ({
               <div className="space-y-4">
                 <div className="flex flex-col gap-2">
                   <Label className="text-sm font-medium text-gray-700">
-                    Handoff Phone Number <span className="text-red-500">*</span>
+                    Handoff Phone Number
                   </Label>
                   <div className="flex gap-2">
                     <div className="w-24">

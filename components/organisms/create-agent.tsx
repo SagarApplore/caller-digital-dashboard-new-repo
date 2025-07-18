@@ -250,29 +250,21 @@ const CreateAgent = ({
 
     // Validate each active channel
     activeChannels.forEach((channel) => {
+      const channelId = channel.id.toLowerCase();
+      
+      // All channels require a prompt
       if (!channel.prompt.value.trim()) {
         errors.push(`${channel.name} prompt is required`);
       }
-      if (!channel.firstMessage.trim()) {
+      
+      // Only voice and chat channels require first message
+      if ((channelId === "voice" || channelId === "chat") && !channel.firstMessage.trim()) {
         errors.push(`${channel.name} first message is required`);
       }
     });
 
-    // Validate handoff configuration
-    if (handoffConfig.enabled) {
-      if (!handoffConfig.countryCode.trim()) {
-        errors.push("Handoff country code is required");
-      }
-      if (!handoffConfig.phoneNumber.trim()) {
-        errors.push("Handoff phone number is required");
-      }
-    }
-
-    // Validate agent phone number mapping (optional but recommended for voice channel)
-    const voiceChannel = channels.find((channel) => channel.id.toLowerCase() === "voice");
-    if (voiceChannel?.active && !agentPhoneNumber.phoneNumber.trim()) {
-      errors.push("Agent phone number is recommended for voice channel");
-    }
+    // Handoff configuration is optional - no validation needed
+    // Agent phone number mapping is optional - no validation needed
 
     return { isValid: errors.length === 0, errors };
   };
@@ -363,6 +355,16 @@ const CreateAgent = ({
     // Validate that each active channel has its corresponding integration configured
     activeChannels.forEach((channel) => {
       const channelId = channel.id.toLowerCase();
+
+      // Validate prompt for all channels
+      if (!channel.prompt.value.trim()) {
+        errors.push(`${channel.name} prompt is required`);
+      }
+
+      // Validate first message only for voice and chat channels
+      if ((channelId === "voice" || channelId === "chat") && !channel.firstMessage.trim()) {
+        errors.push(`${channel.name} first message is required`);
+      }
 
       if (channelId === "voice") {
         if (
@@ -881,6 +883,9 @@ const CreateAgent = ({
             model: chatIntegration.selectedLLMModelName,
             providerName: chatIntegration.selectedLLMProviderName,
           },
+          firstMessage: channels.filter(
+            (channel) => channel.id.toLowerCase() === "chat"
+          )?.[0]?.firstMessage,
           agentPrompt: channels.filter(
             (channel) => channel.id.toLowerCase() === "chat"
           )?.[0]?.prompt?.value,

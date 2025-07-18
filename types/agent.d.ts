@@ -34,7 +34,7 @@ export interface IAgent {
   };
   chats?: {
     llmProvider: IAIProvider;
-    firstMessage?: string;
+    firstMessage: string;
     agentPrompt: string;
     temperature: string;
     maxTokens: number;
