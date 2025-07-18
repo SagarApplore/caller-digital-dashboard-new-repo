@@ -11,7 +11,7 @@ export const apiRequest = async (
     const tokenObj = localStorage.getItem("auth_token");
     const token = tokenObj ? JSON.parse(tokenObj).accessToken : null;
     const baseUrl =
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      process.env.NEXT_PUBLIC_REACT_APP_BASE_URL || "http://localhost:8000/api/v1";
     if (!baseUrl) {
       throw new Error("Base URL is not defined in environment variables.");
     }
