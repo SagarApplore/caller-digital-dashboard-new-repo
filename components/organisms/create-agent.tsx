@@ -524,12 +524,12 @@ const CreateAgent = ({
     const fetchLanguages = async () => {
       const response = [
         {
-          id: 1,
+          id: 2,
           name: "English",
           key: "en",
         },
         {
-          id: 2,
+          id: 1,
           name: "Hindi",
           key: "hi",
         },
@@ -706,20 +706,10 @@ const CreateAgent = ({
           }
 
           // Update handoff configuration
-          if (agentData.handoff) {
-            const handoffNumber = agentData.handoff.handoff_number || "";
-            const countryCode = handoffNumber.startsWith("+")
-              ? handoffNumber.substring(0, 3)
-              : "";
-            const phoneNumber = handoffNumber.startsWith("+")
-              ? handoffNumber.substring(3)
-              : handoffNumber;
-
+          if (agentData.handoff !== undefined) {
             setHandoffConfig({
-              enabled: agentData.handoff.enabled || false,
-              countryCode: countryCode,
-              phoneNumber: phoneNumber,
-              phoneNumberId: agentData.handoff.phoneNumberId || "",
+              enabled: agentData.handoff || false,
+              handoff_number: agentData.handoff_number || "",
             });
           }
 
@@ -842,7 +832,9 @@ const CreateAgent = ({
           }
         })
         .map((channel) => channel.id.toLowerCase()),
-      languages: personaAndBehavior.languages.map((language) => language.key),
+      languages: personaAndBehavior.languages
+        .filter((language) => language.selected)
+        .map((language) => language.key),
       tone: personaAndBehavior.tones
         .filter((tone) => tone.selected)
         .map((tone) => tone.name.toLowerCase()),
