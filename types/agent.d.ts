@@ -15,6 +15,10 @@ export interface IAgent {
   channels: EAgentChannels[];
   knowledgeBase: IKnowledgeBase[] | string[];
   functionTools: string[];
+  handoff: boolean;
+  handoff_number: string;
+  agent_number?: string;
+  phone_number_assignment?: string;
   voice?: {
     llmProvider: IAIProvider;
     voiceProvider: IAIProvider;

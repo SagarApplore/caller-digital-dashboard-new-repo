@@ -183,27 +183,15 @@ const CreateAgent = ({
 
   // Initialize handoff configuration
   const initializeHandoffConfig = (): HandoffConfig => {
-    if (initialData?.handoff) {
-      const handoffNumber = initialData.handoff.handoff_number || "";
-      const countryCode = handoffNumber.startsWith("+")
-        ? handoffNumber.substring(0, 3)
-        : "";
-      const phoneNumber = handoffNumber.startsWith("+")
-        ? handoffNumber.substring(3)
-        : handoffNumber;
-
+    if (initialData?.handoff !== undefined) {
       return {
-        enabled: initialData.handoff.enabled || false,
-        countryCode: countryCode,
-        phoneNumber: phoneNumber,
-        phoneNumberId: initialData.handoff.phoneNumberId || "",
+        enabled: initialData.handoff || false,
+        handoff_number: initialData.handoff_number || "",
       };
     }
     return {
       enabled: false,
-      countryCode: "",
-      phoneNumber: "",
-      phoneNumberId: "",
+      handoff_number: "",
     };
   };
 
@@ -870,17 +858,8 @@ const CreateAgent = ({
       functionTools: functionToolsData.selectedFunctionTools.map(
         (tool) => tool._id
       ), // Array of function tool ObjectIds
-      handoff: handoffConfig.enabled
-        ? {
-            enabled: handoffConfig.enabled,
-            handoff_number: `${handoffConfig.countryCode}${handoffConfig.phoneNumber}`,
-            phoneNumberId: handoffConfig.phoneNumberId,
-          }
-        : {
-            enabled: false,
-            handoff_number: null,
-            phoneNumberId: null,
-          },
+      handoff: handoffConfig.enabled,
+      handoff_number: handoffConfig.enabled ? handoffConfig.handoff_number : "",
       voice: {
         llmProvider: {
           model: voiceIntegration.selectedLLMModelName,
