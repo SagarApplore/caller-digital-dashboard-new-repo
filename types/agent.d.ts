@@ -27,14 +27,14 @@ export interface IAgent {
   };
   email?: {
     llmProvider: IAIProvider;
-    firstMessage: string;
+    firstMessage?: string;
     agentPrompt: string;
     temperature: string;
     maxTokens: number;
   };
   chats?: {
     llmProvider: IAIProvider;
-    firstMessage: string;
+    firstMessage?: string;
     agentPrompt: string;
     temperature: string;
     maxTokens: number;

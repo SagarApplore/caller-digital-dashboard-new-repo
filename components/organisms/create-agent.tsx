@@ -875,34 +875,32 @@ const CreateAgent = ({
         temperature: 100,
         maxTokens: 100,
       },
-      chats: {
-        llmProvider: {
-          model: chatIntegration.selectedLLMModelName,
-          providerName: chatIntegration.selectedLLMProviderName,
+      ...(channels.find(ch => ch.id.toLowerCase() === "chat")?.active && {
+        chats: {
+          llmProvider: {
+            model: chatIntegration.selectedLLMModelName,
+            providerName: chatIntegration.selectedLLMProviderName,
+          },
+          agentPrompt: channels.filter(
+            (channel) => channel.id.toLowerCase() === "chat"
+          )?.[0]?.prompt?.value,
+          temperature: 100,
+          maxTokens: 100,
         },
-        firstMessage: channels.filter(
-          (channel) => channel.id.toLowerCase() === "chat"
-        )?.[0]?.firstMessage,
-        agentPrompt: channels.filter(
-          (channel) => channel.id.toLowerCase() === "chat"
-        )?.[0]?.prompt?.value,
-        temperature: 100,
-        maxTokens: 100,
-      },
-      email: {
-        llmProvider: {
-          model: emailIntegration.selectedLLMModelName,
-          providerName: emailIntegration.selectedLLMProviderName,
+      }),
+      ...(channels.find(ch => ch.id.toLowerCase() === "email")?.active && {
+        email: {
+          llmProvider: {
+            model: emailIntegration.selectedLLMModelName,
+            providerName: emailIntegration.selectedLLMProviderName,
+          },
+          agentPrompt: channels.filter(
+            (channel) => channel.id.toLowerCase() === "email"
+          )?.[0]?.prompt?.value,
+          temperature: 100,
+          maxTokens: 100,
         },
-        firstMessage: channels.filter(
-          (channel) => channel.id.toLowerCase() === "email"
-        )?.[0]?.firstMessage,
-        agentPrompt: channels.filter(
-          (channel) => channel.id.toLowerCase() === "email"
-        )?.[0]?.prompt?.value,
-        temperature: 100,
-        maxTokens: 100,
-      },
+      }),
     };
 
     if (mode === "edit" && agentId) {

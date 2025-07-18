@@ -226,8 +226,8 @@ const ChannelsAndPhoneMapping = ({
                   </div>
                 )}
 
-                {/* First Message */}
-                {channel.active && (
+                {/* First Message - Only for Voice Channel */}
+                {channel.active && channel.id.toLowerCase() === "voice" && (
                   <div className="flex flex-col gap-4">
                     <Input
                       id="first-message"
