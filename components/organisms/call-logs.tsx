@@ -115,15 +115,25 @@ const CallLogs = () => {
     },
   });
   const [totalMinutes, setTotalMinutes] = useState<number>(0);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Fetch call logs data from API
   const fetchCallLogs = async (
     assistantId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    page: number = currentPage,
+    limit: number = pageSize
   ) => {
     try {
-      const params: any = {};
+      const params: any = {
+        page: page.toString(),
+        limit: limit.toString(),
+      };
       if (assistantId && assistantId !== "all-assistants") {
         params.assistantId = assistantId;
       }
@@ -143,6 +153,8 @@ const CallLogs = () => {
       setApiData(response.data.data || []);
       setTotalCount(response.data.totalCount || 0);
       setTotalMinutes(response.data.totalMinutes || 0);
+      setCurrentPage(response.data.currentPage || 1);
+      setTotalPages(response.data.totalPages || 1);
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
@@ -166,7 +178,7 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       await Promise.all([
-        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate),
+        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, currentPage, pageSize),
         fetchAgents(),
       ]);
     } catch (err: any) {
@@ -181,7 +193,8 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      await fetchCallLogs(assistantId, filters.startDate, filters.endDate);
+      setCurrentPage(1); // Reset to first page when filter changes
+      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, 1, pageSize);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
@@ -194,10 +207,13 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
+      setCurrentPage(1); // Reset to first page when filter changes
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
-        dateInputs.endDate
+        dateInputs.endDate,
+        1,
+        pageSize
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -222,8 +238,9 @@ const CallLogs = () => {
     setDateInputs({ startDate: "", endDate: "" });
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
+    setCurrentPage(1); // Reset to first page when filter changes
     // Refetch data without date filter
-    fetchCallLogs(filters.assistant);
+    fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize);
   };
 
   // Handle apply date filter from temp state
@@ -233,10 +250,13 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
+      setCurrentPage(1); // Reset to first page when filter changes
       await fetchCallLogs(
         filters.assistant,
         tempDateFilter.startDate,
-        tempDateFilter.endDate
+        tempDateFilter.endDate,
+        1,
+        pageSize
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -500,15 +520,51 @@ const CallLogs = () => {
         longDuration: false,
       },
     });
-    setDateInputs({
-      startDate: "",
-      endDate: "",
-    });
-    setTempDateFilter({
-      startDate: "",
-      endDate: "",
-    });
-    setSelectedConversations([]);
+    setDateInputs({ startDate: "", endDate: "" });
+    setTempDateFilter({ startDate: "", endDate: "" });
+    setShowDateFilter(false);
+    setCurrentPage(1); // Reset to first page when clearing filters
+    fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize);
+  };
+
+  // Pagination functions
+  const handlePageChange = async (page: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setCurrentPage(page);
+      await fetchCallLogs(
+        filters.assistant,
+        dateInputs.startDate,
+        dateInputs.endDate,
+        page,
+        pageSize
+      );
+    } catch (err: any) {
+      console.error("Error changing page:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageSizeChange = async (newPageSize: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset to first page when changing page size
+      await fetchCallLogs(
+        filters.assistant,
+        dateInputs.startDate,
+        dateInputs.endDate,
+        1,
+        newPageSize
+      );
+    } catch (err: any) {
+      console.error("Error changing page size:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggleConversationSelection = (id: string) => {
@@ -767,15 +823,15 @@ const CallLogs = () => {
             value={filters.language}
             onValueChange={(value) => updateFilter("language", value)}
           >
-            <SelectTrigger className="w-full sm:w-40">
+            {/* <SelectTrigger className="w-full sm:w-40">
               <SelectValue placeholder="All Languages" />
-            </SelectTrigger>
-            <SelectContent>
+            </SelectTrigger> */}
+            {/* <SelectContent>
               <SelectItem value="all-languages">All Languages</SelectItem>
               <SelectItem value="english">English</SelectItem>
               <SelectItem value="spanish">Spanish</SelectItem>
               <SelectItem value="french">French</SelectItem>
-            </SelectContent>
+            </SelectContent> */}
           </Select>
         </div>
 
@@ -783,14 +839,14 @@ const CallLogs = () => {
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Search by phone, email, user ID..."
+              placeholder="Search by assistant"
               value={filters.searchQuery}
               onChange={(e) => updateFilter("searchQuery", e.target.value)}
               className="pl-10 w-full sm:w-64"
             />
           </div>
 
-          <div className="flex flex-row flex-wrap items-center gap-2">
+          {/* <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
               className={`cursor-pointer transition-colors ${
                 filters.quickFilters.escalation
@@ -828,13 +884,13 @@ const CallLogs = () => {
                 <X className="w-3 h-3 ml-1" />
               )}
             </Badge>
-          </div>
+          </div> */}
 
-          {hasActiveFilters() && (
+          {/* {hasActiveFilters() && (
             <Button variant="outline" size="sm" onClick={clearAllFilters}>
               Clear All
             </Button>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -1199,6 +1255,89 @@ const CallLogs = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && !error && totalCount > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Show</span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => handlePageSizeChange(parseInt(value))}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-600">entries per page</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * pageSize) + 1} to{" "}
+              {Math.min(currentPage * pageSize, totalCount)} of {totalCount} entries
+            </span>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1"
+              >
+                Previous
+              </Button>
+              
+              {/* Page numbers */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                      className="px-3 py-1 min-w-[40px]"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1"
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 };

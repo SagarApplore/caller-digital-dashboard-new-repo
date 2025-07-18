@@ -20,11 +20,6 @@ import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import axios from "axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  analyzeText,
-  generateShortSummary,
-  TextAnalysisResult,
-} from "@/utils/openai.util";
 
 interface SenderDetails {
   name: string;
@@ -105,14 +100,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const [apiData, setApiData] = useState<any>({});
   const [transcripts, setTranscripts] = useState<any[]>([]);
   const [summary, setSummary] = useState<string>("");
-  const [shortSummary, setShortSummary] = useState<string>("");
   const [showAllTags, setShowAllTags] = useState(false);
-  const [analysis, setAnalysis] = useState<TextAnalysisResult>({
-    sentiment: "positive",
-    intent: "",
-    keywords: [],
-    aiAnalysis: "",
-  });
 
   const fetchCallLog = async () => {
     try {
@@ -140,10 +128,6 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const fetchSummary = async (summaryUri: string) => {
     try {
       const response = await axios.get(summaryUri);
-      const shortSummary = await generateShortSummary(response.data, 100);
-      const analysis = await analyzeText(response.data);
-      setAnalysis(analysis);
-      setShortSummary(shortSummary);
       setSummary(response.data);
     } catch (err) {
       console.error("Error fetching summary:", err);
@@ -355,26 +339,26 @@ const ViewCallLog = ({ id }: { id: string }) => {
               <h2 className="text-lg font-bold">Call Summary</h2>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Intent</span>
-                <span className="text-sm font-bold">{apiData.intent || analysis.intent || "Not available"}</span>
+                <span className="text-sm font-bold">{apiData.intent || "Not available"}</span>
               </div>
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Resolution</span>
-                <span className="text-sm font-bold">{apiData.ai_analysis || shortSummary || "Not available"}</span>
+                <span className="text-sm font-bold">{apiData.ai_analysis || summary || "Not available"}</span>
               </div>
               <div className="flex flex-col gap-2">
                 <span className="text-sm  text-gray-500">Sentiment</span>
                 <div className="flex items-center gap-2">
-                  {(apiData.sentiment || analysis.sentiment) === "positive" && (
+                  {(apiData.sentiment || "positive") === "positive" && (
                     <Smile className="text-green-500 w-5 h-5" />
                   )}
-                  {(apiData.sentiment || analysis.sentiment) === "neutral" && (
+                  {(apiData.sentiment || "neutral") === "neutral" && (
                     <Smile className="text-gray-400 w-5 h-5" />
                   )}
-                  {(apiData.sentiment || analysis.sentiment) === "negative" && (
+                  {(apiData.sentiment || "negative") === "negative" && (
                     <Frown className="text-red-500 -scale-x-100 w-5 h-5" />
                   )}
                   <span className="text-sm font-bold capitalize">
-                    {apiData.sentiment || analysis.sentiment || "Not available"}
+                    {apiData.sentiment || "Not available"}
                   </span>
                 </div>
               </div>
@@ -397,19 +381,16 @@ const ViewCallLog = ({ id }: { id: string }) => {
                         </li>
                       ))
                     ) : (
-                      analysis?.keywords?.slice(0, showAllTags ? undefined : 6).map((keyword: string) => (
-                        <li
-                          key={keyword}
-                          className={`text-xs font-bold px-2 py-1 rounded-full max-w-[120px] truncate`}
-                          style={{
-                            backgroundColor: "#F3F4F6", // static light gray bg
-                            color: "#4B5563", // static gray text
-                          }}
-                          title={keyword}
-                        >
-                          {keyword}
-                        </li>
-                      ))
+                      <li
+                        className={`text-xs font-bold px-2 py-1 rounded-full max-w-[120px] truncate`}
+                        style={{
+                          backgroundColor: "#F3F4F6", // static light gray bg
+                          color: "#4B5563", // static gray text
+                        }}
+                        title="No tags available"
+                      >
+                        No tags available
+                      </li>
                     )}
                   </ul>
                   {apiData.tags && apiData.tags.split(',').length > 6 && (
@@ -418,14 +399,6 @@ const ViewCallLog = ({ id }: { id: string }) => {
                       className="text-xs text-blue-600 hover:text-blue-800 mt-2 font-medium"
                     >
                       {showAllTags ? "Show less" : `View ${apiData.tags.split(',').length - 6} more`}
-                    </button>
-                  )}
-                  {analysis?.keywords && analysis.keywords.length > 6 && !apiData.tags && (
-                    <button
-                      onClick={() => setShowAllTags(!showAllTags)}
-                      className="text-xs text-blue-600 hover:text-blue-800 mt-2 font-medium"
-                    >
-                      {showAllTags ? "Show less" : `View ${analysis.keywords.length - 6} more`}
                     </button>
                   )}
                 </div>
@@ -528,10 +501,6 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     <span className="text-sm">Copy</span>
                   </div>
                 </div> */}
-              </div>
-
-              <div className="p-2 bg-gray-100 rounded-md text-sm text-gray-600">
-                AI analysis: {analysis.aiAnalysis}
               </div>
             </div>
           </div>
