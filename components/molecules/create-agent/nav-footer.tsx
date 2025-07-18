@@ -9,6 +9,7 @@ const NavFooter = ({
   handleCreateAgent,
   mode = "create",
   creating,
+  validateCurrentStep,
 }: {
   activeStep: number;
   handleStepChange: (step: number) => void;
@@ -16,7 +17,17 @@ const NavFooter = ({
   handleCreateAgent: () => void;
   mode?: "create" | "edit";
   creating: boolean;
+  validateCurrentStep: () => { isValid: boolean; errors: string[] };
 }) => {
+  const handleNext = () => {
+    const validation = validateCurrentStep();
+    if (!validation.isValid) {
+      // The error will be shown by the parent component
+      return;
+    }
+    handleStepChange(activeStep + 1);
+  };
+
   return (
     <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow-lg shadow-gray-200">
       <Button
@@ -38,7 +49,7 @@ const NavFooter = ({
       ) : (
         <Button
           className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
-          onClick={() => handleStepChange(activeStep + 1)}
+          onClick={handleNext}
         >
           Next
           <ArrowRight className="w-4 h-4" />

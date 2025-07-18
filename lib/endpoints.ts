@@ -18,17 +18,29 @@ const endpoints = {
     create: "/knowledgeBase",
     getById: "/knowledgeBase/:id",
   },
+  functionTools: {
+    getAll: "/functionTools",
+    create: "/functionTools/create",
+    getById: "/functionTools/:id",
+  },
   llmModels: {
     getModels: "/ai-models/provider",
     getProviders: "/model-providers",
+    getModelsByName: "/ai-models/get-by-name",
   },
   ttsModels: {
     getModels: "/voice-models/provider",
     getProviders: "/voice-model-providers",
+    getModelsByName: "/voice-models/get-by-name",
   },
   sttModels: {
     getModels: "/stt-models/provider",
     getProviders: "/stt-model-providers",
+    getModelsByName: "/stt-models/get-by-name",
+  },
+  phoneNumbers: {
+    assign: "/phone-number-assignment",
+    get: "/phone-number",
   },
 };
 

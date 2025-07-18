@@ -1,6 +1,7 @@
 const responseMessages = {
   agent: {
     create: "Agent created successfully",
+    update: "Agent updated successfully",
   },
 };
 

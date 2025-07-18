@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
+import { Provider } from "react-redux";
+import { store } from "@/redux/store";
 
 export const metadata: Metadata = {
   title: "Caller.Digital Dashboard",
@@ -24,7 +26,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {/* <Provider store={store}> */}
+            {children}
+
+            {/* </Provider> */}
+          </AuthProvider>
           <ToastContainer position="top-right" autoClose={3000} />
         </ThemeProvider>
       </body>

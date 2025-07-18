@@ -49,6 +49,11 @@ export function VoiceAnalytics({ data }: { data: any }) {
       ? data.humanVsAgentSplit.humanPercentageDrop
       : 0;
 
+  const totalMinutes =
+    typeof data?.totalDuration === "number" && !isNaN(data.totalDuration)
+      ? data.totalDuration
+      : 0;
+
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
       <CardHeader className="p-0 pb-4">
@@ -108,7 +113,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
           </div>
         </div>
 
-        {/* Bottom Row Metrics */}
+        {/* Mid Row Metrics */}
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-gray-100 p-4 rounded-lg">
             <span className="text-sm text-gray-600 block mb-1">
@@ -160,6 +165,18 @@ export function VoiceAnalytics({ data }: { data: any }) {
               ) : (
                 <div className="text-xs text-gray-400">No handoff data</div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Row Metrics */}
+        <div className="">
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <span className="text-sm text-gray-600 block mb-1">
+              Total Minutes
+            </span>
+            <div className="text-3xl font-bold text-gray-900 mb-2">
+              {utils.string.formatDuration(totalMinutes)}
             </div>
           </div>
         </div>

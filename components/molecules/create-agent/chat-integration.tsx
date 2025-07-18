@@ -14,9 +14,11 @@ import React, { useEffect, useState } from "react";
 const ChatIntegration = ({
   chatIntegration,
   setChatIntegration,
+  mode = "create",
 }: {
   chatIntegration: any;
   setChatIntegration: (chatIntegration: any) => void;
+  mode?: "create" | "edit";
 }) => {
   const [loading, setLoading] = useState(true);
   const [configs, setConfigs] = useState<{
@@ -31,25 +33,88 @@ const ChatIntegration = ({
     },
   });
 
-  useEffect(() => {
-    const getData = async () =>
-      Promise.all([
-        new Promise((resolve) => {
-          apiRequest(endpoints.llmModels.getProviders, "GET").then((res) => {
-            resolve(res.data?.data ?? []);
-          });
-        }),
-      ]).then((results) => {
-        setConfigs({
-          llm: {
-            providers: results[0] as any,
-            models: [],
-          },
-        });
-        setLoading(false);
+  // Helper function to find provider by name
+  const findProviderByName = (providers: any[], name: string) => {
+    return providers.find((provider) => provider.name === name);
+  };
+
+  // Helper function to find model by name
+  const findModelByName = (models: any[], name: string) => {
+    return models.find((model) => model.name === name);
+  };
+
+  // Helper function to fetch models by provider name (for edit mode)
+  const fetchModelsByName = async (endpoint: string, providerName: string) => {
+    try {
+      // Try to fetch by name first using POST with provider name in body
+      const response = await apiRequest(endpoint, "POST", {
+        name: providerName,
       });
+      return response?.data?.data || [];
+    } catch (error) {
+      console.warn(
+        `Failed to fetch models by name for ${providerName}, falling back to ID-based approach`
+      );
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const llmProviders = await apiRequest(
+          endpoints.llmModels.getProviders,
+          "GET"
+        ).then((res) => res.data?.data ?? []);
+
+        setConfigs({
+          llm: { providers: llmProviders, models: [] },
+        });
+
+        // If in edit mode and we have existing selections, fetch the models
+        if (mode === "edit" && chatIntegration.selectedLLMProviderName) {
+          const llmProvider = findProviderByName(
+            llmProviders,
+            chatIntegration.selectedLLMProviderName
+          );
+          if (llmProvider) {
+            const models = await fetchModelsByName(
+              endpoints.llmModels.getModelsByName,
+              chatIntegration.selectedLLMProviderName
+            );
+
+            setConfigs((prev) => ({
+              ...prev,
+              llm: { ...prev.llm, models },
+            }));
+
+            // Update the chat integration with provider ID and model ID
+            let updatedChatIntegration = { ...chatIntegration };
+            updatedChatIntegration.selectedLLMProvider = llmProvider._id;
+
+            if (chatIntegration.selectedLLMModelName) {
+              const llmModel = findModelByName(
+                models,
+                chatIntegration.selectedLLMModelName
+              );
+              if (llmModel) {
+                updatedChatIntegration.selectedLLMModel = llmModel._id;
+              }
+            }
+
+            setChatIntegration(updatedChatIntegration);
+          }
+        }
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching providers:", error);
+        setLoading(false);
+      }
+    };
+
     getData();
-  }, []);
+  }, [mode]);
 
   // FETCH LLM MODELS
   useEffect(() => {
