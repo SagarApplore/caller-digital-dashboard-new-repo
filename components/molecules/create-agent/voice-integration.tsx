@@ -526,7 +526,7 @@ const VoiceIntegration = ({
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Voice Model
+                    Model
                   </label>
                   <div className="flex items-center space-x-3">
                     <Select
@@ -595,7 +595,7 @@ const VoiceIntegration = ({
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center gap-2 flex-1 bg-gray-100 rounded-lg">
+              {/* <div className="flex flex-col items-center justify-center gap-2 flex-1 bg-gray-100 rounded-lg">
                 <div className="flex items-center justify-center w-12 h-12 bg-purple-200 rounded-full">
                   <Volume2 className="w-6 h-6 text-purple-700" />
                 </div>
@@ -603,7 +603,7 @@ const VoiceIntegration = ({
                   <Play className="w-4 h-4" />
                   Preview Voice
                 </Button>
-              </div>
+              </div> */}
             </div>
           </CardContent>
         </Card>
@@ -660,7 +660,7 @@ const VoiceIntegration = ({
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Voice Model
+                  Model
                 </label>
                 <div className="flex items-center space-x-3">
                   <Select
@@ -744,7 +744,7 @@ const VoiceIntegration = ({
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Voice Model
+                  Model
                 </label>
                 <div className="flex items-center space-x-3">
                   <Select
