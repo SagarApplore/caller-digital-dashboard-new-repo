@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import apiRequest from '@/utils/api';
+import { toast } from 'react-toastify';
 
-export default function ToolTable({ existingTools }:any) {
+export default function ToolTable({ existingTools,setExistingTools }:any) {
   const [open, setOpen] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState('');
 
@@ -11,6 +13,20 @@ export default function ToolTable({ existingTools }:any) {
     setSelectedResponse(JSON.stringify(body, null, 2));
     setOpen(true);
   };
+  const handleDelete = async (id: string) => {
+  if (!id) return;
+  try {
+    await apiRequest(`/functionTools/${id}`, 'DELETE');
+    // Optionally re-fetch tools or remove from state
+    setExistingTools((prev:any) => prev.filter((tool: any) => tool._id !== id));
+    toast.success("Deleted successfully");
+    // OR if you're managing state: setTools(prev => prev.filter(t => t._id !== id));
+  } catch (err) {
+    console.error('Delete error:', err);
+    toast.error("Failed to delete tool");
+  }
+};
+
 
   return (
     <>
@@ -27,6 +43,7 @@ export default function ToolTable({ existingTools }:any) {
               <th className="px-4 py-2">Auth</th>
               <th className="px-4 py-2">Body</th>
               <th className="px-4 py-2">Response Body</th>
+              <th className="px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -57,6 +74,15 @@ export default function ToolTable({ existingTools }:any) {
                     '-'
                   )}
                 </td>
+                <td className="px-4 py-2">
+  <button
+    onClick={() => handleDelete(tool._id)}
+    className="text-red-600 hover:underline"
+  >
+    Delete
+  </button>
+</td>
+
               </tr>
             ))}
           </tbody>
