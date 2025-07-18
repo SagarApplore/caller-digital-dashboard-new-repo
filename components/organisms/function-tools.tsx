@@ -591,7 +591,7 @@ const FunctionTools = () => {
             {existingTools.length === 0 ? (
               <div className="text-gray-500">No function tools added yet.</div>
             ) : (
-            <ToolTable existingTools={existingTools} />
+            <ToolTable existingTools={existingTools} setExistingTools={setExistingTools} />
             )}
           </div>
         </CardContent>
