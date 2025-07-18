@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { toast } from "react-toastify";
+import ToolTable from "./ToolTable";
 
 // Backend structure for api field
 const apiMethodOptions = ["GET", "POST", "PUT", "DELETE"] as const;
@@ -108,6 +109,10 @@ const FunctionTools = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiErrors, setApiErrors] = useState<Record<string, string>>({});
+  const [jsonFields, setJsonFields] = useState<{ [key: string]: string }>({
+  Body: "",
+  ResponseBody: "",
+});
 
   // Fetch tools from API on mount
   useEffect(() => {
@@ -191,12 +196,23 @@ const FunctionTools = () => {
     setApiErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
+  useEffect(() => {
+  setJsonFields({
+    Body: newTool.api.Body
+      ? JSON.stringify(newTool.api.Body, null, 2)
+      : "",
+    ResponseBody: newTool.api.ResponseBody
+      ? JSON.stringify(newTool.api.ResponseBody, null, 2)
+      : "",
+  });
+}, [newTool]);
   // Helper for updating Body and ResponseBody (as JSON)
   const handleJsonFieldChange = (
     field: "Body" | "ResponseBody",
     value: string
   ) => {
     try {
+
       const parsed = value ? JSON.parse(value) : {};
       updateApiField(field, parsed);
       setApiErrors((prev) => ({ ...prev, [field]: "" }));
@@ -498,15 +514,31 @@ const FunctionTools = () => {
                           }`}
                           rows={2}
                           placeholder='e.g. {"result": "value"}'
-                          value={
-                            newTool.api.ResponseBody &&
-                            Object.keys(newTool.api.ResponseBody).length
-                              ? JSON.stringify(newTool.api.ResponseBody, null, 2)
-                              : ""
-                          }
-                          onChange={(e) =>
-                            handleJsonFieldChange("ResponseBody", e.target.value)
-                          }
+                          // value={
+                          //   newTool.api.ResponseBody &&
+                          //   Object.keys(newTool.api.ResponseBody).length
+                          //     ? JSON.stringify(newTool.api.ResponseBody, null, 2)
+                          //     : ""
+                          // }
+                          value={jsonFields.ResponseBody}
+                           onChange={(e) => {
+    const value = e.target.value;
+    setJsonFields((prev) => ({ ...prev, ResponseBody: value }));
+
+    try {
+      const parsed = JSON.parse(value);
+      updateApiField("ResponseBody", parsed);
+      setApiErrors((prev) => ({ ...prev, ResponseBody: "" }));
+    } catch {
+      setApiErrors((prev) => ({
+        ...prev,
+        ResponseBody: "Invalid JSON",
+      }));
+    }
+  }}
+                          // onChange={(e) =>
+                          //   handleJsonFieldChange("ResponseBody", e.target.value)
+                          // }
                         />
                         {apiErrors.ResponseBody && (
                           <div className="text-xs text-red-500 mt-1">
@@ -530,44 +562,7 @@ const FunctionTools = () => {
             {existingTools.length === 0 ? (
               <div className="text-gray-500">No function tools added yet.</div>
             ) : (
-              <ul className="space-y-2">
-                {existingTools.map((tool, idx) => (
-                  <li key={idx} className="border rounded px-3 py-2 bg-gray-50">
-                    <div className="font-semibold">{tool.name}</div>
-                    <div className="text-xs text-gray-500">
-                      Type: {tool.type}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Prompt: {tool.prompt}
-                    </div>
-                    {tool.type === "API" && (
-                      <div className="mt-1 text-xs text-gray-600">
-                        <div>URL: {tool.api.url}</div>
-                        <div>Method: {tool.api.Method}</div>
-                        <div>Headers: {tool.api.Headers}</div>
-                        <div>
-                          Auth: {tool.api.auth} | Username: {tool.api.username}
-                        </div>
-                        <div>
-                          Body:{" "}
-                          {tool.api.Body && Object.keys(tool.api.Body).length
-                            ? JSON.stringify(tool.api.Body)
-                            : ""}
-                        </div>
-                        <div>ResponseType: {tool.api.ResponseType}</div>
-                        <div>ResponseHeaders: {tool.api.ResponseHeaders}</div>
-                        <div>
-                          ResponseBody:{" "}
-                          {tool.api.ResponseBody &&
-                          Object.keys(tool.api.ResponseBody).length
-                            ? JSON.stringify(tool.api.ResponseBody)
-                            : ""}
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
+            <ToolTable existingTools={existingTools} />
             )}
           </div>
         </CardContent>

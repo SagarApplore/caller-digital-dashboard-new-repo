@@ -44,9 +44,9 @@ export function Sidebar() {
       {/* Bottom Items */}
       <div className="flex-1"></div>
       <div className="flex flex-col space-y-2">
-        <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+        {/* <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50">
           <HelpCircle className="w-5 h-5" />
-        </button>
+        </button> */}
         <button
           onClick={logout}
           className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
