@@ -18,11 +18,32 @@ interface Brand {
   billingEmail: string;
   description?: string;
   status: 'active' | 'inactive' | 'suspended';
+  brandUser: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  agentCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Interface for backend response when creating a brand
+interface BrandCreateResponse {
+  brand: Brand;
+  brandUser: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  copiedAgentsCount: number;
+  agentsCopied: boolean;
 }
 
 interface BrandFormProps {
   brand?: Brand | null;
-  onSuccess: (brand: Brand) => void;
+  onSuccess: (brand: Brand | BrandCreateResponse) => void;
   onCancel: () => void;
 }
 
@@ -65,9 +86,12 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
       
       const method = brand ? 'PUT' : 'POST';
 
+      console.log('Submitting brand form with data:', formData);
       const response = await apiRequest(url, method, formData);
+      console.log('Brand API response:', response.data);
 
       if (response.data?.success) {
+        console.log('Calling onSuccess with:', response.data.data);
         onSuccess(response.data.data);
         setIsOpen(false);
         toast({
@@ -78,6 +102,7 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
         throw new Error(response.data?.message || 'Something went wrong');
       }
     } catch (error) {
+      console.error('Error in brand form submission:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Something went wrong',
