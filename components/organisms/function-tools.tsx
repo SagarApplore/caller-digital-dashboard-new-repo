@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "./card";
 import { Button } from "../ui/button";
 import { Select, SelectItem, SelectContent, SelectTrigger } from "../ui/select";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { toast } from "react-toastify";
@@ -176,6 +176,35 @@ const FunctionTools = () => {
       toast.success("Tool added successfully");
     } catch (err) {
       // Optionally handle error
+    }
+  };
+
+  // Delete tool handler
+  const handleDelete = async (tool: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to delete "${tool.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Call the delete API
+      const response = await apiRequest(
+        endpoints.functionTools.delete.replace(':id', tool._id),
+        "DELETE"
+      );
+
+      if (response?.data?.success) {
+        // Remove from local state
+        setExistingTools((prev) => prev.filter((t) => t._id !== tool._id));
+        toast.success("Function tool deleted successfully");
+      } else {
+        throw new Error(response?.data?.message || "Failed to delete function tool");
+      }
+    } catch (error) {
+      console.error("Error deleting function tool:", error);
+      toast.error("Failed to delete function tool. Please try again.");
     }
   };
 
@@ -533,38 +562,52 @@ const FunctionTools = () => {
               <ul className="space-y-2">
                 {existingTools.map((tool, idx) => (
                   <li key={idx} className="border rounded px-3 py-2 bg-gray-50">
-                    <div className="font-semibold">{tool.name}</div>
-                    <div className="text-xs text-gray-500">
-                      Type: {tool.type}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Prompt: {tool.prompt}
-                    </div>
-                    {tool.type === "API" && (
-                      <div className="mt-1 text-xs text-gray-600">
-                        <div>URL: {tool.api.url}</div>
-                        <div>Method: {tool.api.Method}</div>
-                        <div>Headers: {tool.api.Headers}</div>
-                        <div>
-                          Auth: {tool.api.auth} | Username: {tool.api.username}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-semibold">{tool.name}</div>
+                        <div className="text-xs text-gray-500">
+                          Type: {tool.type}
                         </div>
-                        <div>
-                          Body:{" "}
-                          {tool.api.Body && Object.keys(tool.api.Body).length
-                            ? JSON.stringify(tool.api.Body)
-                            : ""}
+                        <div className="text-xs text-gray-500">
+                          Prompt: {tool.prompt}
                         </div>
-                        <div>ResponseType: {tool.api.ResponseType}</div>
-                        <div>ResponseHeaders: {tool.api.ResponseHeaders}</div>
-                        <div>
-                          ResponseBody:{" "}
-                          {tool.api.ResponseBody &&
-                          Object.keys(tool.api.ResponseBody).length
-                            ? JSON.stringify(tool.api.ResponseBody)
-                            : ""}
-                        </div>
+                        {tool.type === "API" && (
+                          <div className="mt-1 text-xs text-gray-600">
+                            <div>URL: {tool.api.url}</div>
+                            <div>Method: {tool.api.Method}</div>
+                            <div>Headers: {tool.api.Headers}</div>
+                            <div>
+                              Auth: {tool.api.auth} | Username: {tool.api.username}
+                            </div>
+                            <div>
+                              Body:{" "}
+                              {tool.api.Body && Object.keys(tool.api.Body).length
+                                ? JSON.stringify(tool.api.Body)
+                                : ""}
+                            </div>
+                            <div>ResponseType: {tool.api.ResponseType}</div>
+                            <div>ResponseHeaders: {tool.api.ResponseHeaders}</div>
+                            <div>
+                              ResponseBody:{" "}
+                              {tool.api.ResponseBody &&
+                              Object.keys(tool.api.ResponseBody).length
+                                ? JSON.stringify(tool.api.ResponseBody)
+                                : ""}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={(e) => handleDelete(tool, e)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>

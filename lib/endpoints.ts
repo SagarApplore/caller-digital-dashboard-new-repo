@@ -24,6 +24,7 @@ const endpoints = {
     getAll: "/functionTools",
     create: "/functionTools/create",
     getById: "/functionTools/:id",
+    delete: "/functionTools/:id",
   },
   llmModels: {
     getModels: "/ai-models/provider",
