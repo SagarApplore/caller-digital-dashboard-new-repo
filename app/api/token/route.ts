@@ -27,8 +27,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing "username" query parameter' }, { status: 400 });
   }
 
-  // Use the existing environment variable name
-  const apiKey = process.env.NEXT_PUBLIC_LIVEKIT_API_URL;
+  // Use the correct environment variable names
+  const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
   const wsUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
