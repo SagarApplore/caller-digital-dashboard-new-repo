@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Backend API base URL
-const BACKEND_API_BASE_URL = process.env.NEXT_PUBLIC_REACT_APP_BASE_URL || 'http://localhost:8000/api/v1';
+const BACKEND_API_BASE_URL = process.env.NEXT_PUBLIC_REACT_APP_BASE_URL || 'https://caller-digital-api.applore.in/api/v1';
 const BACKEND_PYTHON_API_BASE_URL = process.env.NEXT_PUBLIC_PYTHON_BACKEND_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 // Get auth token from localStorage
