@@ -563,40 +563,71 @@ const VoiceIntegration = ({
                   <div className="flex items-center space-x-3">
                     <Select
                       value={voiceIntegration.selectedTTSProvider}
-                      onValueChange={(value) => {
-                        const selectedProvider = configs.tts.providers.find(
-                          (provider: any) => provider._id === value
-                        );
+                                          onValueChange={async (value) => {
+                      const selectedProvider = configs.tts.providers.find(
+                        (provider: any) => provider._id === value
+                      );
 
-                        // Get voices from the selected provider
-                        let voices = [];
-                        if (selectedProvider) {
-                          voices = selectedProvider.voiceIds || selectedProvider.voices || [];
+                      // Get voices from the selected provider
+                      let voices = [];
+                      if (selectedProvider) {
+                        voices = selectedProvider.voiceIds || selectedProvider.voices || [];
+                      }
+
+                      // Clear current models and fetch new ones
+                      setConfigs((prev) => ({
+                        ...prev,
+                        tts: {
+                          ...prev.tts,
+                          models: [],
+                          voices,
+                        },
+                      }));
+
+                      setVoiceIntegration({
+                        ...voiceIntegration,
+                        selectedTTSProvider: value,
+                        selectedTTSProviderName: selectedProvider
+                          ? selectedProvider.companyName
+                          : null,
+                        selectedTTSModel: null,
+                        selectedTTSModelName: null,
+                        selectedTTSVoiceId: null,
+                        selectedTTSVoiceName: null,
+                      });
+
+                      // Fetch new models for the selected provider
+                      if (value) {
+                        try {
+                          const response = await apiRequest(
+                            endpoints.ttsModels.getModels + "/" + value,
+                            "GET"
+                          );
+                          const newModels = response?.data?.data || [];
+                          
+                          setConfigs((prev) => ({
+                            ...prev,
+                            tts: {
+                              ...prev.tts,
+                              models: newModels,
+                              voices,
+                            },
+                          }));
+                        } catch (error) {
+                          console.error("Error fetching TTS models:", error);
+                          setConfigs((prev) => ({
+                            ...prev,
+                            tts: {
+                              ...prev.tts,
+                              models: [],
+                              voices,
+                            },
+                          }));
                         }
+                      }
 
-                        setVoiceIntegration({
-                          ...voiceIntegration,
-                          selectedTTSProvider: value,
-                          selectedTTSProviderName: selectedProvider
-                            ? selectedProvider.companyName
-                            : null,
-                          selectedTTSModel: null,
-                          selectedTTSModelName: null,
-                          selectedTTSVoiceId: null,
-                          selectedTTSVoiceName: null,
-                        });
-
-                        // Update configs with voices
-                        setConfigs((prev) => ({
-                          ...prev,
-                          tts: {
-                            ...prev.tts,
-                            voices,
-                          },
-                        }));
-
-                        hasSetTTSModel.current = false;
-                      }}
+                      hasSetTTSModel.current = false;
+                    }}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Select a provider..." />
@@ -732,10 +763,19 @@ const VoiceIntegration = ({
                 <div className="flex items-center space-x-3">
                   <Select
                     value={voiceIntegration.selectedSTTProvider}
-                    onValueChange={(value) => {
+                    onValueChange={async (value) => {
                       const selectedProvider = configs.stt.providers.find(
                         (provider: any) => provider._id === value
                       );
+
+                      // Clear current models
+                      setConfigs((prev) => ({
+                        ...prev,
+                        stt: {
+                          ...prev.stt,
+                          models: [],
+                        },
+                      }));
 
                       setVoiceIntegration({
                         ...voiceIntegration,
@@ -746,6 +786,34 @@ const VoiceIntegration = ({
                         selectedSTTModel: null,
                         selectedSTTModelName: null,
                       });
+
+                      // Fetch new models for the selected provider
+                      if (value) {
+                        try {
+                          const response = await apiRequest(
+                            endpoints.sttModels.getModels + "/" + value,
+                            "GET"
+                          );
+                          const newModels = response?.data?.data || [];
+                          
+                          setConfigs((prev) => ({
+                            ...prev,
+                            stt: {
+                              ...prev.stt,
+                              models: newModels,
+                            },
+                          }));
+                        } catch (error) {
+                          console.error("Error fetching STT models:", error);
+                          setConfigs((prev) => ({
+                            ...prev,
+                            stt: {
+                              ...prev.stt,
+                              models: [],
+                            },
+                          }));
+                        }
+                      }
 
                       hasSetSTTModel.current = false;
                     }}
@@ -830,10 +898,20 @@ const VoiceIntegration = ({
                 <div className="flex items-center space-x-3">
                   <Select
                     value={voiceIntegration.selectedLLMProvider}
-                    onValueChange={(value) => {
+                    onValueChange={async (value) => {
                       const selectedProvider = configs.llm.providers.find(
                         (provider: any) => provider._id === value
                       );
+
+                      // Clear current models
+                      setConfigs((prev) => ({
+                        ...prev,
+                        llm: {
+                          ...prev.llm,
+                          models: [],
+                        },
+                      }));
+
                       setVoiceIntegration({
                         ...voiceIntegration,
                         selectedLLMProvider: value,
@@ -843,6 +921,35 @@ const VoiceIntegration = ({
                         selectedLLMModel: null,
                         selectedLLMModelName: null,
                       });
+
+                      // Fetch new models for the selected provider
+                      if (value) {
+                        try {
+                          const response = await apiRequest(
+                            endpoints.llmModels.getModels + "/" + value,
+                            "GET"
+                          );
+                          const newModels = response?.data?.data || [];
+                          
+                          setConfigs((prev) => ({
+                            ...prev,
+                            llm: {
+                              ...prev.llm,
+                              models: newModels,
+                            },
+                          }));
+                        } catch (error) {
+                          console.error("Error fetching LLM models:", error);
+                          setConfigs((prev) => ({
+                            ...prev,
+                            llm: {
+                              ...prev.llm,
+                              models: [],
+                            },
+                          }));
+                        }
+                      }
+
                       hasSetLLMModel.current = false;
                     }}
                   >

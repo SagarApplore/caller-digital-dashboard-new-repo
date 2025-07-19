@@ -237,17 +237,59 @@ const ChatIntegration = ({
                 <div className="flex items-center space-x-3">
                   <Select
                     value={chatIntegration.selectedLLMProvider}
-                    onValueChange={(value) => {
+                    onValueChange={async (value) => {
                       const selectedProvider = configs.llm.providers.find(
                         (provider: any) => provider._id === value
                       );
+
+                      // Clear current models
+                      setConfigs((prev) => ({
+                        ...prev,
+                        llm: {
+                          ...prev.llm,
+                          models: [],
+                        },
+                      }));
+
                       setChatIntegration({
                         ...chatIntegration,
                         selectedLLMProvider: value,
                         selectedLLMProviderName: selectedProvider
                           ? selectedProvider.companyName
                           : null,
+                        selectedLLMModel: null,
+                        selectedLLMModelName: null,
                       });
+
+                      // Fetch new models for the selected provider
+                      if (value) {
+                        try {
+                          const response = await apiRequest(
+                            endpoints.llmModels.getModels + "/" + value,
+                            "GET"
+                          );
+                          const newModels = response?.data?.data || [];
+                          
+                          setConfigs((prev) => ({
+                            ...prev,
+                            llm: {
+                              ...prev.llm,
+                              models: newModels,
+                            },
+                          }));
+                        } catch (error) {
+                          console.error("Error fetching LLM models:", error);
+                          setConfigs((prev) => ({
+                            ...prev,
+                            llm: {
+                              ...prev.llm,
+                              models: [],
+                            },
+                          }));
+                        }
+                      }
+
+                      hasSetLLMModel.current = false;
                     }}
                   >
                     <SelectTrigger className="flex-1">
