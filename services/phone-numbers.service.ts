@@ -196,7 +196,7 @@ class PhoneNumbersService {
     try {
       // Convert request to query parameters for GET request
       const params = new URLSearchParams();
-      if (request.country) params.append('country', request.country);
+      if (request.country) params.append('country_iso', request.country);
       if (request.type) params.append('type', request.type);
       if (request.capabilities) {
         request.capabilities.forEach(cap => params.append('capabilities', cap));
