@@ -586,6 +586,8 @@ const CreateAgent = ({
           console.log("Transcriber provider:", agentData?.voice?.transcriberProvider);
           console.log("LLM provider:", agentData?.voice?.llmProvider);
           console.log("Channels:", agentData?.channels);
+          console.log("Email data:", agentData?.email);
+          console.log("Chat data:", agentData?.chats);
 
           // Update all state with fetched data
           setPersonaAndBehavior((prev) => ({
@@ -749,6 +751,66 @@ const CreateAgent = ({
         phoneNumber: initialData.agent_number || "",
         phoneNumberId: initialData.phone_number_assignment || "",
       });
+    }
+  }, [mode, initialData]);
+
+  // Ensure email and chat integration are properly set when initialData changes
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      console.log("Setting email and chat integration from initialData:", {
+        email: initialData.email,
+        chats: initialData.chats
+      });
+      
+      // Update email integration
+      if (initialData.email) {
+        setEmailIntegration({
+          selectedLLMModel: initialData.email?.llmProvider?.model || null,
+          selectedLLMModelName: initialData.email?.llmProvider?.model || null,
+          selectedLLMProvider: initialData.email?.llmProvider?.providerName || null,
+          selectedLLMProviderName: initialData.email?.llmProvider?.providerName || null,
+        });
+      }
+      
+      // Update chat integration
+      if (initialData.chats) {
+        setChatIntegration({
+          selectedLLMModel: initialData.chats?.llmProvider?.model || null,
+          selectedLLMModelName: initialData.chats?.llmProvider?.model || null,
+          selectedLLMProvider: initialData.chats?.llmProvider?.providerName || null,
+          selectedLLMProviderName: initialData.chats?.llmProvider?.providerName || null,
+        });
+      }
+
+      // Update channels
+      if (initialData.channels) {
+        console.log("Updating channels from initialData:", initialData.channels);
+        setChannels(
+          initialChannels.map((channel) => {
+            const channelId = channel.id.toLowerCase();
+            let existingChannel;
+
+            // Map channel IDs to the correct data structure
+            if (channelId === "voice") {
+              existingChannel = initialData?.voice;
+            } else if (channelId === "chat") {
+              existingChannel = initialData?.chats;
+            } else if (channelId === "email") {
+              existingChannel = initialData?.email;
+            }
+
+            return {
+              ...channel,
+              active: initialData.channels?.includes(channelId) || false,
+              prompt: {
+                ...channel.prompt,
+                value: existingChannel?.agentPrompt || channel.prompt.value,
+              },
+              firstMessage: existingChannel?.firstMessage || channel.firstMessage,
+            };
+          })
+        );
+      }
     }
   }, [mode, initialData]);
 

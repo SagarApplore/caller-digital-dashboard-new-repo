@@ -9,7 +9,7 @@ import {
 import endpoints from "@/lib/endpoints";
 import { apiRequest } from "@/utils/api";
 import { Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 const ChatIntegration = ({
   chatIntegration,
@@ -33,27 +33,37 @@ const ChatIntegration = ({
     },
   });
 
+  // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
+  const hasSetLLMModel = useRef(false);
+
   // Helper function to find provider by name
   const findProviderByName = (providers: any[], name: string) => {
-    return providers.find((provider) => provider.name === name);
+    return providers.find((provider) => 
+      provider.companyName === name || 
+      provider.name === name ||
+      provider.providerName === name
+    );
   };
 
   // Helper function to find model by name
   const findModelByName = (models: any[], name: string) => {
-    return models.find((model) => model.name === name);
+    return models.find((model) => 
+      model.name === name || 
+      model.model === name
+    );
   };
 
   // Helper function to fetch models by provider name (for edit mode)
   const fetchModelsByName = async (endpoint: string, providerName: string) => {
     try {
-      // Try to fetch by name first using POST with provider name in body
-      const response = await apiRequest(endpoint, "POST", {
+      // Use the getModelsByName endpoint with POST request and provider name in body
+      const response = await apiRequest(endpoints.llmModels.getModelsByName, "POST", {
         name: providerName,
       });
       return response?.data?.data || [];
     } catch (error) {
       console.warn(
-        `Failed to fetch models by name for ${providerName}, falling back to ID-based approach`
+        `Failed to fetch models for provider ${providerName}, error:`, error
       );
       return [];
     }
@@ -72,37 +82,32 @@ const ChatIntegration = ({
         });
 
         // If in edit mode and we have existing selections, fetch the models
-        if (mode === "edit" && chatIntegration.selectedLLMProviderName) {
-          const llmProvider = findProviderByName(
-            llmProviders,
-            chatIntegration.selectedLLMProviderName
-          );
-          if (llmProvider) {
-            const models = await fetchModelsByName(
-              endpoints.llmModels.getModelsByName,
+        if (mode === "edit") {
+          console.log("Edit mode - chat integration data:", chatIntegration);
+          console.log("LLM Provider Name:", chatIntegration.selectedLLMProviderName);
+          console.log("LLM Model Name:", chatIntegration.selectedLLMModelName);
+          
+          if (chatIntegration.selectedLLMProviderName) {
+            const llmProvider = findProviderByName(
+              llmProviders,
               chatIntegration.selectedLLMProviderName
             );
-
-            setConfigs((prev) => ({
-              ...prev,
-              llm: { ...prev.llm, models },
-            }));
-
-            // Update the chat integration with provider ID and model ID
-            let updatedChatIntegration = { ...chatIntegration };
-            updatedChatIntegration.selectedLLMProvider = llmProvider._id;
-
-            if (chatIntegration.selectedLLMModelName) {
-              const llmModel = findModelByName(
-                models,
-                chatIntegration.selectedLLMModelName
+            if (llmProvider) {
+              const models = await fetchModelsByName(
+                endpoints.llmModels.getModelsByName,
+                chatIntegration.selectedLLMProviderName
               );
-              if (llmModel) {
-                updatedChatIntegration.selectedLLMModel = llmModel._id;
-              }
-            }
 
-            setChatIntegration(updatedChatIntegration);
+              setConfigs((prev) => ({
+                ...prev,
+                llm: { ...prev.llm, models },
+              }));
+
+              // Update the chat integration with provider ID (model ID will be set in next effect)
+              let updatedChatIntegration = { ...chatIntegration };
+              updatedChatIntegration.selectedLLMProvider = llmProvider._id;
+              setChatIntegration(updatedChatIntegration);
+            }
           }
         }
 
@@ -114,18 +119,74 @@ const ChatIntegration = ({
     };
 
     getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // Set model ID based on model name after models are loaded (for edit mode)
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    console.log("Chat Model setting useEffect triggered");
+    console.log("LLM Model Name:", chatIntegration.selectedLLMModelName);
+    console.log("LLM Models loaded:", configs.llm.models.length);
+    console.log("LLM Models:", configs.llm.models);
+
+    // LLM
+    if (
+      chatIntegration.selectedLLMModelName &&
+      configs.llm.models.length > 0 &&
+      !chatIntegration.selectedLLMModel &&
+      !hasSetLLMModel.current
+    ) {
+      console.log("Setting LLM model for:", chatIntegration.selectedLLMModelName);
+      const llmModel = findModelByName(
+        configs.llm.models,
+        chatIntegration.selectedLLMModelName
+      );
+      console.log("Found LLM model:", llmModel);
+      if (llmModel) {
+        setChatIntegration((prev: any) => ({
+          ...prev,
+          selectedLLMModel: llmModel._id,
+        }));
+        hasSetLLMModel.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    configs.llm.models,
+    mode,
+    chatIntegration.selectedLLMModelName,
+  ]);
 
   // FETCH LLM MODELS
   useEffect(() => {
+    // Don't fetch if in edit mode and models are already loaded
+    if (
+      mode === "edit" &&
+      configs.llm.models.length > 0 &&
+      chatIntegration.selectedLLMProvider
+    ) {
+      return;
+    }
+    
     const fetchLLMModels = async () => {
       try {
-        const response = await apiRequest(
-          endpoints.llmModels.getModels +
-            "/" +
-            chatIntegration.selectedLLMProvider,
-          "GET"
-        );
+        let response;
+        if (mode === "edit") {
+          response = await apiRequest(
+            endpoints.llmModels.getModelsByName,
+            "POST",
+            { name: chatIntegration.selectedLLMProviderName }
+          );
+        } else {
+          response = await apiRequest(
+            endpoints.llmModels.getModels +
+              "/" +
+              chatIntegration.selectedLLMProvider,
+            "GET"
+          );
+        }
         setConfigs((prev) => ({
           ...prev,
           llm: {
@@ -146,7 +207,8 @@ const ChatIntegration = ({
     if (chatIntegration.selectedLLMProvider) {
       fetchLLMModels();
     }
-  }, [chatIntegration.selectedLLMProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatIntegration.selectedLLMProvider, mode]);
 
   if (loading) {
     return (
@@ -200,6 +262,12 @@ const ChatIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the provider name from backend if available */}
+                {chatIntegration.selectedLLMProviderName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Provider:</strong> {chatIntegration.selectedLLMProviderName}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -235,6 +303,12 @@ const ChatIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the model name from backend if available */}
+                {chatIntegration.selectedLLMModelName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Model:</strong> {chatIntegration.selectedLLMModelName}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

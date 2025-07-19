@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/organisms/card";
 import configs from "@/services/config-service";
 import { Loader2, Volume2, Play } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import voiceIntegration from "./voice-integration";
 import {
   Select,
@@ -36,25 +36,37 @@ const EmailIntegration = ({
     },
   });
 
+  // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
+  const hasSetLLMModel = useRef(false);
+
   // Helper function to find provider by name
   const findProviderByName = (providers: any[], name: string) => {
-    return providers.find((provider) => provider.name === name);
+    return providers.find((provider) => 
+      provider.companyName === name || 
+      provider.name === name ||
+      provider.providerName === name
+    );
   };
 
   // Helper function to find model by name
   const findModelByName = (models: any[], name: string) => {
-    return models.find((model) => model.name === name);
+    return models.find((model) => 
+      model.name === name || 
+      model.model === name
+    );
   };
 
   // Helper function to fetch models by provider name (for edit mode)
   const fetchModelsByName = async (endpoint: string, providerName: string) => {
     try {
-      // Try to fetch by name first using POST with provider name in body
-      const response = await apiRequest(endpoint, "POST", { providerName });
+      // Use the getModelsByName endpoint with POST request and provider name in body
+      const response = await apiRequest(endpoints.llmModels.getModelsByName, "POST", {
+        name: providerName,
+      });
       return response?.data?.data || [];
     } catch (error) {
       console.warn(
-        `Failed to fetch models by name for ${providerName}, falling back to ID-based approach`
+        `Failed to fetch models for provider ${providerName}, error:`, error
       );
       return [];
     }
@@ -73,37 +85,32 @@ const EmailIntegration = ({
         });
 
         // If in edit mode and we have existing selections, fetch the models
-        if (mode === "edit" && emailIntegration.selectedLLMProviderName) {
-          const llmProvider = findProviderByName(
-            llmProviders,
-            emailIntegration.selectedLLMProviderName
-          );
-          if (llmProvider) {
-            const models = await fetchModelsByName(
-              endpoints.llmModels.getModelsByName,
+        if (mode === "edit") {
+          console.log("Edit mode - email integration data:", emailIntegration);
+          console.log("LLM Provider Name:", emailIntegration.selectedLLMProviderName);
+          console.log("LLM Model Name:", emailIntegration.selectedLLMModelName);
+          
+          if (emailIntegration.selectedLLMProviderName) {
+            const llmProvider = findProviderByName(
+              llmProviders,
               emailIntegration.selectedLLMProviderName
             );
-
-            setConfigs((prev) => ({
-              ...prev,
-              llm: { ...prev.llm, models },
-            }));
-
-            // Update the email integration with provider ID and model ID
-            let updatedEmailIntegration = { ...emailIntegration };
-            updatedEmailIntegration.selectedLLMProvider = llmProvider._id;
-
-            if (emailIntegration.selectedLLMModelName) {
-              const llmModel = findModelByName(
-                models,
-                emailIntegration.selectedLLMModelName
+            if (llmProvider) {
+              const models = await fetchModelsByName(
+                endpoints.llmModels.getModelsByName,
+                emailIntegration.selectedLLMProviderName
               );
-              if (llmModel) {
-                updatedEmailIntegration.selectedLLMModel = llmModel._id;
-              }
-            }
 
-            setEmailIntegration(updatedEmailIntegration);
+              setConfigs((prev) => ({
+                ...prev,
+                llm: { ...prev.llm, models },
+              }));
+
+              // Update the email integration with provider ID (model ID will be set in next effect)
+              let updatedEmailIntegration = { ...emailIntegration };
+              updatedEmailIntegration.selectedLLMProvider = llmProvider._id;
+              setEmailIntegration(updatedEmailIntegration);
+            }
           }
         }
 
@@ -115,18 +122,74 @@ const EmailIntegration = ({
     };
 
     getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // Set model ID based on model name after models are loaded (for edit mode)
+  useEffect(() => {
+    if (mode !== "edit") return;
+
+    console.log("Email Model setting useEffect triggered");
+    console.log("LLM Model Name:", emailIntegration.selectedLLMModelName);
+    console.log("LLM Models loaded:", configs.llm.models.length);
+    console.log("LLM Models:", configs.llm.models);
+
+    // LLM
+    if (
+      emailIntegration.selectedLLMModelName &&
+      configs.llm.models.length > 0 &&
+      !emailIntegration.selectedLLMModel &&
+      !hasSetLLMModel.current
+    ) {
+      console.log("Setting LLM model for:", emailIntegration.selectedLLMModelName);
+      const llmModel = findModelByName(
+        configs.llm.models,
+        emailIntegration.selectedLLMModelName
+      );
+      console.log("Found LLM model:", llmModel);
+      if (llmModel) {
+        setEmailIntegration((prev: any) => ({
+          ...prev,
+          selectedLLMModel: llmModel._id,
+        }));
+        hasSetLLMModel.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    configs.llm.models,
+    mode,
+    emailIntegration.selectedLLMModelName,
+  ]);
 
   // FETCH LLM MODELS
   useEffect(() => {
+    // Don't fetch if in edit mode and models are already loaded
+    if (
+      mode === "edit" &&
+      configs.llm.models.length > 0 &&
+      emailIntegration.selectedLLMProvider
+    ) {
+      return;
+    }
+    
     const fetchLLMModels = async () => {
       try {
-        const response = await apiRequest(
-          endpoints.llmModels.getModels +
-            "/" +
-            emailIntegration.selectedLLMProvider,
-          "GET"
-        );
+        let response;
+        if (mode === "edit") {
+          response = await apiRequest(
+            endpoints.llmModels.getModelsByName,
+            "POST",
+            { name: emailIntegration.selectedLLMProviderName }
+          );
+        } else {
+          response = await apiRequest(
+            endpoints.llmModels.getModels +
+              "/" +
+              emailIntegration.selectedLLMProvider,
+            "GET"
+          );
+        }
         setConfigs((prev) => ({
           ...prev,
           llm: {
@@ -147,7 +210,8 @@ const EmailIntegration = ({
     if (emailIntegration.selectedLLMProvider) {
       fetchLLMModels();
     }
-  }, [emailIntegration.selectedLLMProvider]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailIntegration.selectedLLMProvider, mode]);
 
   if (loading) {
     return (
@@ -201,6 +265,12 @@ const EmailIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the provider name from backend if available */}
+                {emailIntegration.selectedLLMProviderName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Provider:</strong> {emailIntegration.selectedLLMProviderName}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -236,6 +306,12 @@ const EmailIntegration = ({
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Display the model name from backend if available */}
+                {emailIntegration.selectedLLMModelName && (
+                  <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                    <strong>Selected Model:</strong> {emailIntegration.selectedLLMModelName}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
