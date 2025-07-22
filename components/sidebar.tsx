@@ -7,10 +7,15 @@ import { updateActiveRoute } from "@/lib/sidebar-routes";
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   // Update routes with active state based on current path
-  const activeRoutes = updateActiveRoute(pathname || "/");
+  const activeRoutes = updateActiveRoute(pathname ?? "/");
+
+  // Filter routes by user role
+  const filteredRoutes = activeRoutes.filter(route =>
+    !route.roles || (user && route.roles.includes(user.role))
+  );
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -25,7 +30,7 @@ export function Sidebar() {
 
       {/* Navigation Items */}
       <div className="flex flex-col space-y-2">
-        {activeRoutes.map((route) => (
+        {filteredRoutes.map((route) => (
           <button
             key={route.id}
             onClick={() => handleNavigation(route.path)}

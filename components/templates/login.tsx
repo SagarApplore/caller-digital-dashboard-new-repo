@@ -65,7 +65,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-[#6a29c422] to-[#00b4d82b] flex items-center justify-center p-4">
-      <div className="flex flex-col items-center justify-between h-[95vh] overflow-y-scroll">
+      <div className="flex flex-col items-center justify-between h-[95vh] ">
         <div></div>
 
         <div className="flex flex-col items-center justify-center gap-4 w-full  max-w-[500px]">

@@ -16,6 +16,7 @@ export interface SidebarRouteItem {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   isActive?: boolean;
+  roles?: string[]; // Only show for these roles if specified
 }
 
 export const sidebarRoutes: SidebarRouteItem[] = [
@@ -33,13 +34,14 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     icon: Megaphone,
     isActive: false,
   },
-  // {
-  //   id: "clients",
-  //   name: "Clients",
-  //   path: "/clients",
-  //   icon: Users,
-  //   isActive: false,
-  // },
+  {
+    id: "clients",
+    name: "Clients",
+    path: "/clients",
+    icon:  Megaphone,
+    isActive: false,
+    roles: ["SUPER_ADMIN"], // Only show for SUPER_ADMIN
+  },
   // {
   //   id: "team-members",
   //   name: "Team Members",
