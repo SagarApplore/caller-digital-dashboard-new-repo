@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import React, { useMemo, useState, useEffect } from "react";
 import { Card, CardContent } from "./card";
+import * as XLSX from 'xlsx';
 import {
   Select,
   SelectContent,
@@ -512,6 +513,62 @@ const CallLogs = () => {
     setSelectedConversations([]); // Clear selections when filters change
   };
 
+  const handleExportCallLogs = (callLogs: any, format: 'csv' | 'xlsx') => {
+    if (!callLogs || !Array.isArray(callLogs) || callLogs.length === 0) {
+      console.warn("No call log data available to export");
+      return;
+    }
+    callLogs?.map((item)=>{
+      console.log('item',item.agentId?.languages)
+    })
+
+    const exportData = callLogs.map(log => {
+      return {
+        "Customer Number": log.customer_phone_number || "",
+        "Customer Name": log.clientId?.name || "",
+        "Agent Name": log.agentId?.agentName || "",
+        "Duration (ms)": log.call_duration || "",
+        "Summary URL": log.summary_uri || "",
+        "Audio URL": log.recording_uri || "",
+        "Agent Number": log.agent_phone_number || "",
+        "Tags": log.tags || [],
+        "Intent": log.intent || "",
+        "Sentiment": log.sentiment || "",
+        "AI Analysis": log.ai_analysis || "",
+        "Language":  log.agentId?.languages?.join(",") || ""
+      };
+    });
+
+    if (format === 'csv') {
+      const csvContent = [
+        Object.keys(exportData[0]),
+        ...exportData.map(row => Object.values(row)),
+      ].map(row =>
+        row
+          .map(field => {
+            // Escape quotes and commas
+            if (typeof field === 'string' && /[",\n]/.test(field)) {
+              return `"${field.replace(/"/g, '""')}"`;
+            }
+            return field;
+          })
+          .join(',')
+      ).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'call_logs_report.csv';
+      link.click();
+    } else {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Call Logs');
+      XLSX.writeFile(wb, 'call_logs_report.xlsx');
+    }
+  };
+
+
   const toggleQuickFilter = (filterName: keyof FilterState["quickFilters"]) => {
     setFilters((prev) => ({
       ...prev,
@@ -862,6 +919,7 @@ const CallLogs = () => {
               className="pl-10 w-full sm:w-64"
             />
           </div>
+          <button onClick={() => handleExportCallLogs(apiData, 'xlsx')} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
 
           {/* <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
