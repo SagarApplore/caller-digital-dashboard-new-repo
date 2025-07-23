@@ -8,7 +8,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Language,
   PersonaAndBehavior,
@@ -17,6 +17,7 @@ import {
 import ChannelsAndPhoneMapping, {
   Channel,
   HandoffConfig,
+  ChannelsAndPhoneMappingRef,
 } from "../molecules/create-agent/channels-and-phone-mapping";
 import { KnowledgeBaseItem } from "../molecules/knowledge-base";
 import { IFunctionTool } from "@/types/common";
@@ -218,6 +219,12 @@ const CreateAgent = ({
   const router = useRouter();
   const { user } = useAuth();
 
+  // Ref for phone mapping validation
+  const phoneMappingRef = useRef<ChannelsAndPhoneMappingRef>(null);
+
+  // Debug: log mode
+  console.log("CreateAgent mode:", mode);
+
   // Validation functions for each step
   const validateStep1 = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -266,6 +273,11 @@ const CreateAgent = ({
         errors.push(`${channel.name} first message is required`);
       }
     });
+
+    // Phone number validation for edit mode
+    if (mode === "edit" && phoneMappingRef.current && !phoneMappingRef.current.isPhoneNumberValid()) {
+      errors.push("Agent phone number is required in edit mode");
+    }
 
     // Handoff configuration is optional - no validation needed
     // Agent phone number mapping is optional - no validation needed
@@ -1136,6 +1148,7 @@ const CreateAgent = ({
 
           {activeStep === 2 && (
             <ChannelsAndPhoneMapping
+              ref={phoneMappingRef}
               channels={channels}
               toggleChannel={toggleChannel}
               updatePrompt={updatePrompt}
@@ -1145,9 +1158,10 @@ const CreateAgent = ({
               extraPrompts={extraPrompts}
               updateExtraPrompts={setExtraPrompts}
               agentPhoneNumber={agentPhoneNumber}
-              updateAgentPhoneNumber={(phoneNumber, phoneNumberId) => 
+              updateAgentPhoneNumber={(phoneNumber, phoneNumberId) =>
                 setAgentPhoneNumber({ phoneNumber, phoneNumberId })
               }
+              mode={mode || "create"}
             />
           )}
 

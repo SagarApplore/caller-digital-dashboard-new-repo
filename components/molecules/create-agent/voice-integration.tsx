@@ -564,15 +564,15 @@ const VoiceIntegration = ({
                     <Select
                       value={voiceIntegration.selectedTTSProvider}
                                           onValueChange={async (value) => {
-                      const selectedProvider = configs.tts.providers.find(
-                        (provider: any) => provider._id === value
-                      );
+                        const selectedProvider = configs.tts.providers.find(
+                          (provider: any) => provider._id === value
+                        );
 
-                      // Get voices from the selected provider
-                      let voices = [];
-                      if (selectedProvider) {
-                        voices = selectedProvider.voiceIds || selectedProvider.voices || [];
-                      }
+                        // Get voices from the selected provider
+                        let voices = [];
+                        if (selectedProvider) {
+                          voices = selectedProvider.voiceIds || selectedProvider.voices || [];
+                        }
 
                       // Clear current models and fetch new ones
                       setConfigs((prev) => ({
@@ -584,17 +584,17 @@ const VoiceIntegration = ({
                         },
                       }));
 
-                      setVoiceIntegration({
-                        ...voiceIntegration,
-                        selectedTTSProvider: value,
-                        selectedTTSProviderName: selectedProvider
-                          ? selectedProvider.companyName
-                          : null,
-                        selectedTTSModel: null,
-                        selectedTTSModelName: null,
-                        selectedTTSVoiceId: null,
-                        selectedTTSVoiceName: null,
-                      });
+                        setVoiceIntegration({
+                          ...voiceIntegration,
+                          selectedTTSProvider: value,
+                          selectedTTSProviderName: selectedProvider
+                            ? selectedProvider.companyName
+                            : null,
+                          selectedTTSModel: null,
+                          selectedTTSModelName: null,
+                          selectedTTSVoiceId: null,
+                          selectedTTSVoiceName: null,
+                        });
 
                       // Fetch new models for the selected provider
                       if (value) {
@@ -605,14 +605,14 @@ const VoiceIntegration = ({
                           );
                           const newModels = response?.data?.data || [];
                           
-                          setConfigs((prev) => ({
-                            ...prev,
-                            tts: {
-                              ...prev.tts,
+                        setConfigs((prev) => ({
+                          ...prev,
+                          tts: {
+                            ...prev.tts,
                               models: newModels,
-                              voices,
-                            },
-                          }));
+                            voices,
+                          },
+                        }));
                         } catch (error) {
                           console.error("Error fetching TTS models:", error);
                           setConfigs((prev) => ({
@@ -626,8 +626,8 @@ const VoiceIntegration = ({
                         }
                       }
 
-                      hasSetTTSModel.current = false;
-                    }}
+                        hasSetTTSModel.current = false;
+                      }}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Select a provider..." />
