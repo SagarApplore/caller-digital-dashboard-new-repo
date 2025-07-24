@@ -101,14 +101,14 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     console.log("ChannelsAndPhoneMapping - phoneNumbers:", phoneNumbers);
 
     // Validation function for parent
-    useImperativeHandle(ref, () => ({
-      isPhoneNumberValid: () => {
-        if (mode === "edit" && !agentPhoneNumber.phoneNumber) {
-          return false;
-        }
-        return true;
-      }
-    }));
+    // useImperativeHandle(ref, () => ({
+    //   isPhoneNumberValid: () => {
+    //     if (mode === "edit" && !agentPhoneNumber.phoneNumber) {
+    //       return false;
+    //     }
+    //     return true;
+    //   }
+    // }));
 
     const getChannelBadgeColor = (channel: string) => {
       switch (channel.toLowerCase()) {
