@@ -74,6 +74,7 @@ const FunctionTools = () => {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [existingTools, setExistingTools] = useState<
     {
+      _id: string;
       name: string;
       type: "API";
       prompt: string;
@@ -89,6 +90,7 @@ const FunctionTools = () => {
         ResponseType: string;
         ResponseHeaders: string;
         ResponseBody: Record<string, any>;
+        Params?: string;
       };
     }[]
   >([]);
@@ -337,6 +339,20 @@ const FunctionTools = () => {
                       }
                     />
                   </div>
+                  {newTool.type === "API" && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Params
+                      </label>
+                      <input
+                        type="text"
+                        className="border rounded px-3 py-2 w-full"
+                        placeholder='e.g. ?name=John&empId=1'
+                        value={newTool.api.Params || ""}
+                        onChange={(e) => updateApiField("Params", e.target.value)}
+                      />
+                    </div>
+                  )}
                   {newTool.type === "API" && (
                     <div className="space-y-3 border rounded p-3 bg-gray-50">
                       <div>
