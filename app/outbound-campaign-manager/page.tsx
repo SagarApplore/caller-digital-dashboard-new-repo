@@ -16,7 +16,7 @@ export default function OutboundCampaignManagerPage() {
         header={{
           title: "Outbound Campaign Manager",
           subtitle: {
-            text: "Coming soon",
+            text: "Beta",
             className: "bg-cyan-100 text-cyan-700",
           },
           children: (
