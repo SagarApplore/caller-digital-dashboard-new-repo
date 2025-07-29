@@ -41,6 +41,7 @@ export default function ToolTable({ existingTools,setExistingTools }:any) {
               <th className="px-4 py-2">URL</th>
               <th className="px-4 py-2">Method</th>
               <th className="px-4 py-2">Auth</th>
+              <th className="px-4 py-2">Params</th>
               <th className="px-4 py-2">Body</th>
               <th className="px-4 py-2">Response Body</th>
               <th className="px-4 py-2">Actions</th>
@@ -57,6 +58,7 @@ export default function ToolTable({ existingTools,setExistingTools }:any) {
                 <td className="px-4 py-2">
                   {tool.api?.auth ? `${tool.api.auth} | ${tool.api.username}` : '-'}
                 </td>
+                <td className="px-4 py-2">{tool.api?.Params || '-'}</td>
                 <td className="px-4 py-2 whitespace-pre-wrap max-w-xs">
                   {tool.api?.Body && Object.keys(tool.api.Body).length
                     ? JSON.stringify(tool.api.Body)

@@ -38,6 +38,7 @@ import {
 import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import { useRouter } from "next/navigation";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip";
 
 export interface Conversation {
   id: string;
@@ -66,6 +67,7 @@ export interface Conversation {
   callStartTime?: string;
   callEndTime?: string;
   handOff?: boolean;
+  cost?: ({ total?: number } & { [key: string]: number });
 }
 
 export interface FilterState {
@@ -116,6 +118,7 @@ const CallLogs = () => {
     },
   });
   const [totalMinutes, setTotalMinutes] = useState<number>(0);
+  const [totalCostAllCalls, setTotalCostAllCalls] = useState<number>(0);
   const [escalationMetrics, setEscalationMetrics] = useState<{
     totalCalls: number;
     escalatedCalls: number;
@@ -165,6 +168,7 @@ const CallLogs = () => {
       setApiData(response.data.data || []);
       setTotalCount(response.data.totalCount || 0);
       setTotalMinutes(response.data.totalMinutes || 0);
+      setTotalCostAllCalls(response.data.totalCostAllCalls || 0);
       setCurrentPage(response.data.currentPage || 1);
       setTotalPages(response.data.totalPages || 1);
       setEscalationMetrics(response.data.escalationMetrics || {
@@ -362,6 +366,7 @@ const CallLogs = () => {
         callStartTime: item.call_start_time,
         callEndTime: item.call_end_time,
         handOff: item.hand_off,
+        cost: item.cost || undefined,
       };
     });
   };
@@ -494,6 +499,12 @@ const CallLogs = () => {
         trend: "down" as const,
       },
       {
+        label: "Total Cost",
+        value: `₹${totalCostAllCalls.toFixed(2)}`,
+        change: "N/A",
+        trend: "up" as const,
+      },
+      {
         label: "CSAT Score",
         value: "N/A",
         change: "N/A",
@@ -506,7 +517,7 @@ const CallLogs = () => {
         trend: "down" as const,
       },
     ];
-  }, [filteredConversations, totalCount, totalMinutes, escalationMetrics]);
+  }, [filteredConversations, totalCount, totalMinutes, totalCostAllCalls, escalationMetrics]);
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -1066,9 +1077,9 @@ const CallLogs = () => {
         {!loading && !error && (
           <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
             <Table className="w-full min-w-[700px]">
-              <TableHeader className="bg-gray-50">
+              <TableHeader className="bg-gray-50 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12 bg-gray-50 sticky top-0">
                     <Checkbox
                       className="border-gray-300 border h-4 w-4 bg-white"
                       checked={
@@ -1079,31 +1090,28 @@ const CallLogs = () => {
                       onCheckedChange={toggleAllConversations}
                     />
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Contact
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Channel
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Assistant
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Timestamp
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Duration
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Status
                   </TableHead>
-                  {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                    CSAT
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
+                    Total Cost
                   </TableHead>
-                  <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                    Confidence
-                  </TableHead> */}
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -1197,6 +1205,47 @@ const CallLogs = () => {
                       <TableCell className="p-2 sm:p-4">
                         {getStatusBadge(conversation.status)}
                       </TableCell>
+                      <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
+                        {conversation.cost && typeof conversation.cost.total === "number" ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-pointer underline decoration-dotted">
+                                  ₹{conversation.cost.total.toFixed(2)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="p-4 max-w-sm">
+                                <div className="space-y-3">
+                                  <div className="border-b border-gray-200 pb-2">
+                                    <h4 className="font-semibold text-sm text-gray-900">Cost Breakdown</h4>
+                                    <p className="text-xs text-gray-500">Per call cost components</p>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {Object.entries(conversation.cost)
+                                      .filter(([k]) => k !== "total")
+                                      .map(([key, value]) => (
+                                        <div key={key} className="flex justify-between items-center text-xs py-1">
+                                          <span className="text-gray-600 capitalize pr-4">
+                                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                          </span>
+                                          <span className="font-medium text-gray-900 min-w-[60px] text-right">₹{value.toFixed(2)}</span>
+                                        </div>
+                                      ))}
+                                  </div>
+                                  <div className="border-t border-gray-200 pt-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-semibold text-sm text-gray-900">Total</span>
+                                      <span className="font-bold text-sm text-purple-600">₹{conversation.cost.total.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
                       {/* <TableCell className="p-4">
                         {renderStars(conversation.csat)}
                       </TableCell>
@@ -1260,6 +1309,9 @@ const CallLogs = () => {
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
+                  </TableHead>
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                    Total Cost
                   </TableHead>
                   {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     CSAT

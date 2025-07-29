@@ -14,6 +14,7 @@ import {
   Globe,
   Languages,
   Play,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/organisms/card";
 import {
@@ -201,6 +202,26 @@ export default function Agents({ assistants }: { assistants: any[] }) {
   const handleTestAgent = (assistant: any) => {
     setSelectedAgent(assistant);
     setIsTestModalOpen(true);
+  };
+
+  // Add delete handler function
+  const handleDeleteAgent = async (assistant: any) => {
+    if (!confirm(`Are you sure you want to delete "${assistant.agentName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest(`/agents/${assistant._id}`, "DELETE");
+      if (response?.data?.success) {
+        // Refresh the page or update the assistants list
+        window.location.reload();
+      } else {
+        alert("Failed to delete agent. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error deleting agent:", error);
+      alert("Failed to delete agent. Please try again.");
+    }
   };
 
   return (
@@ -411,6 +432,15 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                     >
                       <Settings className="w-4 h-4" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteAgent(assistant)}
+                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </Button>
                   </div>
                 </div>
