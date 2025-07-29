@@ -5,12 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard, AlertTriangle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/organisms/card';
-import { useAuth } from '@/components/providers/auth-provider';
 
 export default function PaymentRequiredComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { logout } = useAuth();
   const [loading, setLoading] = useState(false);
   const [creditInfo, setCreditInfo] = useState<any>(null);
 
@@ -37,8 +35,12 @@ export default function PaymentRequiredComponent() {
   };
 
   const handleLogout = () => {
-    // Use the auth provider's logout function
-    logout();
+    // Simple logout - clear localStorage and redirect to login
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      router.push('/login');
+    }
   };
 
   if (loading) {

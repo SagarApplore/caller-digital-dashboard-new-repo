@@ -1,10 +1,10 @@
 "use client";
 
 import React, { Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 
 // Dynamically import the component to prevent SSR issues
-const PaymentRequiredComponent = dynamic(() => import('./payment-required-component'), {
+const PaymentRequiredComponent = dynamicImport(() => import('./payment-required-component'), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen flex items-center justify-center">
@@ -16,7 +16,7 @@ const PaymentRequiredComponent = dynamic(() => import('./payment-required-compon
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';
 
-export default function PaymentRequiredPage() {
+function PaymentRequiredWrapper() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
@@ -26,4 +26,6 @@ export default function PaymentRequiredPage() {
       <PaymentRequiredComponent />
     </Suspense>
   );
-} 
+}
+
+export default PaymentRequiredWrapper; 
