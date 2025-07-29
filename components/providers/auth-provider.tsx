@@ -51,15 +51,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Initialize auth state on mount
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
         if (isAuthenticated()) {
-          const userData = getUserData();
           const tokenData = getAuthToken();
-
-          if (userData && tokenData) {
-            setUser(userData);
-            setToken(tokenData);
+          
+          if (tokenData) {
+            // Call /auth/me to get the latest user data
+            try {
+              const response = await apiRequest(endpoints.auth.me, "GET");
+              console.log('getMe response:', response?.data);
+              if (response?.data?.success) {
+                const userData: User = {
+                  id: response.data.data._id,
+                  email: response.data.data.email,
+                  name: response.data.data.name,
+                  role: response.data.data.role,
+                  DIY: response.data.data.DIY,
+                };
+                
+                console.log('User data from getMe:', userData);
+                setUser(userData);
+                setToken(tokenData);
+                setUserData(userData); // Update localStorage with latest data
+              }
+            } catch (error) {
+              console.error("Error fetching user data:", error);
+              // Fallback to localStorage data
+              const userData = getUserData();
+              if (userData) {
+                setUser(userData);
+                setToken(tokenData);
+              }
+            }
           }
         }
       } catch (error) {
@@ -94,7 +118,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: response?.data?.email,
         name: response?.data?.name,
         role: response?.data?.role,
+        DIY: response?.data?.DIY,
       };
+
+      console.log('Login response:', response?.data);
+      console.log('User object created:', user);
 
       const token: AuthToken = {
         accessToken: response?.data?.token,
