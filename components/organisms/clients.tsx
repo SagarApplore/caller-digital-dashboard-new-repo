@@ -31,11 +31,25 @@ import {
   Instagram,
   Facebook,
   Circle,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import utils from "@/utils/index.util";
 import { useState } from "react";
 import { useEffect } from "react";
 import apiRequest from "@/utils/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const getPlanColor = (plan: string) => {
   switch (plan) {
@@ -109,18 +123,78 @@ const getIndustryColor = (industry: string) => {
   }
 };
 
+const getCreditStatusColor = (usedCredits: number, totalCredits: number) => {
+  if (!totalCredits) return "text-gray-500";
+  
+  const usagePercentage = (usedCredits / totalCredits) * 100;
+  
+  if (usagePercentage >= 90) {
+    return "text-red-600";
+  } else if (usagePercentage >= 70) {
+    return "text-orange-600";
+  } else if (usagePercentage >= 50) {
+    return "text-yellow-600";
+  } else {
+    return "text-green-600";
+  }
+};
+
 export function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchClients = async () => {
-      const response = await apiRequest("/users/getClients", "GET");
-      console.log(response.data);
-
-      setClients(response.data);
+      setLoading(true);
+      try {
+        const response = await apiRequest("/users/getClients", "GET");
+        console.log(response.data);
+        setClients(response.data);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch clients",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
     fetchClients();
-  }, []);
+  }, [toast]);
+
+  const handleDeleteClient = async (clientId: string) => {
+    setDeletingClientId(clientId);
+    try {
+      await apiRequest(`/users/deactivate/${clientId}`, "PUT");
+      
+      // Update the local state to reflect the change
+      setClients(prevClients => 
+        prevClients.map(client => 
+          client._id === clientId 
+            ? { ...client, active: false }
+            : client
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Client deactivated successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deactivating client:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to deactivate client",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingClientId(null);
+    }
+  };
 
   return (
     <div className="">
@@ -160,15 +234,12 @@ export function ClientsPage() {
             <TableHeader className="bg-gray-100">
               <TableRow className="border-gray-100">
                 <TableHead>Company</TableHead>
-                {/* <TableHead>Industry</TableHead> */}
-                {/* <TableHead>AM</TableHead> */}
-                {/* <TableHead>MRR</TableHead> */}
-                {/* <TableHead>Plan</TableHead> */}
                 <TableHead>Assistants</TableHead>
                 <TableHead>Channels</TableHead>
-                {/* <TableHead>Health</TableHead> */}
+                <TableHead>Credits Used</TableHead>
+                <TableHead>Credits Remaining</TableHead>
                 <TableHead>Status</TableHead>
-                {/* <TableHead className="text-right">Actions</TableHead> */}
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="bg-white">
@@ -198,38 +269,6 @@ export function ClientsPage() {
                       </div>
                     </div>
                   </TableCell>
-                  {/* <TableCell>
-                    <div
-                      className={`text-xs w-fit font-medium rounded-full px-2 py-1 ${getIndustryColor(
-                        client.industry
-                      )}`}
-                    >
-                      {client.industry}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {client.am}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {utils.string.formatCurrency(client.mrr)}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className={`text-xs w-fit font-semibold px-4 py-1 rounded-full ${getPlanColor(
-                        client.plan
-                      )}`}
-                    >
-                      {client.plan}
-                    </div>
-                  </TableCell> */}
                   <TableCell>
                     <div>
                       <div className="font-medium text-gray-900">
@@ -239,17 +278,6 @@ export function ClientsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      {/* {client.channels?.map((channel: string) => {
-                        const { icon, color } = getChannelIconAndColor(channel);
-                        return (
-                          <div
-                            className={`flex items-center ${color} rounded-full px-2 py-2`}
-                          >
-                            {icon}
-                          </div>
-                        );
-                      })} */}
-                      {/* Hardcoded channels for demonstration */}
                       {["email", "whatsapp", "sms"].map((channel, idx) => {
                         const { icon, color } = getChannelIconAndColor(channel);
                         return (
@@ -263,15 +291,33 @@ export function ClientsPage() {
                       })}
                     </div>
                   </TableCell>
-                  {/* <TableCell>
-                    <div
-                      className={`text-xs w-fit font-semibold ${getHealthColor(
-                        client.health
-                      )}`}
-                    >
-                      {client.health}%
+                  <TableCell>
+                    <div>
+                      <div className={`font-medium ${getCreditStatusColor(client.usedCredits || 0, client.totalCredits || 0)}`}>
+                        {client.usedCredits?.toLocaleString() || 0}
+                      </div>
+                      {client.totalCredits && (
+                        <div className="text-xs text-gray-500">
+                          {client.totalCredits > 0 
+                            ? `${((client.usedCredits || 0) / client.totalCredits * 100).toFixed(1)}% used`
+                            : 'No credits allocated'
+                          }
+                        </div>
+                      )}
                     </div>
-                  </TableCell> */}
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {client.remainingCredits?.toLocaleString() || 0}
+                      </div>
+                      {client.totalCredits && (
+                        <div className="text-xs text-gray-500">
+                          of {client.totalCredits.toLocaleString()} total
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <div
                       className={`text-xs w-fit font-semibold flex items-center gap-1 rounded-full px-2 py-1 ${utils.colors.getStatusColor(
@@ -290,7 +336,7 @@ export function ClientsPage() {
                         : client.active}
                     </div>
                   </TableCell>
-                  {/* <TableCell className="text-right">
+                  <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button variant="outline" size="sm">
                         View
@@ -298,15 +344,52 @@ export function ClientsPage() {
                       <Button variant="outline" size="sm">
                         Edit
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 bg-transparent"
-                      >
-                        Deactivate
-                      </Button>
+                      {client.active && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 bg-transparent"
+                              disabled={deletingClientId === client._id}
+                            >
+                              {deletingClientId === client._id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-500" />
+                                Deactivate Client
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to deactivate{" "}
+                                <strong>{client.name}</strong>? This action will:
+                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                  <li>Set the client as inactive</li>
+                                  <li>Deactivate all associated team members</li>
+                                  <li>This action can be reversed by an administrator</li>
+                                </ul>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteClient(client._id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Deactivate Client
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
-                  </TableCell> */}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

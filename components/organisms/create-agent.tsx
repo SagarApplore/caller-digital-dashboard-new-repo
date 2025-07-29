@@ -48,36 +48,28 @@ interface IPersonaAndBehavior {
   agentName: string;
 }
 
+interface IKnowledgeBase {
+  _id: string;
+  name: string;
+  description: string;
+  file: string;
+}
+
 interface CreateAgentProps {
   mode?: "create" | "edit";
   agentId?: string;
   initialData?: any;
 }
 
-const CreateAgent = ({
+const CreateAgent: React.FC<CreateAgentProps> = ({
   mode = "create",
   agentId,
   initialData,
-}: CreateAgentProps) => {
+}) => {
+  const { user } = useAuth();
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [knowledgeBaseData, setKnowledgeBaseData] = useState<{
-    knowledgeBases: KnowledgeBaseItem[];
-    selectedKnowledgeBases: KnowledgeBaseItem[];
-  }>({
-    knowledgeBases: [],
-    selectedKnowledgeBases: [],
-  });
-
-  const [functionToolsData, setFunctionToolsData] = useState<{
-    functionTools: IFunctionTool[];
-    selectedFunctionTools: IFunctionTool[];
-  }>({
-    functionTools: [],
-    selectedFunctionTools: [],
-  });
-
   const [personaAndBehavior, setPersonaAndBehavior] =
     useState<IPersonaAndBehavior>({
       languages: [],
@@ -85,11 +77,34 @@ const CreateAgent = ({
       agentName: initialData?.agentName || "",
     });
 
-  const [extraPrompts, setExtraPrompts] = useState({
-    summaryPrompt: initialData?.summaryPrompt || "",
-    successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
-    failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
-  });
+  // Check if user has DIY permissions
+  const hasDIYPermission = () => {
+    console.log('hasDIYPermission check:', {
+      user,
+      userRole: user?.role,
+      userDIY: user?.DIY,
+      isSuperAdmin: user?.role === 'SUPER_ADMIN',
+      isClientAdminWithDIY: user?.role === 'CLIENT_ADMIN' && user?.DIY === true
+    });
+    
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'CLIENT_ADMIN' && user.DIY === true) return true;
+    return false;
+  };
+
+  // Get available steps based on DIY permission
+  const getAvailableSteps = () => {
+    const baseSteps = [1, 2, 3]; // Persona, Channels, Knowledge Base
+    
+    if (hasDIYPermission()) {
+      return [...baseSteps, 4, 5, 6]; // Include Voice, Chat, Email integrations
+    }
+    
+    return baseSteps; // Only basic steps for non-DIY users
+  };
+
+  const availableSteps = getAvailableSteps();
 
   // Initialize channels with existing data
   const initializeChannels = (): Channel[] => {
@@ -117,6 +132,25 @@ const CreateAgent = ({
       };
     });
   };
+
+  const [loading, setLoading] = useState(true);
+  const [knowledgeBaseData, setKnowledgeBaseData] = useState<{
+    knowledgeBases: KnowledgeBaseItem[];
+    functionTools: IFunctionTool[];
+    selectedKnowledgeBases: KnowledgeBaseItem[];
+    selectedFunctionTools: IFunctionTool[];
+  }>({
+    knowledgeBases: [],
+    functionTools: [],
+    selectedKnowledgeBases: [],
+    selectedFunctionTools: [],
+  });
+
+  const [extraPrompts, setExtraPrompts] = useState({
+    summaryPrompt: "",
+    successEvaluationPrompt: "",
+    failureEvaluationPrompt: "",
+  });
 
   const [channels, setChannels] = useState<Channel[]>(initializeChannels());
 
@@ -156,21 +190,7 @@ const CreateAgent = ({
     initializeVoiceIntegration()
   );
 
-  // Initialize email integration with existing data
-  const initializeEmailIntegration = () => ({
-    selectedLLMModel: initialData?.email?.llmProvider?.model || null,
-    selectedLLMModelName: initialData?.email?.llmProvider?.model || null,
-    selectedLLMProvider: initialData?.email?.llmProvider?.providerName || null,
-    selectedLLMProviderName:
-      initialData?.email?.llmProvider?.providerName || null,
-  });
-
-  const [emailIntegration, setEmailIntegration] = useState(
-    initializeEmailIntegration()
-  );
-
-  // Initialize chat integration with existing data
-  const initializeChatIntegration = () => ({
+  const [chatIntegration, setChatIntegration] = useState({
     selectedLLMModel: initialData?.chats?.llmProvider?.model || null,
     selectedLLMModelName: initialData?.chats?.llmProvider?.model || null,
     selectedLLMProvider: initialData?.chats?.llmProvider?.providerName || null,
@@ -178,9 +198,16 @@ const CreateAgent = ({
       initialData?.chats?.llmProvider?.providerName || null,
   });
 
-  const [chatIntegration, setChatIntegration] = useState(
-    initializeChatIntegration()
-  );
+  const [emailIntegration, setEmailIntegration] = useState({
+    selectedLLMModel: initialData?.email?.llmProvider?.model || null,
+    selectedLLMModelName: initialData?.email?.llmProvider?.model || null,
+    selectedLLMProvider: initialData?.email?.llmProvider?.providerName || null,
+    selectedLLMProviderName:
+      initialData?.email?.llmProvider?.providerName || null,
+  });
+
+  // Ref for phone mapping validation
+  const phoneMappingRef = useRef<ChannelsAndPhoneMappingRef>(null);
 
   // Initialize handoff configuration
   const initializeHandoffConfig = (): HandoffConfig => {
@@ -215,12 +242,6 @@ const CreateAgent = ({
     agentPhoneNumber: agentPhoneNumber,
     mode: mode
   });
-
-  const router = useRouter();
-  const { user } = useAuth();
-
-  // Ref for phone mapping validation
-  const phoneMappingRef = useRef<ChannelsAndPhoneMappingRef>(null);
 
   // Debug: log mode
   console.log("CreateAgent mode:", mode);
@@ -362,13 +383,35 @@ const CreateAgent = ({
   const validateAllSteps = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
-    // Check if at least one channel is active
-    const activeChannels = channels.filter((channel) => channel.active);
-    if (activeChannels.length === 0) {
-      errors.push("At least one channel must be selected");
+    // Validate step 1 (Persona and Behavior)
+    const step1Validation = validateStep1();
+    errors.push(...step1Validation.errors);
+
+    // Validate step 2 (Channels and Phone Mapping)
+    const step2Validation = validateStep2();
+    errors.push(...step2Validation.errors);
+
+    // Validate step 3 (Knowledge Base)
+    const step3Validation = validateStep3();
+    errors.push(...step3Validation.errors);
+
+    // Only validate integration steps if user has DIY permissions
+    if (hasDIYPermission()) {
+      // Validate step 4 (Voice Integration)
+      const step4Validation = validateStep4();
+      errors.push(...step4Validation.errors);
+
+      // Validate step 5 (Chat Integration)
+      const step5Validation = validateStep5();
+      errors.push(...step5Validation.errors);
+
+      // Validate step 6 (Email Integration)
+      const step6Validation = validateStep6();
+      errors.push(...step6Validation.errors);
     }
 
     // Validate that each active channel has its corresponding integration configured
+    const activeChannels = channels.filter((channel) => channel.active);
     activeChannels.forEach((channel) => {
       const channelId = channel.id.toLowerCase();
 
@@ -382,26 +425,29 @@ const CreateAgent = ({
         errors.push(`${channel.name} first message is required`);
       }
 
-      if (channelId === "voice") {
-        if (
-          !voiceIntegration.selectedLLMModelName ||
-          !voiceIntegration.selectedLLMProviderName
-        ) {
-          errors.push("Voice integration is incomplete");
-        }
-      } else if (channelId === "chat") {
-        if (
-          !chatIntegration.selectedLLMModelName ||
-          !chatIntegration.selectedLLMProviderName
-        ) {
-          errors.push("Chat integration is incomplete");
-        }
-      } else if (channelId === "email") {
-        if (
-          !emailIntegration.selectedLLMModelName ||
-          !emailIntegration.selectedLLMProviderName
-        ) {
-          errors.push("Email integration is incomplete");
+      // Only validate integrations if user has DIY permissions
+      if (hasDIYPermission()) {
+        if (channelId === "voice") {
+          if (
+            !voiceIntegration.selectedLLMModelName ||
+            !voiceIntegration.selectedLLMProviderName
+          ) {
+            errors.push("Voice integration is incomplete");
+          }
+        } else if (channelId === "chat") {
+          if (
+            !chatIntegration.selectedLLMModelName ||
+            !chatIntegration.selectedLLMProviderName
+          ) {
+            errors.push("Chat integration is incomplete");
+          }
+        } else if (channelId === "email") {
+          if (
+            !emailIntegration.selectedLLMModelName ||
+            !emailIntegration.selectedLLMProviderName
+          ) {
+            errors.push("Email integration is incomplete");
+          }
         }
       }
     });
@@ -459,13 +505,29 @@ const CreateAgent = ({
       }
     }
 
-    // Check if the target step should be skipped based on channel activation
+    // Check if the target step should be skipped based on channel activation and DIY permissions
     const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
     const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+    const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
+
+    // If user doesn't have DIY permissions, skip integration steps
+    if (!hasDIYPermission()) {
+      // For non-DIY users, only allow steps 1, 2, 3
+      if (step > 3) {
+        toast.error("Integration features are not available for your account. Please contact support to enable DIY features.");
+        return;
+      }
+    }
+
+    // If trying to navigate to step 4 (Voice Integration) but voice is not active, skip to next available step
+    if (step === 4 && !voiceChannelActive) {
+      const nextStep = chatChannelActive ? 5 : (emailChannelActive ? 6 : 7);
+      setActiveStep(nextStep);
+      return;
+    }
 
     // If trying to navigate to step 5 (Chat Integration) but chat is not active, skip to next available step
     if (step === 5 && !chatChannelActive) {
-      // If email is active, go to step 6, otherwise go to step 7 (or the last step)
       const nextStep = emailChannelActive ? 6 : 7;
       setActiveStep(nextStep);
       return;
@@ -499,10 +561,11 @@ const CreateAgent = ({
           );
         }
 
-        setKnowledgeBaseData({
+        setKnowledgeBaseData((prev) => ({
+          ...prev,
           knowledgeBases,
           selectedKnowledgeBases,
-        });
+        }));
       } catch (error) {
         console.error("Error fetching knowledge bases:", error);
       }
@@ -528,10 +591,11 @@ const CreateAgent = ({
           );
         }
 
-        setFunctionToolsData({
+        setKnowledgeBaseData((prev) => ({
+          ...prev,
           functionTools,
           selectedFunctionTools,
-        });
+        }));
       } catch (error) {
         console.error("Error fetching function tools:", error);
       }
@@ -714,13 +778,13 @@ const CreateAgent = ({
           // Update function tools selection
           if (
             agentData.functionTools &&
-            functionToolsData.functionTools.length > 0
+            knowledgeBaseData.functionTools.length > 0
           ) {
             const selectedFunctionTools =
-              functionToolsData.functionTools.filter((tool: IFunctionTool) =>
+              knowledgeBaseData.functionTools.filter((tool: IFunctionTool) =>
                 agentData.functionTools.includes(tool._id)
               );
-            setFunctionToolsData((prev) => ({
+            setKnowledgeBaseData((prev) => ({
               ...prev,
               selectedFunctionTools,
             }));
@@ -900,7 +964,7 @@ const CreateAgent = ({
   };
 
   const selectFunctionTools = (functionTools: IFunctionTool[]) => {
-    setFunctionToolsData((prev) => ({
+    setKnowledgeBaseData((prev) => ({
       ...prev,
       selectedFunctionTools: functionTools,
     }));
@@ -918,7 +982,7 @@ const CreateAgent = ({
     }
 
     setCreating(true);
-    const agentData = {
+    const agentData: any = {
       agentName: personaAndBehavior.agentName,
       client: user?.id,
       status: "active",
@@ -944,38 +1008,47 @@ const CreateAgent = ({
       knowledgeBase: knowledgeBaseData.selectedKnowledgeBases.map(
         (selectKnowledgeBase) => selectKnowledgeBase._id
       ), // Array of knowledge base ObjectIds
-      functionTools: functionToolsData.selectedFunctionTools.map(
+      functionTools: knowledgeBaseData.selectedFunctionTools.map(
         (tool) => tool._id
       ), // Array of function tool ObjectIds
       handoff: handoffConfig.enabled,
       handoff_number: handoffConfig.enabled ? handoffConfig.handoff_number : "",
-      voice: {
-        llmProvider: {
-          model: voiceIntegration.selectedLLMModelName,
-          providerName: voiceIntegration.selectedLLMProviderName,
-        },
-        voiceProvider: {
-          model: voiceIntegration.selectedTTSModelName,
-          providerName: voiceIntegration.selectedTTSProviderName,
-          voiceId: voiceIntegration.selectedTTSVoiceId,
-          voiceName: voiceIntegration.selectedTTSVoiceName,
-        },
-        transcriberProvider: {
-          model: voiceIntegration.selectedSTTModelName,
-          providerName: voiceIntegration.selectedSTTProviderName,
-        },
-        firstMessageMode: "AI_SPEAKS_FIRST",
-        firstMessage: channels.filter(
-          (channel) => channel.id.toLowerCase() === "voice"
-        )?.[0]?.firstMessage,
-        agentPrompt: channels.filter(
-          (channel) => channel.id.toLowerCase() === "voice"
-        )?.[0]?.prompt?.value,
-        temperature: 100,
-        maxTokens: 100,
-      },
-      ...(channels.find(ch => ch.id.toLowerCase() === "chat")?.active && {
-        chats: {
+    };
+
+    // Only include integration data if user has DIY permissions
+    if (hasDIYPermission()) {
+      // Add voice integration data
+      if (channels.find(ch => ch.id.toLowerCase() === "voice")?.active) {
+        agentData.voice = {
+          llmProvider: {
+            model: voiceIntegration.selectedLLMModelName,
+            providerName: voiceIntegration.selectedLLMProviderName,
+          },
+          voiceProvider: {
+            model: voiceIntegration.selectedTTSModelName,
+            providerName: voiceIntegration.selectedTTSProviderName,
+            voiceId: voiceIntegration.selectedTTSVoiceId,
+            voiceName: voiceIntegration.selectedTTSVoiceName,
+          },
+          transcriberProvider: {
+            model: voiceIntegration.selectedSTTModelName,
+            providerName: voiceIntegration.selectedSTTProviderName,
+          },
+          firstMessageMode: "AI_SPEAKS_FIRST",
+          firstMessage: channels.filter(
+            (channel) => channel.id.toLowerCase() === "voice"
+          )?.[0]?.firstMessage,
+          agentPrompt: channels.filter(
+            (channel) => channel.id.toLowerCase() === "voice"
+          )?.[0]?.prompt?.value,
+          temperature: 100,
+          maxTokens: 100,
+        };
+      }
+
+      // Add chat integration data
+      if (channels.find(ch => ch.id.toLowerCase() === "chat")?.active) {
+        agentData.chats = {
           llmProvider: {
             model: chatIntegration.selectedLLMModelName,
             providerName: chatIntegration.selectedLLMProviderName,
@@ -988,10 +1061,12 @@ const CreateAgent = ({
           )?.[0]?.prompt?.value,
           temperature: 100,
           maxTokens: 100,
-        },
-      }),
-      ...(channels.find(ch => ch.id.toLowerCase() === "email")?.active && {
-        email: {
+        };
+      }
+
+      // Add email integration data
+      if (channels.find(ch => ch.id.toLowerCase() === "email")?.active) {
+        agentData.email = {
           llmProvider: {
             model: emailIntegration.selectedLLMModelName,
             providerName: emailIntegration.selectedLLMProviderName,
@@ -1001,9 +1076,9 @@ const CreateAgent = ({
           )?.[0]?.prompt?.value,
           temperature: 100,
           maxTokens: 100,
-        },
-      }),
-    };
+        };
+      }
+    }
 
     if (mode === "edit" && agentId) {
       // Update existing agent - merge with existing data
@@ -1055,15 +1130,28 @@ const CreateAgent = ({
 
   // Calculate actual total steps based on channel activation
   const getTotalSteps = () => {
+    // If user doesn't have DIY permissions, only show basic steps
+    if (!hasDIYPermission()) {
+      return 3; // Only Persona, Channels, Knowledge Base
+    }
+
     const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
     const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+    const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
     
-    let totalSteps = 4; // Base steps: 1, 2, 3, 4
+    let totalSteps = 3; // Base steps: 1, 2, 3
     
+    // Add voice integration step if voice channel is active
+    if (voiceChannelActive) {
+      totalSteps++;
+    }
+    
+    // Add chat integration step if chat channel is active
     if (chatChannelActive) {
       totalSteps++;
     }
     
+    // Add email integration step if email channel is active
     if (emailChannelActive) {
       totalSteps++;
     }
@@ -1084,16 +1172,27 @@ const CreateAgent = ({
       <div className="bg-white p-4 w-full max-w-[250px] h-full">
         <ul className="flex flex-col gap-2 list-none">
           {agentSteps.map((step) => {
-            // Check if step should be shown based on channel activation
+            // Check if step should be shown based on channel activation and DIY permissions
             const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
             const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
+            const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
             
-            // Hide step 5 if chat is not active
+            // Hide integration steps for non-DIY users
+            if (!hasDIYPermission() && step.id > 3) {
+              return null;
+            }
+            
+            // Hide step 4 (Voice Integration) if voice is not active
+            if (step.id === 4 && !voiceChannelActive) {
+              return null;
+            }
+            
+            // Hide step 5 (Chat Integration) if chat is not active
             if (step.id === 5 && !chatChannelActive) {
               return null;
             }
             
-            // Hide step 6 if email is not active
+            // Hide step 6 (Email Integration) if email is not active
             if (step.id === 6 && !emailChannelActive) {
               return null;
             }
@@ -1170,12 +1269,12 @@ const CreateAgent = ({
               knowledgeBases={knowledgeBaseData.knowledgeBases}
               selectedKnowledgeBases={knowledgeBaseData.selectedKnowledgeBases}
               selectKnowledgeBase={selectKnowledgeBase}
-              selectedFunctionTools={functionToolsData.selectedFunctionTools}
+              selectedFunctionTools={knowledgeBaseData.selectedFunctionTools}
               selectFunctionTools={selectFunctionTools}
             />
           )}
 
-          {activeStep === 4 && (
+          {activeStep === 4 && hasDIYPermission() && (
             <VoiceIntegration
               voiceIntegration={voiceIntegration}
               setVoiceIntegration={setVoiceIntegration}
@@ -1183,7 +1282,22 @@ const CreateAgent = ({
             />
           )}
 
-          {activeStep === 5 && channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
+          {activeStep === 4 && !hasDIYPermission() && (
+            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Voice Integration Not Available</h3>
+              <p className="text-gray-600 mb-4">
+                DIY features are not enabled for your account. Please contact support to enable integration features.
+              </p>
+              <Button 
+                onClick={() => handleStepChange(3)}
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+              >
+                Go Back to Knowledge Base
+              </Button>
+            </div>
+          )}
+
+          {activeStep === 5 && hasDIYPermission() && channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
             <ChatIntegration
               chatIntegration={chatIntegration}
               setChatIntegration={setChatIntegration}
@@ -1191,7 +1305,7 @@ const CreateAgent = ({
             />
           )}
 
-          {activeStep === 5 && !channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
+          {activeStep === 5 && hasDIYPermission() && !channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
             <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Chat Integration Not Available</h3>
               <p className="text-gray-600 mb-4">
@@ -1206,7 +1320,22 @@ const CreateAgent = ({
             </div>
           )}
 
-          {activeStep === 6 && channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
+          {activeStep === 5 && !hasDIYPermission() && (
+            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chat Integration Not Available</h3>
+              <p className="text-gray-600 mb-4">
+                DIY features are not enabled for your account. Please contact support to enable integration features.
+              </p>
+              <Button 
+                onClick={() => handleStepChange(3)}
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+              >
+                Go Back to Knowledge Base
+              </Button>
+            </div>
+          )}
+
+          {activeStep === 6 && hasDIYPermission() && channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
             <EmailIntegration
               emailIntegration={emailIntegration}
               setEmailIntegration={setEmailIntegration}
@@ -1214,7 +1343,7 @@ const CreateAgent = ({
             />
           )}
 
-          {activeStep === 6 && !channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
+          {activeStep === 6 && hasDIYPermission() && !channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
             <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration Not Available</h3>
               <p className="text-gray-600 mb-4">
@@ -1225,6 +1354,21 @@ const CreateAgent = ({
                 className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
               >
                 Go to Channels & Phone Mapping
+              </Button>
+            </div>
+          )}
+
+          {activeStep === 6 && !hasDIYPermission() && (
+            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration Not Available</h3>
+              <p className="text-gray-600 mb-4">
+                DIY features are not enabled for your account. Please contact support to enable integration features.
+              </p>
+              <Button 
+                onClick={() => handleStepChange(3)}
+                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+              >
+                Go Back to Knowledge Base
               </Button>
             </div>
           )}

@@ -1,6 +1,7 @@
 const endpoints = {
   auth: {
     login: "/auth/login",
+    me: "/auth/me",
   },
   outboundCampaign: {
     getAll: "/outbound-campaigns",
@@ -44,6 +45,14 @@ const endpoints = {
   phoneNumbers: {
     assign: "/phone-number-assignment",
     get: "/phone-number",
+  },
+  pricingModels: {
+    getAll: "/pricing-models",
+  },
+  workspaces: {
+    available: "/workspaces/available",
+    switch: "/workspaces/switch",
+    current: "/workspaces/current",
   },
 };
 

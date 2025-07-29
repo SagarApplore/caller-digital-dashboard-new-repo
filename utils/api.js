@@ -34,6 +34,15 @@ export const apiRequest = async (
     return response;
   } catch (error) {
     console.error("API Request Error:", error.stack);
+    
+    // Handle credit exhaustion - but prevent infinite redirects
+    if (error.response?.data?.error === 'CREDITS_EXHAUSTED' && error.response?.data?.redirectTo) {
+      // Only redirect if we're not already on the payment required page
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/payment-required')) {
+        window.location.href = error.response.data.redirectTo;
+      }
+    }
+    
     throw error.response?.data || { message: "Something went wrong!" };
   }
 };

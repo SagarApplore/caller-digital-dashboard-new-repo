@@ -4,6 +4,7 @@ export interface User {
   email: string;
   name?: string;
   role?: string;
+  DIY?: boolean;
 }
 
 export interface AuthToken {
