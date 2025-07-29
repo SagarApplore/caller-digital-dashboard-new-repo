@@ -19,17 +19,17 @@ export default function OutboundCampaignManagerPage() {
             text: "Coming soon",
             className: "bg-cyan-100 text-cyan-700",
           },
-          // children: (
-          //   <Button
-          //     className="bg-purple-700 hover:bg-purple-800"
-          //     onClick={() => {
-          //       router.push("/outbound-campaign-manager/new");
-          //     }}
-          //   >
-          //     <PlusIcon className="w-4 h-4" />
-          //     Create New Campaign
-          //   </Button>
-          // ),
+          children: (
+            <Button
+              className="bg-purple-700 hover:bg-purple-800"
+              onClick={() => {
+                router.push("/outbound-campaign-manager/new");
+              }}
+            >
+              <PlusIcon className="w-4 h-4" />
+              Create New Campaign
+            </Button>
+          ),
         }}
       >
         <OutboundCampaignManager />

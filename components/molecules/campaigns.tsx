@@ -17,6 +17,8 @@ import {
   Download,
   RefreshCw,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import utils from "@/utils/index.util";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -32,39 +34,87 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../ui/pagination";
 import Image from "next/image";
 
 export function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isPageLoading, setIsPageLoading] = useState<boolean>(false);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    limit: 10,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (page = 1) => {
     try {
+      if (page === 1) {
+        setIsLoading(true);
+      } else {
+        setIsPageLoading(true);
+      }
+      
       const response = await apiRequest(
-        endpoints.outboundCampaign.getAll,
+        `${endpoints.outboundCampaign.getAll}?page=${page}&limit=${pagination.limit}`,
         "GET"
       );
       if (response.data?.success === true) {
         setCampaigns(response.data?.data);
+        setPagination(response.data?.pagination || pagination);
         setIsLoading(false);
+        setIsPageLoading(false);
       } else {
         toast.error(response.data?.message || "Error fetching campaigns");
         setCampaigns([]);
+        setIsLoading(false);
+        setIsPageLoading(false);
       }
     } catch (error) {
       toast.error("Error fetching campaigns");
       setCampaigns([]);
       setIsLoading(false);
+      setIsPageLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchCampaigns();
+    fetchCampaigns(1);
   }, []);
 
   useEffect(() => {
     console.log(isLoading);
   }, [isLoading]);
+
+  // Pagination functions
+  const handlePageChange = (page: number) => {
+    fetchCampaigns(page);
+  };
+
+  // Keyboard navigation for pagination
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft' && pagination.hasPrevPage) {
+        handlePageChange(pagination.currentPage - 1);
+      } else if (event.key === 'ArrowRight' && pagination.hasNextPage) {
+        handlePageChange(pagination.currentPage + 1);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [pagination.currentPage, pagination.hasPrevPage, pagination.hasNextPage]);
 
   const [filters, setFilters] = useState({
     status: "all-status",
@@ -134,11 +184,6 @@ export function CampaignsPage() {
     console.log("Export clicked");
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    // Refresh functionality can be implemented here
-    console.log("Refresh clicked");
-  }, []);
-
   const router = useRouter();
 
   return (
@@ -182,6 +227,28 @@ export function CampaignsPage() {
               <Calendar className="w-4 h-4 mr-2" />
               Date Range
             </Button>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">Show:</span>
+              <Select 
+                value={pagination.limit.toString()} 
+                onValueChange={(value) => {
+                  const newLimit = parseInt(value);
+                  setPagination(prev => ({ ...prev, limit: newLimit, currentPage: 1 }));
+                  fetchCampaigns(1);
+                }}
+              >
+                <SelectTrigger className="w-20 bg-gray-100">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -198,7 +265,7 @@ export function CampaignsPage() {
               variant="outline"
               size="sm"
               className="bg-gray-100 border-none"
-              onClick={handleRefresh}
+              onClick={() => fetchCampaigns(pagination.currentPage)}
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -211,7 +278,7 @@ export function CampaignsPage() {
       <div className="bg-white rounded-lg shadow-lg shadow-gray-200">
         <div className="">
           <h2 className="text-lg font-semibold text-gray-900 m-4">
-            Active Campaigns ({campaigns.length})
+            Active Campaigns ({pagination.totalCount})
           </h2>
 
           <div className="overflow-x-auto">
@@ -345,41 +412,11 @@ export function CampaignsPage() {
                             {utils.string.formatDate(campaign.createdAt)}
                           </span>
                         </TableCell>
-                        {/* <TableCell className="py-4 px-4">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-blue-600 hover:text-blue-700"
-                              onClick={() =>
-                                router.push(
-                                  `/outbound-campaign-manager/${campaign._id}`
-                                )
-                              }
-                            >
-                              View
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-600 hover:text-gray-700"
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              Stop
-                            </Button>
-                          </div>
-                        </TableCell> */}
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-4 px-4">
+                      <TableCell colSpan={6} className="text-center py-4 px-4">
                         No campaigns found
                       </TableCell>
                     </TableRow>
@@ -388,29 +425,138 @@ export function CampaignsPage() {
               </Table>
             )}
           </div>
+          
+          {/* Pagination */}
+          {!isLoading && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Showing {((pagination.currentPage - 1) * pagination.limit) + 1} to{" "}
+                {Math.min(pagination.currentPage * pagination.limit, pagination.totalCount)} of{" "}
+                {pagination.totalCount} campaigns
+                {isPageLoading && (
+                  <span className="ml-2 text-blue-600">
+                    <Loader2 className="inline w-3 h-3 animate-spin mr-1" />
+                    Loading...
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                {/* Go to page input */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">Go to page:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={pagination.totalPages}
+                    value={pagination.currentPage}
+                    onChange={(e) => {
+                      const page = parseInt(e.target.value);
+                      if (page >= 1 && page <= pagination.totalPages) {
+                        handlePageChange(page);
+                      }
+                    }}
+                    className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-500">of {pagination.totalPages}</span>
+                </div>
+                
+                <Pagination>
+                  <PaginationContent>
+                    {/* First page button */}
+                    <PaginationItem>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        disabled={pagination.currentPage === 1}
+                        className="flex items-center gap-1"
+                      >
+                        First
+                      </Button>
+                    </PaginationItem>
+                    
+                    <PaginationItem>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                        disabled={!pagination.hasPrevPage}
+                        className="flex items-center gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                    </PaginationItem>
+                    
+                    {/* Page numbers */}
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => {
+                      // Show first page, last page, current page, and pages around current page
+                      const shouldShow = 
+                        page === 1 || 
+                        page === pagination.totalPages || 
+                        Math.abs(page - pagination.currentPage) <= 1;
+                      
+                      if (shouldShow) {
+                        return (
+                          <PaginationItem key={page}>
+                            <Button
+                              variant={page === pagination.currentPage ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handlePageChange(page)}
+                              className="min-w-[40px]"
+                            >
+                              {page}
+                            </Button>
+                          </PaginationItem>
+                        );
+                      } else if (
+                        page === pagination.currentPage - 2 || 
+                        page === pagination.currentPage + 2
+                      ) {
+                        return (
+                          <PaginationItem key={page}>
+                            <span className="flex h-9 w-9 items-center justify-center text-sm">
+                              ...
+                            </span>
+                          </PaginationItem>
+                        );
+                      }
+                      return null;
+                    })}
+                    
+                    <PaginationItem>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                        disabled={!pagination.hasNextPage}
+                        className="flex items-center gap-1"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </PaginationItem>
+                    
+                    {/* Last page button */}
+                    <PaginationItem>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.totalPages)}
+                        disabled={pagination.currentPage === pagination.totalPages}
+                        className="flex items-center gap-1"
+                      >
+                        Last
+                      </Button>
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Total Leads Dialed */}
-      {/* <div className="bg-white rounded-lg shadow-lg shadow-gray-200 w-fit">
-        <div className="m-4">
-          <h2 className="text-sm text-gray-400">Total Leads Dialed</h2>
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-gray-900">
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="animate-spin" />
-                  <span className="text-sm text-gray-500">
-                    Loading total calls...
-                  </span>
-                </div>
-              ) : (
-                utils.string.formatNumber(totalCalls)
-              )}
-            </span>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 }

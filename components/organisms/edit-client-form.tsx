@@ -15,7 +15,8 @@ import {
 import { Building2, Crown, User, Upload } from "lucide-react";
 import apiRequest from "@/utils/api";
 
-interface AddClientFormProps {
+interface EditClientFormProps {
+  clientId: string;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -33,26 +34,16 @@ interface FormDataType {
   contactJobTitle: string;
   timeZone: string;
   preferredLanguage: string;
-  password: string;
   notes: string;
   active: boolean;
   DIY: boolean;
 }
 
-export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCancel }) => {
+export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [pricingModels, setPricingModels] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
-
-  useEffect(() => {
-    setPricingLoading(true);
-    apiRequest("/pricing-models", "GET")
-      .then((data) => {
-        setPricingModels(data.data.data || []);
-        setPricingLoading(false);
-      })
-      .catch(() => setPricingLoading(false));
-  }, []);
 
   const [formData, setFormData] = useState<FormDataType>({
     companyName: "",
@@ -67,13 +58,60 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     contactJobTitle: "",
     timeZone: "",
     preferredLanguage: "English",
-    password: "",
     notes: "",
     active: true,
     DIY: false
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch client data
+  useEffect(() => {
+    const fetchClient = async () => {
+      try {
+        setFetching(true);
+        const response = await apiRequest(`/our-clients/${clientId}`, "GET");
+        if (response.data?.success) {
+          const client = response.data.data;
+          setFormData({
+            companyName: client.companyName || "",
+            websiteUrl: client.websiteUrl || "",
+            industry: client.industry || "",
+            companySize: client.companySize || "",
+            companyLogo: null,
+            billing: client.subscriptionPlan || "",
+            contactFullName: client.contactFullName || "",
+            contactEmail: client.contactEmail || "",
+            contactPhone: client.contactPhone || "",
+            contactJobTitle: client.contactJobTitle || "",
+            timeZone: client.timeZone || "",
+            preferredLanguage: client.preferredLanguage || "English",
+            notes: client.notes || "",
+            active: client.active !== undefined ? client.active : true,
+            DIY: client.DIY !== undefined ? client.DIY : false
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching client:", error);
+        setErrors({ fetch: "Failed to fetch client data" });
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchClient();
+  }, [clientId]);
+
+  // Fetch pricing models
+  useEffect(() => {
+    setPricingLoading(true);
+    apiRequest("/pricing-models", "GET")
+      .then((data) => {
+        setPricingModels(data.data.data || []);
+        setPricingLoading(false);
+      })
+      .catch(() => setPricingLoading(false));
+  }, []);
 
   const handleInputChange = (field: keyof FormDataType, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,10 +148,6 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       newErrors.contactEmail = "Please enter a valid email address";
     }
 
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -140,37 +174,26 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
         }
       });
 
-      await apiRequest("/our-clients/create", "POST", submitData);
-      
-      // Reset form
-      setFormData({
-        companyName: "",
-        websiteUrl: "",
-        industry: "",
-        companySize: "",
-        companyLogo: null,
-        billing: "",
-        contactFullName: "",
-        contactEmail: "",
-        contactPhone: "",
-        contactJobTitle: "",
-        timeZone: "",
-        preferredLanguage: "English",
-        password: "",
-        notes: "",
-        active: true,
-        DIY: false
-      });
+      await apiRequest(`/our-clients/${clientId}`, "PUT", submitData);
       
       setErrors({});
       onSuccess?.();
     } catch (error: any) {
-      console.error("Error creating client:", error);
-      setErrors({ submit: error?.response?.data?.message || "Failed to create client" });
+      console.error("Error updating client:", error);
+      setErrors({ submit: error?.response?.data?.message || "Failed to update client" });
     } finally {
       setLoading(false);
     }
   };
+
+  if (fetching) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <span className="ml-3 text-gray-500">Loading client data...</span>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -218,12 +241,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   <SelectItem value="Technology">Technology</SelectItem>
                   <SelectItem value="Healthcare">Healthcare</SelectItem>
                   <SelectItem value="Finance">Finance</SelectItem>
+                  <SelectItem value="Education">Education</SelectItem>
                   <SelectItem value="Retail">Retail</SelectItem>
                   <SelectItem value="Manufacturing">Manufacturing</SelectItem>
-                  <SelectItem value="Education">Education</SelectItem>
                   <SelectItem value="Real Estate">Real Estate</SelectItem>
                   <SelectItem value="Consulting">Consulting</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -236,64 +258,52 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
               <Label htmlFor="companySize">Company Size</Label>
               <Select value={formData.companySize} onValueChange={(value) => handleInputChange("companySize", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Size" />
+                  <SelectValue placeholder="Select Company Size" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1-10">1-10</SelectItem>
-                  <SelectItem value="11-50">11-50</SelectItem>
-                  <SelectItem value="51-200">51-200</SelectItem>
-                  <SelectItem value="201-1000">201-1000</SelectItem>
-                  <SelectItem value="1000+">1000+</SelectItem>
+                  <SelectItem value="1-10">1-10 employees</SelectItem>
+                  <SelectItem value="11-50">11-50 employees</SelectItem>
+                  <SelectItem value="51-200">51-200 employees</SelectItem>
+                  <SelectItem value="201-500">201-500 employees</SelectItem>
+                  <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                  <SelectItem value="1000+">1000+ employees</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <Label htmlFor="companyLogo">Company Logo</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
-                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Drop logo here or click to upload</p>
-                <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
-                <input
-                  type="file"
+              <div className="flex items-center space-x-4">
+                <Input
                   id="companyLogo"
+                  type="file"
                   accept="image/*"
                   onChange={handleFileChange}
-                  className="hidden"
+                  className="flex-1"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => document.getElementById('companyLogo')?.click()}
-                >
-                  Choose File
-                </Button>
+                <Upload className="w-5 h-5 text-gray-400" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Plan & Billing */}
+        {/* Billing Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-purple-600" />
-              Plan & Billing
+              Billing Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Subscription Plan *</Label>
-              <div className="space-y-2 mt-2">
+              <Label htmlFor="billing">Subscription Plan</Label>
+              <div className="space-y-2">
                 {pricingLoading ? (
-                  <div>Loading plans...</div>
-                ) : pricingModels.length === 0 ? (
-                  <div className="text-gray-500">No plans available.</div>
+                  <div className="text-sm text-gray-500">Loading plans...</div>
                 ) : (
                   pricingModels.map((plan) => (
-                    <label key={plan._id} className="flex items-center space-x-2 cursor-pointer">
+                    <label key={plan._id} className="flex items-center space-x-3 cursor-pointer">
                       <input
                         type="radio"
                         name="billing"
@@ -349,21 +359,6 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
               />
               {errors.contactEmail && (
                 <p className="text-red-500 text-sm mt-1">{errors.contactEmail}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder="Enter password"
-                className={errors.password ? "border-red-500" : ""}
-              />
-              {errors.password && (
-                <p className="text-red-500 text-sm mt-1">{errors.password}</p>
               )}
             </div>
 
@@ -450,6 +445,19 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
               DIY (Do It Yourself) - Client can access voice, chat, and LLM integration features
             </Label>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="active"
+              checked={formData.active}
+              onChange={(e) => handleInputChange("active", e.target.checked)}
+              className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+            />
+            <Label htmlFor="active" className="text-sm font-medium text-gray-700">
+              Active - Client account is active and can access the system
+            </Label>
+          </div>
         </CardContent>
       </Card>
 
@@ -475,7 +483,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
           className="bg-purple-600 hover:bg-purple-700"
           disabled={loading}
         >
-          {loading ? "Creating..." : "Create Client"}
+          {loading ? "Updating..." : "Update Client"}
         </Button>
       </div>
     </form>

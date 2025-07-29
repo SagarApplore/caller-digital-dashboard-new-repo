@@ -30,6 +30,8 @@ import {
   X,
   CheckCircle2,
   AlertCircle,
+  MessageSquare,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -43,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge as BadgeComponent } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@radix-ui/react-avatar";
 import { Checkbox } from "@radix-ui/react-checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -50,6 +53,7 @@ import { Stepper } from "@/components/molecules/stepper";
 import { NetworkService } from "@/services/network-service";
 import endpoints from "@/lib/endpoints";
 import apiRequest from "@/utils/api";
+import { toast } from "sonner";
 
 export function CreateCampaignPage() {
   const router = useRouter();
@@ -60,12 +64,12 @@ export function CreateCampaignPage() {
   const [step, setStep] = useState(1);
   const [campaignName, setCampaignName] = useState("");
   const [campaignDescription, setCampaignDescription] = useState("");
-  // selectedAssistant now stores the whole assistant object, not just the id
   const [selectedAssistant, setSelectedAssistant] = useState<any>(null);
   const [selectedPhone, setSelectedPhone] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [timezone, setTimezone] = useState("");
+  const [timezone, setTimezone] = useState("UTC");
+  const [timeAdjusted, setTimeAdjusted] = useState(false);
   const [callingDays, setCallingDays] = useState({
     mon: false,
     tue: false,
@@ -76,6 +80,7 @@ export function CreateCampaignPage() {
     sun: false,
   });
   const [assistants, setAssistants] = useState<any[]>([]);
+  const [assistantsLoading, setAssistantsLoading] = useState(false);
   const [maxRetries, setMaxRetries] = useState(1);
   const [retryInterval, setRetryInterval] = useState(1);
   const [enableSmartRetry, setEnableSmartRetry] = useState(false);
@@ -91,6 +96,15 @@ export function CreateCampaignPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string>("");
   const [campaignCreating, setCampaignCreating] = useState(false);
+
+  // Additional fields required by backend API
+  const [status, setStatus] = useState("running");
+  const [connect, setConnect] = useState(false);
+  const [callPlaced, setCallPlaced] = useState(0);
+  const [successPrompt, setSuccessPrompt] = useState("");
+  const [failurePrompt, setFailurePrompt] = useState("");
+  const [scheduleTimestamp, setScheduleTimestamp] = useState("");
+  const [delay_between_calls, setDelayBetweenCalls] = useState(5);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -135,6 +149,31 @@ export function CreateCampaignPage() {
       return;
     }
 
+    // Validate CSV headers
+    try {
+      const text = await file.text();
+      const lines = text.split('\n');
+      if (lines.length === 0) {
+        setUploadError("CSV file is empty.");
+        return;
+      }
+
+      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+      const requiredColumns = ['phone_number', 'name'];
+      const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+
+      if (missingColumns.length > 0) {
+        setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has columns: phone_number, name`);
+        return;
+      }
+
+      console.log("CSV validation passed. Headers found:", headers);
+    } catch (validationError) {
+      setUploadError("Error reading CSV file. Please check the file format.");
+      console.error("CSV validation error:", validationError);
+      return;
+    }
+
     // Set file and simulate upload progress (API call will be done later)
     setUploadedFile(file);
     setUploadStatus("uploading");
@@ -176,6 +215,19 @@ export function CreateCampaignPage() {
     }
   };
 
+  const downloadSampleCSV = () => {
+    const csvContent = "phone_number,name,email,company\n+1234567890,John Doe,john@example.com,ABC Corp\n+1987654321,Jane Smith,jane@example.com,XYZ Inc";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_campaign_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   function handleDayChange(key: string, checked: boolean) {
     setCallingDays((prev) => ({
       ...prev,
@@ -188,22 +240,92 @@ export function CreateCampaignPage() {
   }, []);
 
   const fetchAssistants = async () => {
-    const response = await apiRequest(endpoints.assistants.list, "GET");
+    setAssistantsLoading(true);
+    try {
+      // Get current user info to determine client ID
+      const userResponse = await apiRequest('/auth/me', "GET");
+      let clientId = null;
+      
+      if (userResponse.data?.success) {
+        const user = userResponse.data.data;
+        if (user.role === "CLIENT_ADMIN") {
+          clientId = user._id;
+        } else if (user.role === "TEAM_MEMBER") {
+          clientId = user.createdBy;
+        }
+        // For SUPER_ADMIN, we don't filter by client as they can see all agents
+      }
 
-    if (response.data?.success === true) {
-      setAssistants(response.data.data);
-    } else {
-      console.error("Failed to fetch assistants:", response.statusText);
+      // Build the API URL with client ID if needed (only for CLIENT_ADMIN and TEAM_MEMBER)
+      let apiUrl = '/agents/with-phone-numbers';
+      if (clientId) {
+        apiUrl += `?clientId=${clientId}`;
+      }
+
+      // Fetch agents with phone numbers assigned
+      const response = await apiRequest(apiUrl, "GET");
+
+      if (response.data?.success === true) {
+        setAssistants(response.data.data);
+      } else {
+        console.error("Failed to fetch assistants with phone numbers:", response.statusText);
+        // Fallback to regular agents list if the new endpoint doesn't exist
+        const fallbackResponse = await apiRequest(endpoints.assistants.list, "GET");
+        if (fallbackResponse.data?.success === true) {
+          setAssistants(fallbackResponse.data.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching assistants:", error);
+      // Fallback to regular agents list
+      try {
+        const fallbackResponse = await apiRequest(endpoints.assistants.list, "GET");
+        if (fallbackResponse.data?.success === true) {
+          setAssistants(fallbackResponse.data.data);
+        }
+      } catch (fallbackError) {
+        console.error("Fallback fetch also failed:", fallbackError);
+      }
+    } finally {
+      setAssistantsLoading(false);
     }
   };
 
-  // Helper to get assistant id for Select value
   const getSelectedAssistantId = () =>
     selectedAssistant && selectedAssistant._id ? selectedAssistant._id : "";
 
   const createCampaign = async () => {
     setCampaignCreating(true);
     try {
+      // Validate CSV upload for CSV source
+      if (selectedSource === "csv") {
+        if (!uploadedFile) {
+          toast.error("Please upload a CSV file for CSV source campaigns.");
+          setCampaignCreating(false);
+          return;
+        }
+        
+        if (uploadStatus === "error") {
+          toast.error("Please fix the CSV file errors before creating the campaign.");
+          setCampaignCreating(false);
+          return;
+        }
+      }
+
+      // Prepare campaign data with all required fields
+      const campaignData = {
+        campaignName,
+        status,
+        assistant: selectedAssistant._id,
+        connect,
+        callPlaced,
+        successPrompt,
+        failurePrompt,
+        scheduleTimestamp,
+        delay_between_calls,
+        timezone
+      };
+
       // Check if we have a CSV file to upload
       if (selectedSource === "csv" && uploadedFile) {
         // Create FormData to send file + campaign data together
@@ -212,8 +334,10 @@ export function CreateCampaignPage() {
         // Add the CSV file
         formData.append("csvFile", uploadedFile);
 
-        formData.append("campaignName", campaignName);
-        formData.append("assistant", selectedAssistant._id);
+        // Add all campaign data fields
+        Object.entries(campaignData).forEach(([key, value]) => {
+          formData.append(key, value.toString());
+        });
 
         const response = await apiRequest(
           endpoints.outboundCampaign.create,
@@ -224,6 +348,7 @@ export function CreateCampaignPage() {
         console.log("Campaign created with CSV:", response.data);
 
         // Redirect to campaigns page on success
+        toast.success("Campaign created successfully!");
         router.push("/outbound-campaign-manager");
         return response.data;
       } else {
@@ -231,23 +356,25 @@ export function CreateCampaignPage() {
         const response = await apiRequest(
           endpoints.outboundCampaign.create,
           "POST",
-          {
-            campaignName,
-            assistant: selectedAssistant._id,
-            selectedSource,
-          }
+          campaignData
         );
 
         console.log("Campaign created:", response.data);
 
         // Redirect to campaigns page on success
+        toast.success("Campaign created successfully!");
         router.push("/outbound-campaign-manager");
         return response.data;
       }
     } catch (error) {
       console.error("Campaign creation failed:", error);
-      // You can add toast notification here
-      alert("Failed to create campaign. Please try again.");
+      
+      // Handle specific error messages
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to create campaign. Please try again.");
+      }
       throw error;
     } finally {
       setCampaignCreating(false);
@@ -264,9 +391,6 @@ export function CreateCampaignPage() {
 
           {/* Step 2 - Inactive */}
           {Stepper("Configuration", 2, step, 2)}
-
-          {/* Step 3 - Commented out */}
-          {/* {Stepper("Review & Launch", 3, step, 3)} */}
         </div>
       </div>
 
@@ -352,7 +476,7 @@ export function CreateCampaignPage() {
                 <p className="text-gray-600 mb-4">
                   Connect to your CRM system and import leads directly
                 </p>
-                <Badge className="bg-gray-100 text-gray-600">Available</Badge>
+                <BadgeComponent className="bg-gray-100 text-gray-600">Available</BadgeComponent>
               </CardContent>
             </Card>
           </div>
@@ -403,9 +527,22 @@ export function CreateCampaignPage() {
                     <div className="mt-6 text-sm text-gray-500">
                       <p className="mb-1">Supported format: CSV (max 50MB)</p>
                       <p>
-                        Required columns: Phone, Name (Optional: Email, Company,
-                        Custom Fields)
+                        Required columns: <strong>phone_number</strong>, <strong>name</strong> (Optional: email, company, custom fields)
                       </p>
+                      <p className="text-xs text-red-600 mt-1">
+                        ⚠️ Column names must be exactly: "phone_number" and "name" (with underscores)
+                      </p>
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={downloadSampleCSV}
+                          className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Sample CSV
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -530,923 +667,362 @@ export function CreateCampaignPage() {
             </Card>
           )}
 
-          {/* Template Download Section */}
-          <Card className="mb-8 border-blue-200 bg-blue-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Info className="w-5 h-5 text-blue-600" />
-                  <span className="text-blue-800 font-medium">
-                    Need a template? Download our sample CSV format
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  className="border-blue-300 text-blue-700 hover:bg-blue-100 bg-transparent"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Template
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center pt-6">
             <Button
-              variant="ghost"
-              className="text-gray-600 hover:text-gray-800"
-              onClick={() => router.back()}
+              variant="outline"
+              onClick={() => router.push("/outbound-campaign-manager")}
+              className="flex items-center space-x-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Cancel
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
             </Button>
 
             <Button
-              className={`px-8 py-2 ${
-                selectedSource === null ||
-                (selectedSource === "csv" &&
-                  (!uploadedFile || uploadStatus === "uploading"))
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700 text-white"
-              }`}
-              onClick={() => setStep(step + 1)}
-              disabled={
-                selectedSource === null ||
-                (selectedSource === "csv" &&
-                  (!uploadedFile || uploadStatus === "uploading"))
-              }
+              onClick={() => setStep(2)}
+              disabled={!selectedSource || (selectedSource === "csv" && !uploadedFile)}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 flex items-center space-x-2"
             >
-              Continue to Assistant Selection
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <span>Next</span>
+              <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
       )}
 
       {step === 2 && (
-        <div className="max-w-5xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto space-y-4">
-          {/* Header */}
-          <div className="text-center">
+        <div className="max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto">
+          {/* Main Content */}
+          <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-3">
               Campaign Configuration
             </h1>
             <p className="text-gray-600">
-              Configure your AI assistant, calling settings, and campaign rules
+              Configure your campaign settings and parameters
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            {/* Left Column */}
-            <div className="space-y-6">
-              {/* Campaign Details */}
-              <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Tag className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Campaign Details
-                    </h2>
-                  </div>
+          {/* Campaign Details */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Settings className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Campaign Details
+                </h2>
+              </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <Label
-                        htmlFor="campaign-name"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Campaign Name
-                      </Label>
-                      <Input
-                        id="campaign-name"
-                        placeholder="e.g., Q1 Product Launch Outreach"
-                        value={campaignName}
-                        onChange={(e) => setCampaignName(e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="campaign-name" className="text-sm font-medium text-gray-700">
+                    Campaign Name
+                  </Label>
+                  <Input
+                    id="campaign-name"
+                    value={campaignName}
+                    onChange={(e) => setCampaignName(e.target.value)}
+                    placeholder="Enter campaign name"
+                    className="mt-1"
+                  />
+                </div>
 
-                    <div>
-                      <Label
-                        htmlFor="campaign-description"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        Campaign Description
-                      </Label>
-                      <Textarea
-                        id="campaign-description"
-                        placeholder="Brief description of campaign goals..."
-                        value={campaignDescription}
-                        onChange={(e) => setCampaignDescription(e.target.value)}
-                        className="mt-1 min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                <div>
+                  <Label htmlFor="campaign-description" className="text-sm font-medium text-gray-700">
+                    Campaign Description
+                  </Label>
+                  <Textarea
+                    id="campaign-description"
+                    value={campaignDescription}
+                    onChange={(e) => setCampaignDescription(e.target.value)}
+                    placeholder="Enter campaign description"
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
 
-              {/* AI Assistant */}
-              <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Bot className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      AI Assistant
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Select Assistant
-                      </Label>
-                      <Select
-                        value={getSelectedAssistantId()}
-                        onValueChange={(value) => {
-                          const found = assistants.find(
-                            (assistant) => assistant._id === value
-                          );
-                          setSelectedAssistant(found || null);
-                        }}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Choose an assistant..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {assistants.map((assistant) => (
-                            <SelectItem
-                              key={assistant._id}
-                              value={assistant._id}
-                            >
-                              {assistant.agentName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Assistant Profile */}
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                      <div className="flex items-start space-x-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarFallback className="bg-purple-200 text-purple-700">
-                            {selectedAssistant && selectedAssistant.agentName
-                              ? selectedAssistant.agentName[0]
-                              : "S"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">
-                            {selectedAssistant && selectedAssistant.agentName
-                              ? selectedAssistant.agentName
-                              : "Sarah - Sales Assistant"}
-                          </h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {selectedAssistant && selectedAssistant.description
-                              ? selectedAssistant.description
-                              : "Professional, persuasive, goal-oriented"}
+                <div>
+                  <Label htmlFor="assistant" className="text-sm font-medium text-gray-700">
+                    Select Assistant
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Only your assistants with assigned phone numbers are shown for outbound campaigns
+                  </p>
+                  <Select value={getSelectedAssistantId()} onValueChange={(value) => {
+                    const assistant = assistants.find(a => a._id === value);
+                    setSelectedAssistant(assistant);
+                  }}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder={assistantsLoading ? "Loading..." : "Select an assistant with phone number"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assistantsLoading ? (
+                        <SelectItem value="" disabled>
+                          Loading assistants...
+                        </SelectItem>
+                      ) : assistants.length > 0 ? (
+                        assistants.map((assistant) => (
+                          <SelectItem key={assistant._id} value={assistant._id}>
+                            {assistant.agentName}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          No assistants with phone numbers available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {assistants.length === 0 && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-start space-x-2">
+                        <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-yellow-800 font-medium">
+                            No assistants with phone numbers found
                           </p>
-                          <div className="flex items-center justify-between mt-3">
-                            <div className="flex items-center space-x-2">
-                              <Globe className="w-4 h-4 text-gray-500" />
-                              <span className="text-sm text-gray-600">
-                                {selectedAssistant &&
-                                selectedAssistant.languages
-                                  ? selectedAssistant.languages.join(", ")
-                                  : "English, Spanish"}
-                              </span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium text-gray-700">
-                                {selectedAssistant && selectedAssistant.rating
-                                  ? `${selectedAssistant.rating} Rating`
-                                  : "4.8 Rating"}
-                              </span>
-                            </div>
-                          </div>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            Please assign phone numbers to agents first. 
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="text-yellow-800 p-0 h-auto font-medium underline"
+                              onClick={() => router.push("/phone-numbers")}
+                            >
+                              Go to Phone Numbers
+                            </Button>
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-              {/* Outbound Number */}
-              {/* <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Phone className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Outbound Number
-                    </h2>
-                  </div>
+          {/* Campaign Prompts */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <MessageSquare className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Campaign Prompts
+                </h2>
+              </div>
 
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">
-                      Select Phone Number
-                    </Label>
-                    <Select
-                      value={selectedPhone}
-                      onValueChange={setSelectedPhone}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="us-east">
-                          +1 (555) 123-4567 - US East
-                        </SelectItem>
-                        <SelectItem value="us-west">
-                          +1 (555) 987-6543 - US West
-                        </SelectItem>
-                        <SelectItem value="us-central">
-                          +1 (555) 456-7890 - US Central
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="success-prompt" className="text-sm font-medium text-gray-700">
+                    Success Prompt
+                  </Label>
+                  <Textarea
+                    id="success-prompt"
+                    value={successPrompt}
+                    onChange={(e) => setSuccessPrompt(e.target.value)}
+                    placeholder="Enter success prompt"
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
 
-                    <div className="flex items-center space-x-2 mt-3">
-                      <Badge className="text-green-700 border-green-300 bg-green-50">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        DND Compliant
-                      </Badge>
-                      <Badge className="text-blue-700 border-blue-300 bg-blue-50">
-                        <Globe className="w-3 h-3 mr-1" />
-                        US Region
-                      </Badge>
+                <div>
+                  <Label htmlFor="failure-prompt" className="text-sm font-medium text-gray-700">
+                    Failure Prompt
+                  </Label>
+                  <Textarea
+                    id="failure-prompt"
+                    value={failurePrompt}
+                    onChange={(e) => setFailurePrompt(e.target.value)}
+                    placeholder="Enter failure prompt"
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Call Settings */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Phone className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Call Settings
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="delay-between-calls" className="text-sm font-medium text-gray-700">
+                    Delay Between Calls (seconds)
+                  </Label>
+                  <Input
+                    id="delay-between-calls"
+                    type="number"
+                    value={delay_between_calls}
+                    onChange={(e) => setDelayBetweenCalls(Number(e.target.value))}
+                    min="1"
+                    max="300"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="campaign-status" className="text-sm font-medium text-gray-700">
+                    Campaign Status
+                  </Label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="running">Running</SelectItem>
+                      <SelectItem value="paused">Paused</SelectItem>
+                      <SelectItem value="stopped">Stopped</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Schedule Settings */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <Clock className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Schedule Settings
+                </h2>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="schedule-timestamp" className="text-sm font-medium text-gray-700">
+                    Schedule Campaign Start
+                  </Label>
+                  <Input
+                    id="schedule-timestamp"
+                    type="datetime-local"
+                    value={scheduleTimestamp}
+                    onChange={(e) => {
+                      const selectedValue = e.target.value; // Format: "2024-01-15T18:39"
+                      
+                      // If no value is selected, reset everything
+                      if (!selectedValue) {
+                        setScheduleTimestamp("");
+                        setTimeAdjusted(false);
+                        return;
+                      }
+                      
+                      const now = new Date();
+                      
+                      // Parse the selected date and time without timezone conversion
+                      const [datePart, timePart] = selectedValue.split('T');
+                      const selectedDate = new Date(datePart + 'T00:00:00');
+                      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                      
+                      // More robust date comparison
+                      const isToday = selectedDate.toDateString() === today.toDateString();
+                      
+                      console.log('Selected date:', selectedDate.toDateString());
+                      console.log('Today:', today.toDateString());
+                      console.log('Is today?', isToday);
+                      
+                      // If user selects today's date, add 30 minutes to the selected time
+                      if (isToday) {
+                        console.log('Adding 30 minutes to time:', timePart);
+                        // Parse time and add 30 minutes
+                        const [hours, minutes] = timePart.split(':').map(Number);
+                        const adjustedMinutes = minutes + 30;
+                        const adjustedHours = hours + Math.floor(adjustedMinutes / 60);
+                        const finalMinutes = adjustedMinutes % 60;
+                        
+                        // Format back to datetime-local format
+                        const adjustedTime = `${datePart}T${adjustedHours.toString().padStart(2, '0')}:${finalMinutes.toString().padStart(2, '0')}`;
+                        console.log('Adjusted time:', adjustedTime);
+                        setScheduleTimestamp(adjustedTime);
+                        setTimeAdjusted(true);
+                      } else {
+                        console.log('Not today, using original time:', selectedValue);
+                        setScheduleTimestamp(selectedValue);
+                        setTimeAdjusted(false);
+                      }
+                    }}
+                    min={(() => {
+                      const now = new Date();
+                      const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+                      return thirtyMinutesFromNow.toISOString().slice(0, 16);
+                    })()}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Optional: Leave empty to start immediately. Cannot schedule in the past. If today's date is selected, 30 minutes will be added to your chosen time.
+                  </p>
+                  {timeAdjusted && (
+                    <div className="mt-2 p-2 bg-blue-100 border border-blue-200 rounded-md text-blue-800 text-xs">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Time adjusted to 30 minutes after your selected time.
                     </div>
-                  </div>
-                </CardContent>
-              </Card> */}
-            </div>
+                  )}
+                </div>
 
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Calling Schedule */}
-              {/* <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Clock className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Calling Schedule
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          Start Time
-                        </Label>
-                        <Select value={startTime} onValueChange={setStartTime}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="8:00 AM">8:00 AM</SelectItem>
-                            <SelectItem value="9:00 AM">9:00 AM</SelectItem>
-                            <SelectItem value="10:00 AM">10:00 AM</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          End Time
-                        </Label>
-                        <Select value={endTime} onValueChange={setEndTime}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="4:00 PM">4:00 PM</SelectItem>
-                            <SelectItem value="5:00 PM">5:00 PM</SelectItem>
-                            <SelectItem value="6:00 PM">6:00 PM</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Timezone
-                      </Label>
-                      <Select value={timezone} onValueChange={setTimezone}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="eastern">
-                            Eastern Time (ET)
-                          </SelectItem>
-                          <SelectItem value="central">
-                            Central Time (CT)
-                          </SelectItem>
-                          <SelectItem value="mountain">
-                            Mountain Time (MT)
-                          </SelectItem>
-                          <SelectItem value="pacific">
-                            Pacific Time (PT)
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                        Calling Days
-                      </Label>
-                      <div className="flex flex-wrap gap-4">
-                        {[
-                          { key: "mon", label: "Mon" },
-                          { key: "tue", label: "Tue" },
-                          { key: "wed", label: "Wed" },
-                          { key: "thu", label: "Thu" },
-                          { key: "fri", label: "Fri" },
-                          { key: "sat", label: "Sat" },
-                          { key: "sun", label: "Sun" },
-                        ].map(({ key, label }) => (
-                          <div
-                            key={key}
-                            className="flex items-center space-x-1"
-                          >
-                            <Checkbox
-                              id={key}
-                              checked={
-                                callingDays[key as keyof typeof callingDays]
-                              }
-                              className={`h-4 w-4 border-gray-300 border-2 ${
-                                callingDays[key as keyof typeof callingDays]
-                                  ? "bg-purple-600 border-purple-600"
-                                  : "bg-white border-gray-300"
-                              }`}
-                              onCheckedChange={(checked) =>
-                                handleDayChange(key, checked as boolean)
-                              }
-                            />
-                            <Label htmlFor={key} className="text-sm">
-                              {label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card> */}
-
-              {/* Retry Settings */}
-              {/* <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <RotateCcw className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Retry Settings
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          Max Retries
-                        </Label>
-                        <Select>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4">4</SelectItem>
-                            <SelectItem value="5">5</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm font-medium text-gray-700">
-                          Retry Interval
-                        </Label>
-                        <Select>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1-hour">1 hour</SelectItem>
-                            <SelectItem value="6-hours">6 hours</SelectItem>
-                            <SelectItem value="12-hours">12 hours</SelectItem>
-                            <SelectItem value="24-hours">24 hours</SelectItem>
-                            <SelectItem value="48-hours">48 hours</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="smart-retry"
-                        checked={enableSmartRetry}
-                        className={`h-4 w-4 border-2 ${
-                          enableSmartRetry
-                            ? "bg-purple-600 border-purple-600"
-                            : "bg-white border-gray-300"
-                        }`}
-                        onCheckedChange={(checked) =>
-                          setEnableSmartRetry(checked as boolean)
-                        }
-                      />
-                      <Label htmlFor="smart-retry" className="text-sm">
-                        Enable smart retry (skip busy signals)
-                      </Label>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card> */}
-
-              {/* Human Handoff */}
-              <Card className="border-none bg-gray-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Human Handoff
-                    </h2>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="enable-handoff"
-                        checked={enableHumanHandoff}
-                        className={`h-4 w-4 border-gray-300 border-2 ${
-                          enableHumanHandoff
-                            ? "bg-purple-600 border-purple-600"
-                            : "bg-white border-gray-300"
-                        }`}
-                        onCheckedChange={(checked) =>
-                          setEnableHumanHandoff(checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor="enable-handoff"
-                        className="text-sm font-medium"
-                      >
-                        Enable human handoff
-                      </Label>
-                    </div>
-
-                    {enableHumanHandoff && (
-                      <div className="ml-6 space-y-3">
-                        <Label className="text-sm font-medium text-gray-700">
-                          Handoff Triggers
-                        </Label>
-
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="customer-request"
-                            checked={customerRequestsAgent}
-                            className={`h-4 w-4 border-gray-300 border-2 ${
-                              customerRequestsAgent
-                                ? "bg-purple-600 border-purple-600"
-                                : "bg-white border-gray-300"
-                            }`}
-                            onCheckedChange={(checked) =>
-                              setCustomerRequestsAgent(checked as boolean)
-                            }
-                          />
-                          <Label
-                            htmlFor="customer-request"
-                            className="text-sm text-gray-600"
-                          >
-                            Customer requests human agent
-                          </Label>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="low-confidence"
-                            checked={lowConfidenceHandoff}
-                            className={`h-4 w-4 border-gray-300 border-2 ${
-                              lowConfidenceHandoff
-                                ? "bg-purple-600 border-purple-600"
-                                : "bg-white border-gray-300"
-                            }`}
-                            onCheckedChange={(checked) =>
-                              setLowConfidenceHandoff(checked as boolean)
-                            }
-                          />
-                          <Label
-                            htmlFor="low-confidence"
-                            className="text-sm text-gray-600"
-                          >
-                            AI confidence below 70%
-                          </Label>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                <div>
+                  <Label htmlFor="timezone" className="text-sm font-medium text-gray-700">
+                    Timezone
+                  </Label>
+                  <Select value={timezone} onValueChange={setTimezone}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTC">UTC</SelectItem>
+                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                      <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                      <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                      <SelectItem value="Asia/Kolkata">Mumbai (IST)</SelectItem>
+                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Navigation Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center pt-6">
             <Button
-              variant="ghost"
-              className="text-gray-600 hover:text-gray-800"
-              onClick={() => router.back()}
+              variant="outline"
+              onClick={() => setStep(1)}
+              className="flex items-center space-x-2"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Previous
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back</span>
             </Button>
 
             <Button
-              className={`px-8 py-2 ${
-                !selectedAssistant || !campaignName.trim() || campaignCreating
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:bg-purple-700 text-white"
-              }`}
               onClick={createCampaign}
-              disabled={
-                !selectedAssistant || !campaignName.trim() || campaignCreating
-              }
+              disabled={!campaignName || !selectedAssistant || campaignCreating || assistants.length === 0}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 flex items-center space-x-2"
             >
               {campaignCreating ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating Campaign...
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Creating...</span>
                 </>
               ) : (
                 <>
-                  <Rocket className="w-4 h-4 mr-2" />
-                  Launch Campaign
+                  <Rocket className="w-4 h-4" />
+                  <span>Create Campaign</span>
                 </>
               )}
             </Button>
           </div>
         </div>
       )}
-
-      {/* Step 3 - Commented out */}
-      {/* {step === 3 && (
-        <div className="max-w-5xl mx-auto p-8 bg-white rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-170px)] overflow-y-auto">
-          {/* Header */}
-      {/* <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-3">
-              Review & Launch Campaign
-            </h1>
-            <p className="text-gray-600">
-              Review all settings before launching your outbound voice campaign
-            </p>
-          </div>
-
-          <div>
-            {/* Summary Cards */}
-      {/* <div className="grid md:grid-cols-3 gap-6 mb-8">
-              {/* Campaign Overview */}
-      {/* <Card className="border-purple-200 bg-purple-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">
-                      Campaign Overview
-                    </h3>
-                    <Target className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-purple-700 font-medium">Name:</span>
-                      <span className="text-gray-900 font-medium">
-                        {campaignName}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-purple-700 font-medium">
-                        Total Leads:
-                      </span>
-                      <span className="text-gray-900 font-medium">2,456</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-purple-700 font-medium">
-                        Source:
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        {selectedSource === "csv" ? "CSV Upload" : "CRM Upload"}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* AI Assistant */}
-      {/* <Card className="border-blue-200 bg-blue-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">
-                      AI Assistant
-                    </h3>
-                    <Bot className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">
-                        Assistant:
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        {selectedAssistant && selectedAssistant.agentName
-                          ? selectedAssistant.agentName
-                          : ""}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">Phone:</span>
-                      <span className="text-gray-900 font-medium">
-                        +1 (555) 123-4567
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-700 font-medium">
-                        Handoff:
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        Disabled
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Schedule */}
-      {/* <Card className="border-green-200 bg-green-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Schedule</h3>
-                    <Clock className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-green-700 font-medium">Time:</span>
-                      <span className="text-gray-900 font-medium">
-                        9AM - 5PM ET
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700 font-medium">Days:</span>
-                      <span className="text-gray-900 font-medium">
-                        Mon - Fri
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-green-700 font-medium">
-                        Retries:
-                      </span>
-                      <span className="text-gray-900 font-medium">
-                        3 attempts
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Left Column */}
-      {/* <div className="space-y-6">
-                {/* Lead Information */}
-      {/* <Card className="border-none bg-gray-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2 mb-6">
-                      <Users className="w-5 h-5 text-gray-600" />
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Lead Information
-                      </h2>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-gray-900 mb-1">
-                          2,456
-                        </div>
-                        <div className="text-sm text-gray-600">Total Leads</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-green-600 mb-1">
-                          2,398
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Valid Numbers
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          Data Quality
-                        </span>
-                        <span className="text-sm font-bold text-green-600">
-                          97.6%
-                        </span>
-                      </div>
-                      <Progress value={97.6} className="h-2" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Compliance Status */}
-      {/* <Card className="border-none bg-gray-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2 mb-6">
-                      <Shield className="w-5 h-5 text-gray-600" />
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Compliance Status
-                      </h2>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div className="flex items-center space-x-3">
-                          <Check className="w-5 h-5 text-green-600" />
-                          <span className="font-medium text-gray-900">
-                            DND Registry Check
-                          </span>
-                        </div>
-                        <Badge className="bg-green-100 text-green-800 border-green-300">
-                          Passed
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div className="flex items-center space-x-3">
-                          <Check className="w-5 h-5 text-green-600" />
-                          <span className="font-medium text-gray-900">
-                            TCPA Compliance
-                          </span>
-                        </div>
-                        <Badge className="bg-green-100 text-green-800 border-green-300">
-                          Enabled
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div className="flex items-center space-x-3">
-                          <Check className="w-5 h-5 text-green-600" />
-                          <span className="font-medium text-gray-900">
-                            Time Zone Validation
-                          </span>
-                        </div>
-                        <Badge className="bg-green-100 text-green-800 border-green-300">
-                          Active
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right Column */}
-      {/* <div className="space-y-6">
-                {/* Estimated Performance */}
-      {/* <Card className="border-none bg-gray-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2 mb-6">
-                      <TrendingUp className="w-5 h-5 text-gray-600" />
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Estimated Performance
-                      </h2>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-blue-600 mb-1">
-                          35%
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Connect Rate
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-purple-600 mb-1">
-                          860
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Est. Connects
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Campaign Duration</span>
-                        <span className="font-medium text-gray-900">
-                          5-7 days
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Daily Call Volume</span>
-                        <span className="font-medium text-gray-900">
-                          ~350 calls
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Cost Breakdown */}
-      {/* <Card className="border-none bg-gray-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-2 mb-6">
-                      <DollarSign className="w-5 h-5 text-gray-600" />
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        Cost Breakdown
-                      </h2>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Voice minutes</span>
-                        <span className="font-medium text-gray-900">
-                          $127.80
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">AI processing</span>
-                        <span className="font-medium text-gray-900">
-                          $24.56
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Platform fees</span>
-                        <span className="font-medium text-gray-900">
-                          $15.00
-                        </span>
-                      </div>
-
-                      <div className="border-t pt-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-semibold text-gray-900">
-                            Total Estimate
-                          </span>
-                          <span className="text-2xl font-bold text-green-600">
-                            $167.36
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {/* Bottom Navigation */}
-      {/* <div className="flex items-center justify-between mt-8 pt-6 border-t">
-              <Button
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-800"
-                onClick={() => setStep(step - 1)}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Configuration
-              </Button>
-
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  className="border-gray-300 bg-transparent"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save as Draft
-                </Button>
-
-                <Button
-                  className={`px-8 py-2 ${
-                    campaignCreating
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-purple-600 hover:bg-purple-700 text-white"
-                  }`}
-                  onClick={createCampaign}
-                  disabled={campaignCreating}
-                >
-                  {campaignCreating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Creating Campaign...
-                    </>
-                  ) : (
-                    <>
-                      <Rocket className="w-4 h-4 mr-2" />
-                      Launch Campaign
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }

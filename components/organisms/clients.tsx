@@ -50,6 +50,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { EditClientForm } from "./edit-client-form";
 
 const getPlanColor = (plan: string) => {
   switch (plan) {
@@ -141,13 +142,14 @@ const getCreditStatusColor = (usedCredits: number, totalCredits: number) => {
 
 export function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchClients = async () => {
-      setLoading(true);
+      setIsLoading(true);
       try {
         const response = await apiRequest("/users/getClients", "GET");
         console.log(response.data);
@@ -160,7 +162,7 @@ export function ClientsPage() {
           variant: "destructive",
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
     fetchClients();
@@ -169,31 +171,48 @@ export function ClientsPage() {
   const handleDeleteClient = async (clientId: string) => {
     setDeletingClientId(clientId);
     try {
-      await apiRequest(`/users/deactivate/${clientId}`, "PUT");
-      
-      // Update the local state to reflect the change
-      setClients(prevClients => 
-        prevClients.map(client => 
-          client._id === clientId 
-            ? { ...client, active: false }
-            : client
-        )
-      );
-
-      toast({
-        title: "Success",
-        description: "Client deactivated successfully",
-      });
-    } catch (error: any) {
-      console.error("Error deactivating client:", error);
+      const response = await apiRequest(`/users/deactivate/${clientId}`, "PUT");
+      if (response.data?.success) {
+        toast({
+          title: "Success",
+          description: "Client deactivated successfully",
+        });
+        // Refresh the clients list
+        const updatedResponse = await apiRequest("/users/getClients", "GET");
+        if (updatedResponse.data?.success) {
+          setClients(updatedResponse.data.data);
+        }
+      }
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to deactivate client",
+        description: "Failed to deactivate client",
         variant: "destructive",
       });
     } finally {
       setDeletingClientId(null);
     }
+  };
+
+  const handleEditClient = (clientId: string) => {
+    setEditingClientId(clientId);
+  };
+
+  const handleEditSuccess = async () => {
+    setEditingClientId(null);
+    toast({
+      title: "Success",
+      description: "Client updated successfully",
+    });
+    // Refresh the clients list
+    const response = await apiRequest("/users/getClients", "GET");
+    if (response.data?.success) {
+      setClients(response.data.data);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingClientId(null);
   };
 
   return (
@@ -341,7 +360,11 @@ export function ClientsPage() {
                       <Button variant="outline" size="sm">
                         View
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditClient(client._id)}
+                      >
                         Edit
                       </Button>
                       {client.active && (
@@ -396,6 +419,31 @@ export function ClientsPage() {
           </Table>
         </div>
       </div>
+      
+      {/* Edit Client Form Modal */}
+      {editingClientId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Edit Client</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditCancel}
+                >
+                  ✕
+                </Button>
+              </div>
+              <EditClientForm
+                clientId={editingClientId}
+                onSuccess={handleEditSuccess}
+                onCancel={handleEditCancel}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
