@@ -139,7 +139,7 @@ export default function Login() {
                 </div>
 
                 {/* Remember Me & Forgot Password */}
-                {/* <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -155,10 +155,12 @@ export default function Login() {
                   <Button
                     variant="link"
                     className="text-sm text-purple-600 hover:text-purple-700 p-0 h-auto"
+                    type="button"
+                    onClick={() => router.push("/forgot-password")}
                   >
                     Forgot password?
                   </Button>
-                </div> */}
+                </div>
 
                
                 {error && (
