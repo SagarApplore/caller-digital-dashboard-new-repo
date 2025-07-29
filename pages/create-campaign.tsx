@@ -888,7 +888,8 @@ export function CreateCampaignPage() {
           </Card>
 
           {/* Schedule Settings */}
-          <Card className="mb-6">
+          
+          {/* <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <Clock className="w-5 h-5 text-purple-600" />
@@ -990,7 +991,7 @@ export function CreateCampaignPage() {
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-6">

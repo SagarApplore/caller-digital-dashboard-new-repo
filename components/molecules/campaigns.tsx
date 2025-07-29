@@ -189,6 +189,7 @@ export function CampaignsPage() {
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
       {/* Filters */}
+      {/* 
       <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 w-full overflow-x-scroll">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -273,6 +274,7 @@ export function CampaignsPage() {
           </div>
         </div>
       </div>
+      */}
 
       {/* Campaign Table */}
       <div className="bg-white rounded-lg shadow-lg shadow-gray-200">
