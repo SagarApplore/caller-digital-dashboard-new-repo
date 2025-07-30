@@ -1015,7 +1015,7 @@ const CallLogs = () => {
         </div>
       )}
 
-      <div className="m-2 sm:m-6 space-y-6 h-full">
+      <div className="m-2 sm:m-6 space-y-6">
         {/* Metrics Cards */}
         {!loading && !error && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
@@ -1075,7 +1075,7 @@ const CallLogs = () => {
 
         {/* Data Table */}
         {!loading && !error && (
-          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200">
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50 sticky top-0 z-10">
                 <TableRow>
@@ -1285,7 +1285,7 @@ const CallLogs = () => {
 
         {/* Loading Skeleton for Table */}
         {loading && (
-          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200">
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
@@ -1465,6 +1465,8 @@ const CallLogs = () => {
           )}
         </div>
       )}
+
+
     </>
   );
 };
