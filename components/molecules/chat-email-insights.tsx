@@ -6,6 +6,9 @@ import {
 } from "@/components/organisms/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowDownLeft, ArrowUpRight, MessageSquare } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { fetchSentimentSummary } from "@/services/index.service";
+import { useState, useEffect } from "react";
 import {
   Bar,
   BarChart,
@@ -26,6 +29,37 @@ export function ChatEmailInsights({
   handleDaysChange: (days: number) => void;
   days: number;
 }) {
+  const router = useRouter();
+  const [sentimentData, setSentimentData] = useState<any>({
+    positive: 0,
+    negative: 0,
+    neutral: 0,
+    total: 0
+  });
+  const [sentimentLoading, setSentimentLoading] = useState(true);
+
+  // Fetch sentiment data
+  useEffect(() => {
+    const fetchSentiment = async () => {
+      try {
+        setSentimentLoading(true);
+        const response = await fetchSentimentSummary(days);
+        if (response.success && response.data) {
+          setSentimentData(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching sentiment data:", error);
+      } finally {
+        setSentimentLoading(false);
+      }
+    };
+
+    fetchSentiment();
+  }, [days]);
+
+  const handleViewSentimentDetails = () => {
+    router.push("/call-logs");
+  };
   // Defensive defaults for all metrics to avoid "Cannot read properties of undefined"
   const chatData =
     typeof data === "object" &&
@@ -329,51 +363,49 @@ export function ChatEmailInsights({
           </div> */}
         </div>
 
-        {/* CSAT Summary */}
+        {/* Sentiment Summary */}
         <div className="bg-gray-100 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-600">CSAT Summary</span>
-            <button className="text-sm text-purple-600 hover:underline">
+            <span className="text-sm text-gray-600">Sentiment Summary</span>
+            <button 
+              className="text-sm text-purple-600 hover:underline"
+              onClick={handleViewSentimentDetails}
+            >
               View Sentiment Details
             </button>
           </div>
 
-          <div className="flex gap-4 items-center mx-auto w-fit mb-3">
-            <div className="text-center">
-              <div className="text-2xl mb-1">😊</div>
-              <div className="text-xs text-gray-600">Very Satisfied</div>
-              <div className="font-bold text-lg">N/A</div>
+          {sentimentLoading ? (
+            <div className="flex justify-center items-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">😐</div>
-              <div className="text-xs text-gray-600">Neutral</div>
-              <div className="font-bold text-lg">N/A</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl mb-1">😞</div>
-              <div className="text-xs text-gray-600">Unsatisfied</div>
-              <div className="font-bold text-lg">N/A</div>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex gap-4 items-center mx-auto w-fit mb-3">
+                <div className="text-center">
+                  <div className="text-2xl mb-1">😊</div>
+                  <div className="text-xs text-gray-600">Positive</div>
+                  <div className="font-bold text-lg">{sentimentData.positive}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">😐</div>
+                  <div className="text-xs text-gray-600">Neutral</div>
+                  <div className="font-bold text-lg">{sentimentData.neutral}%</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">😞</div>
+                  <div className="text-xs text-gray-600">Negative</div>
+                  <div className="font-bold text-lg">{sentimentData.negative}%</div>
+                </div>
+              </div>
 
-          <div className="text-center">
-            <span className="text-sm text-green-600 flex items-center justify-center">
-              Trend:
-              <svg
-                className="w-3 h-3 mx-1"
-                viewBox="0 0 12 12"
-                fill="currentColor"
-              >
-                <path
-                  d="M2 8L6 4L10 8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </svg>
-              N/A improvement
-            </span>
-          </div>
+              <div className="text-center">
+                <span className="text-sm text-gray-600">
+                  Total Calls: {sentimentData.total}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

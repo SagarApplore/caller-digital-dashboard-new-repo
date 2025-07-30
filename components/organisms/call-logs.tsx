@@ -39,6 +39,7 @@ import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip";
+import { toast } from "react-toastify";
 
 export interface Conversation {
   id: string;
@@ -524,58 +525,97 @@ const CallLogs = () => {
     setSelectedConversations([]); // Clear selections when filters change
   };
 
-  const handleExportCallLogs = (callLogs: any, format: 'csv' | 'xlsx') => {
+  // Function to fetch summary content from URL
+  const fetchSummaryContent = async (summaryUrl: string): Promise<string> => {
+    if (!summaryUrl) return "";
+    
+    try {
+      // Add CORS headers for S3 requests
+      const response = await fetch(summaryUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/plain,text/html',
+        },
+      });
+      
+      if (response.ok) {
+        const content = await response.text();
+        return content.trim();
+      } else {
+        console.warn(`Failed to fetch summary from ${summaryUrl}: ${response.status} ${response.statusText}`);
+        return `[Failed to fetch: ${response.status}]`;
+      }
+    } catch (error) {
+      console.error(`Error fetching summary from ${summaryUrl}:`, error);
+      return `[Error: ${error instanceof Error ? error.message : 'Unknown error'}]`;
+    }
+  };
+
+  const handleExportCallLogs = async (callLogs: any, format: 'csv' | 'xlsx') => {
     if (!callLogs || !Array.isArray(callLogs) || callLogs.length === 0) {
       console.warn("No call log data available to export");
       return;
     }
-    callLogs?.map((item)=>{
-      console.log('item',item.agentId?.languages)
-    })
 
-    const exportData = callLogs.map(log => {
-      return {
-        "Customer Number": log.customer_phone_number || "",
-        "Customer Name": log.clientId?.name || "",
-        "Agent Name": log.agentId?.agentName || "",
-        "Duration (ms)": log.call_duration || "",
-        "Summary URL": log.summary_uri || "",
-        "Audio URL": log.recording_uri || "",
-        "Agent Number": log.agent_phone_number || "",
-        "Tags": log.tags || [],
-        "Intent": log.intent || "",
-        "Sentiment": log.sentiment || "",
-        "AI Analysis": log.ai_analysis || "",
-        "Language":  log.agentId?.languages?.join(",") || ""
-      };
-    });
+    // Show loading state
+    toast.info("Preparing export... This may take a moment while fetching summary content.");
 
-    if (format === 'csv') {
-      const csvContent = [
-        Object.keys(exportData[0]),
-        ...exportData.map(row => Object.values(row)),
-      ].map(row =>
-        row
-          .map(field => {
-            // Escape quotes and commas
-            if (typeof field === 'string' && /[",\n]/.test(field)) {
-              return `"${field.replace(/"/g, '""')}"`;
-            }
-            return field;
-          })
-          .join(',')
-      ).join('\n');
+    try {
+      // Fetch summary content for all logs
+      const exportDataPromises = callLogs.map(async (log) => {
+        const summaryContent = await fetchSummaryContent(log.summary_uri);
+        
+        return {
+          "Customer Number": log.customer_phone_number || "",
+          "Customer Name": log.clientId?.name || "",
+          "Agent Name": log.agentId?.agentName || "",
+          "Duration (ms)": log.call_duration || "",
+          "Summary Content": summaryContent || "",
+          "Summary URL": log.summary_uri || "",
+          "Audio URL": log.recording_uri || "",
+          "Agent Number": log.agent_phone_number || "",
+          "Tags": log.tags || [],
+          "Intent": log.intent || "",
+          "Sentiment": log.sentiment || "",
+          "AI Analysis": log.ai_analysis || "",
+          "Language": log.agentId?.languages?.join(",") || ""
+        };
+      });
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'call_logs_report.csv';
-      link.click();
-    } else {
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Call Logs');
-      XLSX.writeFile(wb, 'call_logs_report.xlsx');
+      const exportData = await Promise.all(exportDataPromises);
+
+      if (format === 'csv') {
+        const csvContent = [
+          Object.keys(exportData[0]),
+          ...exportData.map(row => Object.values(row)),
+        ].map(row =>
+          row
+            .map(field => {
+              // Escape quotes and commas
+              if (typeof field === 'string' && /[",\n]/.test(field)) {
+                return `"${field.replace(/"/g, '""')}"`;
+              }
+              return field;
+            })
+            .join(',')
+        ).join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'call_logs_report.csv';
+        link.click();
+      } else {
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Call Logs');
+        XLSX.writeFile(wb, 'call_logs_report.xlsx');
+      }
+
+      toast.success("Export completed successfully!");
+    } catch (error) {
+      console.error("Error during export:", error);
+      toast.error("Export failed. Please try again.");
     }
   };
 
@@ -1015,7 +1055,7 @@ const CallLogs = () => {
         </div>
       )}
 
-      <div className="m-2 sm:m-6 space-y-6 h-full">
+      <div className="m-2 sm:m-6 space-y-6">
         {/* Metrics Cards */}
         {!loading && !error && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
@@ -1075,7 +1115,7 @@ const CallLogs = () => {
 
         {/* Data Table */}
         {!loading && !error && (
-          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200">
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50 sticky top-0 z-10">
                 <TableRow>
@@ -1285,7 +1325,7 @@ const CallLogs = () => {
 
         {/* Loading Skeleton for Table */}
         {loading && (
-          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200 max-h-[calc(100vh-310px)]">
+          <div className="overflow-x-auto rounded-lg shadow-lg shadow-gray-200">
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
@@ -1465,6 +1505,8 @@ const CallLogs = () => {
           )}
         </div>
       )}
+
+
     </>
   );
 };
