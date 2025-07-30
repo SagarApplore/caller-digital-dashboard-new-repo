@@ -65,7 +65,7 @@ export default function AnalyticsDashboard() {
   return (
     <div className="p-6 overflow-y-auto h-full">
       {/* Credit Display Section */}
-      {creditInfo && (
+      {/* {creditInfo && (
         <div className="mb-6">
           <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
             <div className="flex items-center justify-between">
@@ -91,7 +91,7 @@ export default function AnalyticsDashboard() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Analytics Grid */}
       {loading ? (

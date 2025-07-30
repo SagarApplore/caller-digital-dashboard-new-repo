@@ -498,12 +498,12 @@ const CallLogs = () => {
         change: "N/A",
         trend: "down" as const,
       },
-      {
-        label: "Total Cost",
-        value: `₹${totalCostAllCalls.toFixed(2)}`,
-        change: "N/A",
-        trend: "up" as const,
-      },
+      // {
+      //   label: "Total Cost",
+      //   value: `₹${totalCostAllCalls.toFixed(2)}`,
+      //   change: "N/A",
+      //   trend: "up" as const,
+      // },
       {
         label: "CSAT Score",
         value: "N/A",
@@ -1108,9 +1108,9 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Status
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
+                  {/* <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Total Cost
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Actions
                   </TableHead>
@@ -1205,8 +1205,8 @@ const CallLogs = () => {
                       <TableCell className="p-2 sm:p-4">
                         {getStatusBadge(conversation.status)}
                       </TableCell>
-                      <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
-                        {conversation.cost && typeof conversation.cost.total === "number" ? (
+                      {/* <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium"> */}
+                        {/* {conversation.cost && typeof conversation.cost.total === "number" ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -1244,8 +1244,8 @@ const CallLogs = () => {
                           </TooltipProvider>
                         ) : (
                           <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
+                        )} */}
+                      {/* </TableCell> */}
                       {/* <TableCell className="p-4">
                         {renderStars(conversation.csat)}
                       </TableCell>
@@ -1310,9 +1310,9 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
                   </TableHead>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                  {/* <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Total Cost
-                  </TableHead>
+                  </TableHead> */}
                   {/* <TableHead className="text-left py-2 px-4 text-sm font-medium text-gray-600 uppercase tracking-wider">
                     CSAT
                   </TableHead>
