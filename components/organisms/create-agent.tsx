@@ -1041,7 +1041,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           agentPrompt: channels.filter(
             (channel) => channel.id.toLowerCase() === "voice"
           )?.[0]?.prompt?.value,
-          temperature: 100,
+          temperature: 0.5,
           maxTokens: 100,
         };
       }
