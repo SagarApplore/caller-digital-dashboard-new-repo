@@ -381,27 +381,39 @@ export function ChatEmailInsights({
             </div>
           ) : (
             <>
+              {/* Sentiment Score */}
+              <div className="text-center mb-4">
+                <div className="text-3xl font-bold text-purple-600">
+                  {sentimentData.sentimentScore*10 || 0}%
+                </div>
+                <div className="text-sm text-gray-600">Sentiment Score</div>
+                <div className="text-xs text-gray-500 mt-1">
+                
+                </div>
+              </div>
+
+              {/* Sentiment Breakdown */}
               <div className="flex gap-4 items-center mx-auto w-fit mb-3">
                 <div className="text-center">
                   <div className="text-2xl mb-1">😊</div>
                   <div className="text-xs text-gray-600">Positive</div>
-                  <div className="font-bold text-lg">{sentimentData.positive}%</div>
+                  <div className="font-bold text-lg">{sentimentData.positive || 0}%</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl mb-1">😐</div>
                   <div className="text-xs text-gray-600">Neutral</div>
-                  <div className="font-bold text-lg">{sentimentData.neutral}%</div>
+                  <div className="font-bold text-lg">{sentimentData.neutral || 0}%</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl mb-1">😞</div>
                   <div className="text-xs text-gray-600">Negative</div>
-                  <div className="font-bold text-lg">{sentimentData.negative}%</div>
+                  <div className="font-bold text-lg">{sentimentData.negative || 0}%</div>
                 </div>
               </div>
 
               <div className="text-center">
                 <span className="text-sm text-gray-600">
-                  Total Calls: {sentimentData.total}
+                  Total Calls: {sentimentData.total || 0}
                 </span>
               </div>
             </>

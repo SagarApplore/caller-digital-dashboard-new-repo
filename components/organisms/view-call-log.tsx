@@ -50,8 +50,8 @@ const Transcript = ({
           {utils.string
             .getInitials(
               transcript.role?.toLowerCase() === "user"
-                ? callLog?.clientId?.name
-                : callLog?.agentId?.agentName ?? "Agent"
+                ? (callLog?.clientId?.name || "User")
+                : (callLog?.agentId?.agentName || "Agent")
             )
             .toUpperCase()}
         </div>

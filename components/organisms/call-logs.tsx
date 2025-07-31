@@ -131,6 +131,21 @@ const CallLogs = () => {
     escalationRate: 0,
     aiResolutionPercentage: 100,
   });
+
+  const [sentimentMetrics, setSentimentMetrics]=useState<{
+    totalCalls: number;
+    positiveSentiments: number;
+    neutralSentiments: number;
+    negativeSentiments: number;
+    sentimentScore:number
+  }>({
+   totalCalls: 0,
+    positiveSentiments: 0,
+    neutralSentiments: 0,
+    negativeSentiments: 0,
+    sentimentScore:0
+  });
+  
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -178,6 +193,7 @@ const CallLogs = () => {
         escalationRate: 0,
         aiResolutionPercentage: 100,
       });
+      setSentimentMetrics(response.data?.sentimentMetrics)
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
@@ -506,8 +522,8 @@ const CallLogs = () => {
       //   trend: "up" as const,
       // },
       {
-        label: "CSAT Score",
-        value: "N/A",
+        label: " Sentiment Score",
+        value:   sentimentMetrics.sentimentScore,
         change: "N/A",
         trend: "up" as const,
       },

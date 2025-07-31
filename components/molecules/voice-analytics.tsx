@@ -6,12 +6,48 @@ import {
 } from "@/components/organisms/card";
 import { Badge } from "@/components/ui/badge";
 import utils from "@/utils/index.util";
-import { Phone } from "lucide-react";
+import { Phone, CheckCircle, TrendingUp } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
+import { fetchSentimentSummary } from "@/services/index.service";
+import { useState, useEffect } from "react";
 
-export function VoiceAnalytics({ data }: { data: any }) {
+export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number }) {
+  const [resolutionRate, setResolutionRate] = useState<number>(0);
+  const [totalCalls, setTotalCalls] = useState<number>(0);
+  const [resolutionLoading, setResolutionLoading] = useState(true);
+
+  // Fetch resolution rate data
+  useEffect(() => {
+    const fetchResolutionRate = async () => {
+      try {
+        setResolutionLoading(true);
+        console.log("VoiceAnalytics - Fetching resolution rate for days:", days);
+        const response = await fetchSentimentSummary(days);
+        if (response.success && response.data) {
+          const { sentimentScore, total } = response.data;
+          // Use the sentiment score from the backend
+          setResolutionRate(sentimentScore);
+          setTotalCalls(total);
+          console.log("VoiceAnalytics - Resolution rate updated:", {
+            days,
+            sentimentScore,
+            total
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching resolution rate:", error);
+        setResolutionRate(0);
+        setTotalCalls(0);
+      } finally {
+        setResolutionLoading(false);
+      }
+    };
+
+    fetchResolutionRate();
+  }, [days]); // Added days as dependency
+
   // Defensive defaults for all metrics
-  const totalCalls =
+  const totalCallsVoice =
     typeof data?.totalCalls === "number" && !isNaN(data.totalCalls)
       ? data.totalCalls
       : 0;
@@ -82,7 +118,7 @@ export function VoiceAnalytics({ data }: { data: any }) {
               </span> */}
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {utils.string.formatNumber(totalCalls)}
+              {utils.string.formatNumber(totalCallsVoice)}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
@@ -94,21 +130,32 @@ export function VoiceAnalytics({ data }: { data: any }) {
           <div className="bg-gray-100 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-gray-600">Resolution Rate</span>
-              {/* <span className="text-sm text-green-600 font-medium">+2.1%</span> */}
+              <Badge className="bg-green-100 text-green-700 text-xs">
+                Success
+              </Badge>
             </div>
-            <div className="text-3xl font-bold text-gray-900 mb-2">N/A</div>
-            <div className="w-full bg-purple-100 rounded-lg h-8 relative overflow-hidden">
-              <svg
-                className="absolute inset-0 w-full h-full"
-                viewBox="0 0 100 32"
-              >
-                <path
-                  d="M0,24 Q20,8 40,12 T80,10 L100,8"
-                  stroke="#a855f7"
-                  strokeWidth="2"
-                  fill="none"
-                />
-              </svg>
+            <div className="text-3xl font-bold text-gray-900 mb-2">
+              {resolutionLoading ? "Loading..." : `${resolutionRate*10}%`}
+            </div>
+            <div className="flex items-center text-green-600 mb-2">
+              {/* <TrendingUp className="w-4 h-4 mr-1" /> */}
+              {/* <span className="text-sm font-medium">((Positive + Neutral) × 10) ÷ Total Calls</span> */}
+            </div>
+            <div className="text-center">
+              <span className="text-sm text-gray-600">
+                Based on {totalCalls} total calls
+              </span>
+            </div>
+            <div className="mt-3 p-3 bg-white rounded-lg">
+              <div className="text-xs text-gray-600 mb-2">Resolution Breakdown</div>
+              <div className="flex justify-between text-sm">
+                <span className="text-green-600 font-medium">
+                  Resolved: {resolutionRate*10}%
+                </span>
+                <span className="text-red-600 font-medium">
+                  Unresolved: {100 - resolutionRate*10}%
+                </span>
+              </div>
             </div>
           </div>
         </div>

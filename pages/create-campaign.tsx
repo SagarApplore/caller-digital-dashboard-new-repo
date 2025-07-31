@@ -104,7 +104,7 @@ export function CreateCampaignPage() {
   const [successPrompt, setSuccessPrompt] = useState("");
   const [failurePrompt, setFailurePrompt] = useState("");
   const [scheduleTimestamp, setScheduleTimestamp] = useState("");
-  const [delay_between_calls, setDelayBetweenCalls] = useState(5);
+  const [delay_between_calls, setDelayBetweenCalls] = useState(60);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -292,7 +292,7 @@ export function CreateCampaignPage() {
   };
 
   const getSelectedAssistantId = () =>
-    selectedAssistant && selectedAssistant._id ? selectedAssistant._id : "";
+    selectedAssistant && selectedAssistant._id ? selectedAssistant._id : undefined;
 
   const createCampaign = async () => {
     setCampaignCreating(true);
@@ -756,7 +756,7 @@ export function CreateCampaignPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {assistantsLoading ? (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="loading" disabled>
                           Loading assistants...
                         </SelectItem>
                       ) : assistants.length > 0 ? (
@@ -766,7 +766,7 @@ export function CreateCampaignPage() {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-assistants" disabled>
                           No assistants with phone numbers available
                         </SelectItem>
                       )}
@@ -861,11 +861,12 @@ export function CreateCampaignPage() {
                     id="delay-between-calls"
                     type="number"
                     value={delay_between_calls}
-                    onChange={(e) => setDelayBetweenCalls(Number(e.target.value))}
-                    min="1"
-                    max="300"
-                    className="mt-1"
+                    readOnly
+                    className="mt-1 bg-gray-50 cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Fixed at 60 seconds - cannot be modified
+                  </p>
                 </div>
 
                 <div>
