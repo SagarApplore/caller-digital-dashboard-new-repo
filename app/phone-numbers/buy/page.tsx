@@ -71,6 +71,7 @@ interface BuyNumberForm {
   type: string;
   number: string;
   capabilities: string[];
+  numberType: string;
 }
 
 const countries: Country[] = [
@@ -110,7 +111,8 @@ export default function BuyNumbersPage() {
     country: 'IN',
     type: 'any',
     number: '',
-    capabilities: ['any']
+    capabilities: ['any'],
+    numberType: 'inbound'
   });
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -256,7 +258,8 @@ export default function BuyNumbersPage() {
         region: number.region,
         monthly_rental_rate: number.monthly_rental_rate,
         voice_enabled: number.voice_enabled,
-        country: formData.country
+        country: formData.country,
+        numberType: formData.numberType || 'inbound'
       });
 
       if (!orderResponse.success) {
@@ -292,8 +295,8 @@ export default function BuyNumbersPage() {
               if (verificationResponse.success) {
                 // Call Python API to register the purchased number
                 try {
-                  await phoneNumbersService.registerNumberWithPythonAPI(number.number, response, apiId);
-                  console.log('Successfully registered number with Python API:', number.number, 'API ID:', apiId);
+                  await phoneNumbersService.registerNumberWithPythonAPI(number.number, response, apiId, formData.numberType || 'inbound');
+                  console.log('Successfully registered number with Python API:', number.number, 'API ID:', apiId, 'Number Type:', formData.numberType);
                 } catch (pythonApiError) {
                   console.error('Failed to register number with Python API:', pythonApiError);
                   // Don't fail the entire transaction if Python API fails
@@ -457,6 +460,38 @@ export default function BuyNumbersPage() {
 
                   {/* Right Column */}
                   <div className="space-y-6">
+                    {/* Number Type Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium text-gray-700">Number Type</Label>
+                      <p className="text-sm text-gray-600">Choose how you want to use this phone number.</p>
+                      <RadioGroup 
+                        value={formData.numberType || 'inbound'} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, numberType: value }))}
+                        className="space-y-3"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem 
+                            value="inbound" 
+                            id="inbound"
+                            className="text-green-600 border-gray-300 focus:ring-green-500"
+                          />
+                          <Label htmlFor="inbound" className="text-sm font-medium text-gray-700">
+                            Inbound - For receiving calls
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem 
+                            value="outbound" 
+                            id="outbound"
+                            className="text-green-600 border-gray-300 focus:ring-green-500"
+                          />
+                          <Label htmlFor="outbound" className="text-sm font-medium text-gray-700">
+                            Outbound - For making calls
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
                     {/* Number Input */}
                     <div className="space-y-3">
                       <Label className="text-sm font-medium text-gray-700">Number</Label>

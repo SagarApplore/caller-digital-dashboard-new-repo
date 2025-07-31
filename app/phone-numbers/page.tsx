@@ -438,6 +438,7 @@ export default function PhoneNumbersPage() {
                           S.No.
                         </th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Phone Number</th>
+                        <th className="text-left py-4 px-6 font-medium text-gray-700">Number Type</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Agent Linked</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Active</th>
                         <th className="text-left py-4 px-6 font-medium text-gray-700">Assigned Date</th>
@@ -456,6 +457,18 @@ export default function PhoneNumbersPage() {
                           </td>
                           <td className="py-4 px-6">
                             <div className="font-medium text-gray-900 text-base">{assignment.phone_number}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <Badge 
+                              variant={assignment.numberType === 'inbound' ? 'default' : 'secondary'}
+                              className={`px-3 py-1 text-sm font-medium rounded-full ${
+                                assignment.numberType === 'inbound'
+                                  ? 'bg-blue-100 text-blue-800 border-blue-200' 
+                                  : 'bg-purple-100 text-purple-800 border-purple-200'
+                              }`}
+                            >
+                              {assignment.numberType === 'inbound' ? 'Inbound' : 'Outbound'}
+                            </Badge>
                           </td>
                           <td className="py-4 px-6">
                             {assignment.agentId ? (

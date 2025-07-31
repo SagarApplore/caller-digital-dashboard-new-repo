@@ -127,6 +127,7 @@ export interface PhoneNumberAssignment {
   client_id: string;
   status: string;
   active: boolean;
+  numberType: string;
   agentId?: {
     _id: string;
     agentName: string;
@@ -254,6 +255,7 @@ class PhoneNumbersService {
     monthly_rental_rate: string;
     voice_enabled: boolean;
     country: string;
+    numberType: string;
   }): Promise<any> {
     try {
       const response = await backendApiClient.post('/phone-number-payment/create-order', phoneNumberData);
@@ -280,7 +282,7 @@ class PhoneNumbersService {
   }
 
   // Call Python API after successful payment to register the number
-  async registerNumberWithPythonAPI(phoneNumber: string, paymentDetails: any, api_id: string): Promise<any> {
+  async registerNumberWithPythonAPI(phoneNumber: string, paymentDetails: any, api_id: string, numberType: string = 'inbound'): Promise<any> {
     try {
       // First call Python API to assign the number
       const pythonResponse = await backendPythonApiClient.post('/assign-number', {
@@ -305,7 +307,8 @@ class PhoneNumbersService {
         const nodeResponse = await backendApiClient.post('/phone-number-assignment', {
           phone_number: `+${numberData.number}`,
           api_id: buy_response.api_id,
-          status: numberData.status === 'Success' ? 'active' : 'inactive'
+          status: numberData.status === 'Success' ? 'active' : 'inactive',
+          numberType: numberType // Use the passed numberType parameter
         });
 
         console.log('Node.js API response:', nodeResponse.data);
@@ -481,6 +484,7 @@ class PhoneNumbersService {
             client_id: 'client-1',
             status: 'active',
             active: true,
+            numberType: 'inbound',
             agentId: {
               _id: 'agent-1',
               agentName: 'Customer Support Agent',
@@ -496,6 +500,7 @@ class PhoneNumbersService {
             client_id: 'client-1',
             status: 'inactive',
             active: false,
+            numberType: 'outbound',
             agentId: {
               _id: 'agent-1',
               agentName: 'Customer Support Agent',
