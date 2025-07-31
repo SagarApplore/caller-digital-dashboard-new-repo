@@ -21,6 +21,7 @@ import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import axios from "axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "react-toastify";
 
 interface SenderDetails {
   name: string;
@@ -94,8 +95,10 @@ const Transcript = ({
 
 const EntityResult = ({
   entityResult,
+  onExport,
 }: {
   entityResult: any;
+  onExport: () => void;
 }) => {
   if (!entityResult) {
     return (
@@ -136,6 +139,15 @@ const EntityResult = ({
 
   return (
     <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Entity Data</h3>
+        <Button
+          onClick={onExport}
+          className="bg-purple-600 text-white hover:bg-purple-700 text-sm px-3 py-1"
+        >
+          Export Entity Results
+        </Button>
+      </div>
       <div className="bg-white rounded-lg border">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -294,6 +306,78 @@ const ViewCallLog = ({ id }: { id: string }) => {
       .toString()
       .padStart(2, "0");
     return `${mins}:${secs}`;
+  };
+
+  const handleExportEntityResults = async () => {
+    if (!apiData?.entity_result) {
+      toast.warning("No entity result data available for this call");
+      return;
+    }
+
+    try {
+      // Collect all unique keys from entity_result data
+      const allKeys = new Set<string>();
+      const entityResultsData: any[] = [];
+
+      if (typeof apiData.entity_result === 'object' && apiData.entity_result !== null) {
+        // Handle object format
+        Object.keys(apiData.entity_result).forEach(key => allKeys.add(key));
+        entityResultsData.push(apiData.entity_result);
+      } else if (Array.isArray(apiData.entity_result)) {
+        // Handle array format
+        apiData.entity_result.forEach((item: any) => {
+          if (typeof item === 'object' && item !== null) {
+            Object.keys(item).forEach(key => allKeys.add(key));
+            entityResultsData.push(item);
+          }
+        });
+      }
+
+      if (entityResultsData.length === 0) {
+        toast.warning("No entity result data found to export");
+        return;
+      }
+
+      // Convert Set to Array and sort for consistent order
+      const sortedKeys = Array.from(allKeys).sort();
+
+      console.log("Entity Results Export - Keys:", sortedKeys);
+      console.log("Entity Results Export - Data:", entityResultsData);
+
+      // Create CSV content with keys as headers
+      const csvContent = [
+        sortedKeys, // Headers (keys)
+        ...entityResultsData.map(row => 
+          sortedKeys.map(key => {
+            const value = row[key];
+            return typeof value === 'object' ? JSON.stringify(value) : String(value || '');
+          })
+        )
+      ].map(row =>
+        row
+          .map(field => {
+            // Escape quotes and commas
+            if (typeof field === 'string' && /[",\n]/.test(field)) {
+              return `"${field.replace(/"/g, '""')}"`;
+            }
+            return field;
+          })
+          .join(',')
+      ).join('\n');
+
+      console.log("Entity Results Export - CSV Content:", csvContent);
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `entity_results_${apiData._id || 'call'}.csv`;
+      link.click();
+
+      toast.success("Entity results exported successfully!");
+    } catch (error) {
+      console.error("Error during entity results export:", error);
+      toast.error("Entity results export failed. Please try again.");
+    }
   };
 
   return (
@@ -584,7 +668,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     </div>
                   </TabsContent>
                   <TabsContent value="entity-result">
-                    <EntityResult entityResult={apiData?.entity_result} />
+                    <EntityResult entityResult={apiData?.entity_result} onExport={handleExportEntityResults} />
                   </TabsContent>
                 </Tabs>
                 {/* <div className="flex items-center gap-4">
