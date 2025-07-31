@@ -46,6 +46,8 @@ export interface Channel {
 export interface PhoneNumber {
   _id: string;
   phone_number: string;
+  numberType: string;
+  displayName: string;
 }
 
 export interface HandoffConfig {
@@ -72,8 +74,8 @@ interface ChannelsAndPhoneMappingProps {
   updateHandoffConfig: (config: HandoffConfig) => void;
   extraPrompts: ExtraPrompts;
   updateExtraPrompts: (prompts: ExtraPrompts) => void;
-  agentPhoneNumber: { phoneNumber: string; phoneNumberId: string };
-  updateAgentPhoneNumber: (phoneNumber: string, phoneNumberId: string) => void;
+  agentPhoneNumber: { phoneNumber: string; phoneNumberId: string; numberType?: string };
+  updateAgentPhoneNumber: (phoneNumber: string, phoneNumberId: string, numberType?: string) => void;
   mode?: "create" | "edit";
 }
 
@@ -99,6 +101,7 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     // Debug logging for agent phone number
     console.log("ChannelsAndPhoneMapping - agentPhoneNumber:", agentPhoneNumber);
     console.log("ChannelsAndPhoneMapping - phoneNumbers:", phoneNumbers);
+    console.log("ChannelsAndPhoneMapping - extraPrompts:", extraPrompts);
 
     // Validation function for parent
     // useImperativeHandle(ref, () => ({
@@ -408,7 +411,8 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                     });
                     updateAgentPhoneNumber(
                       e.target.value,
-                      selectedPhoneNumber?._id || ""
+                      selectedPhoneNumber?._id || "",
+                      selectedPhoneNumber?.numberType || undefined
                     );
                   }}
                 >
@@ -425,7 +429,7 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                       key={phoneNumber._id}
                       value={phoneNumber.phone_number}
                     >
-                      {phoneNumber.phone_number}
+                      {phoneNumber.displayName}
                     </option>
                   ))}
                 </select>
