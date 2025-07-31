@@ -581,6 +581,33 @@ const CallLogs = () => {
       const exportDataPromises = callLogs.map(async (log) => {
         const summaryContent = await fetchSummaryContent(log.summary_uri);
         
+        // Process entity_result data
+        let entityResultData = "";
+        if (log.entity_result) {
+          if (typeof log.entity_result === 'object' && log.entity_result !== null) {
+            // Convert object to key-value pairs
+            const entityPairs = Object.entries(log.entity_result).map(([key, value]) => {
+              const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+              const formattedValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+              return `${formattedKey}: ${formattedValue}`;
+            });
+            entityResultData = entityPairs.join(' | ');
+          } else if (Array.isArray(log.entity_result)) {
+            // Handle array format
+            const entityPairs = log.entity_result.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                return Object.entries(item).map(([key, value]) => {
+                  const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+                  const formattedValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                  return `${formattedKey}: ${formattedValue}`;
+                }).join(', ');
+              }
+              return String(item);
+            });
+            entityResultData = entityPairs.join(' | ');
+          }
+        }
+        
         return {
           "Customer Number": log.customer_phone_number || "",
           "Customer Name": log.clientId?.name || "",
@@ -594,7 +621,8 @@ const CallLogs = () => {
           "Intent": log.intent || "",
           "Sentiment": log.sentiment || "",
           "AI Analysis": log.ai_analysis || "",
-          "Language": log.agentId?.languages?.join(",") || ""
+          "Language": log.agentId?.languages?.join(",") || "",
+          "Entity Result": entityResultData || ""
         };
       });
 
@@ -625,6 +653,49 @@ const CallLogs = () => {
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Call Logs');
+        
+        // Create separate sheet for entity results if any exist
+        const entityResultsData: any[] = [];
+        callLogs.forEach((log, index) => {
+          if (log.entity_result) {
+            if (typeof log.entity_result === 'object' && log.entity_result !== null) {
+              entityResultsData.push({
+                "Call Log ID": log._id || `Call ${index + 1}`,
+                "Customer Number": log.customer_phone_number || "",
+                "Customer Name": log.clientId?.name || "",
+                ...Object.fromEntries(
+                  Object.entries(log.entity_result).map(([key, value]) => [
+                    key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                    typeof value === 'object' ? JSON.stringify(value) : String(value)
+                  ])
+                )
+              });
+            } else if (Array.isArray(log.entity_result)) {
+              log.entity_result.forEach((item: any, itemIndex: number) => {
+                if (typeof item === 'object' && item !== null) {
+                  entityResultsData.push({
+                    "Call Log ID": log._id || `Call ${index + 1}`,
+                    "Customer Number": log.customer_phone_number || "",
+                    "Customer Name": log.clientId?.name || "",
+                    "Entity Index": itemIndex + 1,
+                    ...Object.fromEntries(
+                      Object.entries(item).map(([key, value]) => [
+                        key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
+                        typeof value === 'object' ? JSON.stringify(value) : String(value)
+                      ])
+                    )
+                  });
+                }
+              });
+            }
+          }
+        });
+        
+        if (entityResultsData.length > 0) {
+          const entityWs = XLSX.utils.json_to_sheet(entityResultsData);
+          XLSX.utils.book_append_sheet(wb, entityWs, 'Entity Results');
+        }
+        
         XLSX.writeFile(wb, 'call_logs_report.xlsx');
       }
 
@@ -632,6 +703,78 @@ const CallLogs = () => {
     } catch (error) {
       console.error("Error during export:", error);
       toast.error("Export failed. Please try again.");
+    }
+  };
+
+  const handleExportEntityResults = async (callLogs: any) => {
+    if (!callLogs || !Array.isArray(callLogs) || callLogs.length === 0) {
+      console.warn("No call log data available to export");
+      return;
+    }
+
+    // Show loading state
+    toast.info("Preparing entity results export...");
+
+    try {
+      const entityResultsData: any[] = [];
+
+      callLogs.forEach((log) => {
+        if (log.entity_result) {
+          if (typeof log.entity_result === 'object' && log.entity_result !== null) {
+            // Handle object format
+            Object.entries(log.entity_result).forEach(([key, value]) => {
+              entityResultsData.push({
+                "Key": key,
+                "Value": typeof value === 'object' ? JSON.stringify(value) : String(value)
+              });
+            });
+          } else if (Array.isArray(log.entity_result)) {
+            // Handle array format
+            log.entity_result.forEach((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                Object.entries(item).forEach(([key, value]) => {
+                  entityResultsData.push({
+                    "Key": key,
+                    "Value": typeof value === 'object' ? JSON.stringify(value) : String(value)
+                  });
+                });
+              }
+            });
+          }
+        }
+      });
+
+      if (entityResultsData.length === 0) {
+        toast.warning("No entity result data found to export");
+        return;
+      }
+
+      // Create CSV content
+      const csvContent = [
+        ["Key", "Value"], // Header
+        ...entityResultsData.map(row => [row.Key, row.Value])
+      ].map(row =>
+        row
+          .map(field => {
+            // Escape quotes and commas
+            if (typeof field === 'string' && /[",\n]/.test(field)) {
+              return `"${field.replace(/"/g, '""')}"`;
+            }
+            return field;
+          })
+          .join(',')
+      ).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'entity_results.csv';
+      link.click();
+
+      toast.success("Entity results exported successfully!");
+    } catch (error) {
+      console.error("Error during entity results export:", error);
+      toast.error("Entity results export failed. Please try again.");
     }
   };
 
@@ -987,6 +1130,7 @@ const CallLogs = () => {
             />
           </div>
           <button onClick={() => handleExportCallLogs(apiData, 'xlsx')} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
+          <button onClick={() => handleExportEntityResults(apiData)} className="text-white bg-purple-600 rounded-md px-2 py-1 cursor-pointer ml-2">Export Entity Results</button>
 
           {/* <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
