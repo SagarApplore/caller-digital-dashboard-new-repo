@@ -55,6 +55,12 @@ interface IKnowledgeBase {
   file: string;
 }
 
+interface EntityDataItem {
+  key: string;
+  value: any;
+  id: string;
+}
+
 interface CreateAgentProps {
   mode?: "create" | "edit";
   agentId?: string;
@@ -76,6 +82,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       tones: [],
       agentName: initialData?.agentName || "",
     });
+
+  // Entity data state
+  const [entityData, setEntityData] = useState<EntityDataItem[]>([]);
+
+  // Debug entityData changes
+  useEffect(() => {
+    console.log("CreateAgent - entityData changed:", entityData);
+  }, [entityData]);
 
   // Check if user has DIY permissions
   const hasDIYPermission = () => {
@@ -811,6 +825,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             phoneNumberId: agentData.phone_number_assignment || "",
             numberType: agentData.phone_number_type || "primary", // Set numberType
           });
+
+          // Update entity data
+          if (agentData.entity_data && Array.isArray(agentData.entity_data)) {
+            console.log("Setting entity data from agentData:", agentData.entity_data);
+            const entityDataItems = agentData.entity_data.map((item: any, index: number) => ({
+              key: item.key || "",
+              value: item.value || "",
+              id: Date.now().toString() + index, // Generate unique ID
+            }));
+            setEntityData(entityDataItems);
+          }
         } catch (error) {
           console.error("Error fetching agent data:", error);
         }
@@ -890,6 +915,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             };
           })
         );
+      }
+
+      // Update entity data
+      if (initialData.entity_data && Array.isArray(initialData.entity_data)) {
+        console.log("Updating entity data from initialData:", initialData.entity_data);
+        const entityDataItems = initialData.entity_data.map((item: any, index: number) => ({
+          key: item.key || "",
+          value: item.value || "",
+          id: Date.now().toString() + index, // Generate unique ID
+        }));
+        setEntityData(entityDataItems);
       }
     }
   }, [mode, initialData]);
@@ -1034,6 +1070,12 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       ), // Array of function tool ObjectIds
       handoff: handoffConfig.enabled,
       handoff_number: handoffConfig.enabled ? handoffConfig.handoff_number : "",
+      entity_data: entityData
+        .filter(item => item.key && item.key.trim() !== "") // Only include items with non-empty keys
+        .map(item => ({
+          key: item.key,
+          value: item.value
+        })), // Array of entity data key-value pairs
     };
 
     // Only include integration data if user has DIY permissions
@@ -1107,6 +1149,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         ...initialData,
         ...agentData,
       };
+      console.log("Edit Agent - entity_data payload:", updateData.entity_data);
       await apiRequest(
         `${endpoints.assistants.update}/${agentId}`,
         "PUT",
@@ -1114,6 +1157,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       );
     } else {
       try {
+        console.log("Create Agent - entity_data payload:", agentData.entity_data);
+        console.log("Create Agent - full payload:", agentData);
         await apiRequest(endpoints.assistants.create, "POST", agentData);
       } catch (error) {
         console.error(error);
@@ -1292,6 +1337,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               selectKnowledgeBase={selectKnowledgeBase}
               selectedFunctionTools={knowledgeBaseData.selectedFunctionTools}
               selectFunctionTools={selectFunctionTools}
+              entityData={entityData}
+              onEntityDataChange={setEntityData}
             />
           )}
 

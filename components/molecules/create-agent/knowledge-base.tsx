@@ -14,6 +14,13 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
+import EntityData from "./entity-data";
+
+interface EntityDataItem {
+  key: string;
+  value: any;
+  id: string;
+}
 
 const KnowledgeBase = ({
   knowledgeBases,
@@ -21,12 +28,16 @@ const KnowledgeBase = ({
   selectKnowledgeBase,
   selectedFunctionTools,
   selectFunctionTools,
+  entityData,
+  onEntityDataChange,
 }: {
   knowledgeBases: KnowledgeBaseItem[];
   selectedKnowledgeBases: KnowledgeBaseItem[];
   selectKnowledgeBase: (knowledgeBases: KnowledgeBaseItem[]) => void;
   selectedFunctionTools: IFunctionTool[];
   selectFunctionTools: (functionTools: IFunctionTool[]) => void;
+  entityData: EntityDataItem[];
+  onEntityDataChange: (entityData: EntityDataItem[]) => void;
 }) => {
   const router = useRouter();
   const [knowledgeBaseDropdownOpen, setKnowledgeBaseDropdownOpen] =
@@ -58,6 +69,12 @@ const KnowledgeBase = ({
     <div className="h-full overflow-y-auto">
       <Card className="border-none p-4 h-full">
         <CardContent className="p-0 space-y-6">
+          {/* Entity Data Section */}
+          <EntityData
+            entityData={entityData}
+            onEntityDataChange={onEntityDataChange}
+          />
+          
           {/* Knowledge Base Section */}
           <div>
             <h2 className="text-lg font-bold mb-4">Select Knowledge Base(s)</h2>

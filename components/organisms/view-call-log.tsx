@@ -11,6 +11,7 @@ import {
   Star,
   Volume2,
   VolumeX,
+  Table,
 } from "lucide-react";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
@@ -91,6 +92,83 @@ const Transcript = ({
   );
 };
 
+const EntityResult = ({
+  entityResult,
+}: {
+  entityResult: any;
+}) => {
+  if (!entityResult) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+        <Table className="w-8 h-8 mb-2" />
+        <span className="text-sm">No entity result data available</span>
+      </div>
+    );
+  }
+
+  // Handle both object and array formats
+  let dataToDisplay: any[] = [];
+  
+  if (Array.isArray(entityResult)) {
+    dataToDisplay = entityResult;
+  } else if (typeof entityResult === 'object' && entityResult !== null) {
+    // Convert object to array format for table display
+    dataToDisplay = [entityResult];
+  }
+
+  if (dataToDisplay.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+        <Table className="w-8 h-8 mb-2" />
+        <span className="text-sm">No entity result data available</span>
+      </div>
+    );
+  }
+
+  // Get all unique keys from the entity result data
+  const allKeys = Array.from(
+    new Set(
+      dataToDisplay.flatMap((item: any) => 
+        typeof item === 'object' && item !== null ? Object.keys(item) : []
+      )
+    )
+  );
+
+  return (
+    <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
+      <div className="bg-white rounded-lg border">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b">
+                {allKeys.map((key: string) => (
+                  <th key={key} className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    {key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataToDisplay.map((item: any, index: number) => (
+                <tr key={index} className="border-b hover:bg-gray-50">
+                  {allKeys.map((key: string) => (
+                    <td key={key} className="px-4 py-3 text-sm text-gray-600">
+                      {typeof item[key] === 'object' 
+                        ? JSON.stringify(item[key])
+                        : String(item[key] || '-')
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ViewCallLog = ({ id }: { id: string }) => {
   const [play, setPlay] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -137,6 +215,15 @@ const ViewCallLog = ({ id }: { id: string }) => {
   useEffect(() => {
     fetchCallLog();
   }, [id]);
+
+  // Debug entity_result data
+  useEffect(() => {
+    if (apiData?.entity_result) {
+      console.log("Entity Result Data:", apiData.entity_result);
+      console.log("Entity Result Type:", typeof apiData.entity_result);
+      console.log("Is Array:", Array.isArray(apiData.entity_result));
+    }
+  }, [apiData?.entity_result]);
 
   const renderStars = (rating: number) => {
     return (
@@ -473,6 +560,12 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     >
                       Summary
                     </TabsTrigger>
+                    <TabsTrigger
+                      value="entity-result"
+                      className="text-lg font-bold data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 border-b-2 border-transparent rounded-none"
+                    >
+                      Entity Result
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="transcript" className="w-full">
                     <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll w-full">
@@ -489,6 +582,9 @@ const ViewCallLog = ({ id }: { id: string }) => {
                     <div className="flex flex-col gap-4 max-h-[500px] overflow-y-scroll">
                       <div className="text-sm text-gray-500">{summary}</div>
                     </div>
+                  </TabsContent>
+                  <TabsContent value="entity-result">
+                    <EntityResult entityResult={apiData?.entity_result} />
                   </TabsContent>
                 </Tabs>
                 {/* <div className="flex items-center gap-4">
