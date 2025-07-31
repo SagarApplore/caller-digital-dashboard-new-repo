@@ -147,9 +147,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   });
 
   const [extraPrompts, setExtraPrompts] = useState({
-    summaryPrompt: "",
-    successEvaluationPrompt: "",
-    failureEvaluationPrompt: "",
+    summaryPrompt: initialData?.summaryPrompt || "",
+    successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
+    failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
   });
 
   const [channels, setChannels] = useState<Channel[]>(initializeChannels());
@@ -231,9 +231,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const [agentPhoneNumber, setAgentPhoneNumber] = useState<{
     phoneNumber: string;
     phoneNumberId: string;
+    numberType?: string; // Added numberType
   }>({
     phoneNumber: initialData?.agent_number || "",
     phoneNumberId: initialData?.phone_number_assignment || "",
+    numberType: initialData?.phone_number_type || "primary", // Initialize numberType
   });
 
   // Debug logging for agent phone number initialization
@@ -807,6 +809,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           setAgentPhoneNumber({
             phoneNumber: agentData.agent_number || "",
             phoneNumberId: agentData.phone_number_assignment || "",
+            numberType: agentData.phone_number_type || "primary", // Set numberType
           });
         } catch (error) {
           console.error("Error fetching agent data:", error);
@@ -826,6 +829,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       setAgentPhoneNumber({
         phoneNumber: initialData.agent_number || "",
         phoneNumberId: initialData.phone_number_assignment || "",
+        numberType: initialData.phone_number_type || "primary", // Set numberType
       });
     }
   }, [mode, initialData]);
@@ -887,6 +891,22 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           })
         );
       }
+    }
+  }, [mode, initialData]);
+
+  // Update extraPrompts when initialData changes
+  useEffect(() => {
+    if (mode === "edit" && initialData) {
+      console.log("Updating extraPrompts with initialData:", {
+        summaryPrompt: initialData.summaryPrompt,
+        successEvaluationPrompt: initialData.successEvaluationPrompt,
+        failureEvaluationPrompt: initialData.failureEvaluationPrompt,
+      });
+      setExtraPrompts({
+        summaryPrompt: initialData.summaryPrompt || "",
+        successEvaluationPrompt: initialData.successEvaluationPrompt || "",
+        failureEvaluationPrompt: initialData.failureEvaluationPrompt || "",
+      });
     }
   }, [mode, initialData]);
 
@@ -999,9 +1019,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       tone: personaAndBehavior.tones
         .filter((tone) => tone.selected)
         .map((tone) => tone.name.toLowerCase()),
-      call_type: "OUTBOUND", // or "inbound", etc.
+      call_type: agentPhoneNumber.numberType === 'inbound' ? 'inbound' : agentPhoneNumber.numberType === 'outbound' ? 'outbound' : undefined, // Set based on phone number type, undefined if no number selected
       agent_number: agentPhoneNumber.phoneNumber || "", // Phone number for the agent
       phone_number_assignment: agentPhoneNumber.phoneNumberId || null, // Phone number assignment ID
+      phone_number_type: agentPhoneNumber.numberType || "primary", // Phone number type
       summaryPrompt: extraPrompts.summaryPrompt,
       successEvaluationPrompt: extraPrompts.successEvaluationPrompt,
       failureEvaluationPrompt: extraPrompts.failureEvaluationPrompt,
@@ -1257,8 +1278,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               extraPrompts={extraPrompts}
               updateExtraPrompts={setExtraPrompts}
               agentPhoneNumber={agentPhoneNumber}
-              updateAgentPhoneNumber={(phoneNumber, phoneNumberId) =>
-                setAgentPhoneNumber({ phoneNumber, phoneNumberId })
+              updateAgentPhoneNumber={(phoneNumber, phoneNumberId, numberType) =>
+                setAgentPhoneNumber({ phoneNumber, phoneNumberId, numberType })
               }
               mode={mode || "create"}
             />
