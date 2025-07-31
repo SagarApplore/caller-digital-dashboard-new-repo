@@ -280,7 +280,7 @@ export function CampaignsPage() {
       <div className="bg-white rounded-lg shadow-lg shadow-gray-200">
         <div className="">
           <h2 className="text-lg font-semibold text-gray-900 m-4">
-            Active Campaigns ({pagination.totalCount})
+            Campaigns ({pagination.totalCount})
           </h2>
 
           <div className="overflow-x-auto">
@@ -299,23 +299,23 @@ export function CampaignsPage() {
                       Campaign Name
                     </TableHead>
                     <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                      Status
-                    </TableHead>
-                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                      Assistant
-                    </TableHead>
-                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
                       Calls Placed
                     </TableHead>
                     <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                      Connect Rate
+                      Calls Answered
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Calls Unanswered
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Connect Rate (%)
+                    </TableHead>
+                    <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
+                      Total Interested
                     </TableHead>
                     <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
                       Created On
                     </TableHead>
-                    {/* <TableHead className="text-left py-3 px-4 font-medium text-gray-500 text-sm">
-                      Actions
-                    </TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -323,68 +323,23 @@ export function CampaignsPage() {
                     campaigns.map((campaign) => (
                       <TableRow
                         key={campaign._id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
+                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                        onClick={() => router.push(`/outbound-campaign-manager/${campaign._id}`)}
                       >
                         <TableCell className="py-4 px-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                              {campaign.icon ? (
-                                <Image
-                                  src={campaign.icon}
-                                  alt={campaign.campaignName}
-                                  width={32}
-                                  height={32}
-                                />
-                              ) : (
-                                <div className="flex items-center justify-center">
-                                  <span className="text-sm">
-                                    {campaign.campaignName.charAt(0)}
-                                  </span>
-                                </div>
-                              )}
+                              <div className="flex items-center justify-center">
+                                <span className="text-sm font-medium text-blue-600">
+                                  {campaign.campaignName.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">
                                 {campaign.campaignName}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {campaign.callPlaced}
-                              </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-4">
-                          <Badge
-                            className={`${getStatusColor(
-                              campaign.status
-                            )} border-0`}
-                          >
-                            {campaign.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4 px-4">
-                          <div className="flex items-center space-x-2">
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback className="text-xs bg-purple-100 text-purple-600">
-                                {campaign.assistant?.image ? (
-                                  <Image
-                                    src={campaign.assistant.image}
-                                    alt={campaign.assistant.agentName}
-                                    width={32}
-                                    height={32}
-                                  />
-                                ) : (
-                                  <div className="flex items-center justify-center">
-                                    <span className="text-sm">
-                                      {campaign.assistant.agentName.charAt(0)}
-                                    </span>
-                                  </div>
-                                )}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm font-medium text-gray-900">
-                              {campaign.assistant.agentName}
-                            </span>
                           </div>
                         </TableCell>
                         <TableCell className="py-4 px-4">
@@ -395,19 +350,40 @@ export function CampaignsPage() {
                           </span>
                         </TableCell>
                         <TableCell className="py-4 px-4">
+                          <span className="font-medium text-gray-900">
+                            {utils.string.formatNumber(
+                              campaign.callsAnswered ?? 0
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="font-medium text-gray-900">
+                            {utils.string.formatNumber(
+                              campaign.callsUnanswered ?? 0
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
                           <div className="flex items-center space-x-2">
                             <span className="font-medium text-gray-900">
-                              {campaign.connectRate}%
+                              {campaign.connectRate ?? 0}%
                             </span>
                             <div className="w-16">
                               <Progress
-                                value={campaign.connectRate}
+                                value={campaign.connectRate ?? 0}
                                 className={`h-2 ${getProgressColor(
-                                  campaign.connectRate
+                                  campaign.connectRate ?? 0
                                 )}`}
                               />
                             </div>
                           </div>
+                        </TableCell>
+                        <TableCell className="py-4 px-4">
+                          <span className="font-medium text-gray-900">
+                            {utils.string.formatNumber(
+                              campaign.totalInterested ?? 0
+                            )}
+                          </span>
                         </TableCell>
                         <TableCell className="py-4 px-4">
                           <span className="text-sm text-gray-500">
@@ -418,7 +394,7 @@ export function CampaignsPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4 px-4">
+                      <TableCell colSpan={7} className="text-center py-4 px-4">
                         No campaigns found
                       </TableCell>
                     </TableRow>

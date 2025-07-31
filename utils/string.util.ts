@@ -35,6 +35,9 @@ const string = {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   },
   getInitials: (name: string) => {
+    if (!name || typeof name !== 'string') {
+      return '';
+    }
     const nameParts = name.split(" ");
     return nameParts.map((part) => part[0]).join("");
   },

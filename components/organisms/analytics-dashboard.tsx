@@ -100,7 +100,7 @@ export default function AnalyticsDashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <VoiceAnalytics data={apiData.voiceAnalytics} />
+          <VoiceAnalytics data={apiData.voiceAnalytics} days={days} />
           <ChatEmailInsights
             data={apiData.chatEmailInsights}
             handleDaysChange={handleDaysChange}

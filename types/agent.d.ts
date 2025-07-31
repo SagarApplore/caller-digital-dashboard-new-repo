@@ -63,8 +63,8 @@ export enum EAgentLanguages {
 export type TAgentCallType = EAgentCallType.INBOUND | EAgentCallType.OUTBOUND;
 
 export enum EAgentCallType {
-  INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
+  INBOUND = "inbound",
+  OUTBOUND = "outbound",
 }
 
 export enum EAgentTones {
