@@ -177,28 +177,38 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   });
 
   // Initialize voice integration with existing data
-  const initializeVoiceIntegration = () => ({
-    selectedTTSModel: initialData?.voice?.voiceProvider?.model || null,
-    selectedTTSModelName: initialData?.voice?.voiceProvider?.model || null,
-    selectedTTSProvider:
-      initialData?.voice?.voiceProvider?.providerName || null,
-    selectedTTSProviderName:
-      initialData?.voice?.voiceProvider?.providerName || null,
-    selectedSTTModel: initialData?.voice?.transcriberProvider?.model || null,
-    selectedSTTModelName:
-      initialData?.voice?.transcriberProvider?.model || null,
-    selectedSTTProvider:
-      initialData?.voice?.transcriberProvider?.providerName || null,
-    selectedSTTProviderName:
-      initialData?.voice?.transcriberProvider?.providerName || null,
-    selectedTTSVoiceId: initialData?.voice?.voiceProvider?.voiceId || null,
-    selectedTTSVoiceName: initialData?.voice?.voiceProvider?.voiceName || null,
-    selectedLLMModel: initialData?.voice?.llmProvider?.model || null,
-    selectedLLMModelName: initialData?.voice?.llmProvider?.model || null,
-    selectedLLMProvider: initialData?.voice?.llmProvider?.providerName || null,
-    selectedLLMProviderName:
-      initialData?.voice?.llmProvider?.providerName || null,
-  });
+  const initializeVoiceIntegration = () => {
+    const voiceData = {
+      selectedTTSModel: initialData?.voice?.voiceProvider?.model || null,
+      selectedTTSModelName: initialData?.voice?.voiceProvider?.model || null,
+      selectedTTSProvider:
+        initialData?.voice?.voiceProvider?.providerName || null,
+      selectedTTSProviderName:
+        initialData?.voice?.voiceProvider?.providerName || null,
+      selectedSTTModel: initialData?.voice?.transcriberProvider?.model || null,
+      selectedSTTModelName:
+        initialData?.voice?.transcriberProvider?.model || null,
+      selectedSTTProvider:
+        initialData?.voice?.transcriberProvider?.providerName || null,
+      selectedSTTProviderName:
+        initialData?.voice?.transcriberProvider?.providerName || null,
+      selectedTTSVoiceId: initialData?.voice?.voiceProvider?.voiceId || null,
+      selectedTTSVoiceName: initialData?.voice?.voiceProvider?.voiceName || null,
+      selectedLLMModel: initialData?.voice?.llmProvider?.model || null,
+      selectedLLMModelName: initialData?.voice?.llmProvider?.model || null,
+      selectedLLMProvider: initialData?.voice?.llmProvider?.providerName || null,
+      selectedLLMProviderName:
+        initialData?.voice?.llmProvider?.providerName || null,
+      backgroundNoiseEnabled: initialData?.voice?.background_noise || false,
+    };
+    
+    console.log("🔍 Initializing voice integration:", {
+      initialData: initialData?.voice,
+      backgroundNoiseEnabled: voiceData.backgroundNoiseEnabled
+    });
+    
+    return voiceData;
+  };
 
   const [voiceIntegration, setVoiceIntegration] = useState(
     initializeVoiceIntegration()
@@ -756,6 +766,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               agentData.voice?.llmProvider?.providerName || null,
             selectedLLMProviderName:
               agentData.voice?.llmProvider?.providerName || null,
+            backgroundNoiseEnabled: agentData.voice?.background_noise || false,
           });
 
           setEmailIntegration({
@@ -1087,6 +1098,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     if (hasDIYPermission()) {
       // Add voice integration data
       if (channels.find(ch => ch.id.toLowerCase() === "voice")?.active) {
+        console.log("🔍 Voice Integration Debug:", {
+          backgroundNoiseEnabled: voiceIntegration.backgroundNoiseEnabled,
+          voiceIntegration: voiceIntegration
+        });
+        
         agentData.voice = {
           llmProvider: {
             model: voiceIntegration.selectedLLMModelName,
@@ -1111,7 +1127,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           )?.[0]?.prompt?.value,
           temperature: 0.5,
           maxTokens: 100,
+          background_noise: voiceIntegration.backgroundNoiseEnabled,
         };
+        
+        console.log("🔍 Voice Object Debug:", agentData.voice);
       }
 
       // Add chat integration data
@@ -1154,6 +1173,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         ...initialData,
         ...agentData,
       };
+      console.log("🔍 Edit Agent Debug:", {
+        mode,
+        agentId,
+        initialData: initialData?.voice,
+        agentData: agentData?.voice,
+        updateData: updateData?.voice,
+        backgroundNoiseEnabled: voiceIntegration.backgroundNoiseEnabled
+      });
       console.log("Edit Agent - entity_data payload:", updateData.entity_data);
       await apiRequest(
         `${endpoints.assistants.update}/${agentId}`,
