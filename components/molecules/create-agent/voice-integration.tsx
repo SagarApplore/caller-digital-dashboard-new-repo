@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Loader2, Play, Volume2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 
@@ -1013,6 +1014,38 @@ const VoiceIntegration = ({
                   </div>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Background Noise Checkbox */}
+        <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Background Noise</h2>
+              <span className="text-gray-600 text-sm">
+                Enable background noise detection
+              </span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Checkbox
+                id="backgroundNoise"
+                checked={voiceIntegration.backgroundNoiseEnabled}
+                onCheckedChange={(checked) => {
+                  console.log("🔍 Background noise checkbox changed:", checked);
+                  setVoiceIntegration((prev: any) => {
+                    const updated = {
+                      ...prev,
+                      backgroundNoiseEnabled: checked,
+                    };
+                    console.log("🔍 Updated voice integration:", updated);
+                    return updated;
+                  });
+                }}
+              />
+              <label htmlFor="backgroundNoise" className="text-sm text-gray-700">
+                Enable background noise detection
+              </label>
             </div>
           </CardContent>
         </Card>
