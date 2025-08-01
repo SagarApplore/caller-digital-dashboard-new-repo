@@ -15,6 +15,8 @@ import {
   Languages,
   Play,
   Trash2,
+  MoreVertical,
+  Copy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/organisms/card";
 import {
@@ -27,6 +29,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import TestAgentModal from "./test-agent-modal";
 import apiRequest from "@/utils/api";
+import { toast } from "react-toastify";
 
 export interface AssistantStats {
   conversations: number;
@@ -224,6 +227,23 @@ export default function Agents({ assistants }: { assistants: any[] }) {
     }
   };
 
+  // Add clone agent handler function
+  const handleCloneAgent = async (assistant: any) => {
+    try {
+      const response = await apiRequest(`/agents/${assistant._id}/clone`, "POST");
+      if (response?.data?.success) {
+        toast.success(`Agent "${assistant.agentName}" cloned successfully!`);
+        // Refresh the page to show the new agent
+        window.location.reload();
+      } else {
+        toast.error("Failed to clone agent. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error cloning agent:", error);
+      toast.error("Failed to clone agent. Please try again.");
+    }
+  };
+
   return (
     <div>
       {/* Filters */}
@@ -413,35 +433,47 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTestAgent(assistant)}
-                      className="text-green-600 hover:text-green-700 border-green-200 hover:border-green-300"
-                    >
-                      <Play className="w-4 h-4" />
-                      Test
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        router.push(`/agents/edit/${assistant._id}`)
-                      }
-                      className="text-purple-600 hover:text-purple-700 border-purple-200 hover:border-purple-300"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteAgent(assistant)}
-                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-white text-gray-600 hover:text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg p-1">
+                        <DropdownMenuItem
+                          onClick={() => handleTestAgent(assistant)}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer rounded-md transition-colors"
+                        >
+                          <Play className="w-4 h-4 mr-3" />
+                          Test
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/agents/edit/${assistant._id}`)}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 hover:bg-purple-50 cursor-pointer rounded-md transition-colors"
+                        >
+                          <Settings className="w-4 h-4 mr-3" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleCloneAgent(assistant)}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer rounded-md transition-colors"
+                        >
+                          <Copy className="w-4 h-4 mr-3" />
+                          Clone
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteAgent(assistant)}
+                          className="flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer rounded-md transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 mr-3" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
