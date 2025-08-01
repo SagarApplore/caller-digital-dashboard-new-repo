@@ -1,8 +1,9 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { HelpCircle, User, LogOut } from "lucide-react";
+import { HelpCircle, User, LogOut, Coins } from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
 import { updateActiveRoute } from "@/lib/sidebar-routes";
+import { CreditDisplay } from "./credit-display";
 
 export function Sidebar() {
   const router = useRouter();
@@ -49,6 +50,18 @@ export function Sidebar() {
       {/* Bottom Items */}
       <div className="flex-1"></div>
       <div className="flex flex-col space-y-2">
+        {/* Credit Icon with Hover Tooltip */}
+        <div className="relative group">
+          <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors">
+            <Coins className="w-5 h-5" />
+          </button>
+          
+          {/* Hover Tooltip */}
+          <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+            <CreditDisplay />
+          </div>
+        </div>
+
         {/* <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50">
           <HelpCircle className="w-5 h-5" />
         </button> */}
