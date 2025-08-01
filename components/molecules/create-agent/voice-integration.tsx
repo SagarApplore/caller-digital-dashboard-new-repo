@@ -1024,7 +1024,7 @@ const VoiceIntegration = ({
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Background Noise</h2>
               <span className="text-gray-600 text-sm">
-                Enable background noise detection
+                Enable background noise addition
               </span>
             </div>
             <div className="flex items-center space-x-3">
@@ -1044,7 +1044,7 @@ const VoiceIntegration = ({
                 }}
               />
               <label htmlFor="backgroundNoise" className="text-sm text-gray-700">
-                Enable background noise detection
+                Enable background noise addition
               </label>
             </div>
           </CardContent>
