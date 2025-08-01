@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Phone, User, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone, User, CheckCircle, XCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,6 +25,7 @@ interface CampaignLead {
   status: "answered" | "unanswered";
   callLogId: string | null;
   createdAt: string;
+  entity_result?: any;
 }
 
 interface CampaignDetails {
@@ -48,7 +49,7 @@ export default function CampaignDetailsPage() {
   const [leads, setLeads] = useState<CampaignLead[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const campaignId = params.id as string;
+  const campaignId = params?.id as string;
 
   useEffect(() => {
     fetchCampaignDetails();
@@ -82,9 +83,9 @@ export default function CampaignDetailsPage() {
     }
   };
 
-  const handleViewCallLog = (callLogId: string) => {
+  const handleViewCallLog = (callLogId: string,flag = "truncate") => {
     if (callLogId) {
-      router.push(`/call-logs/${callLogId}`);
+      router.push(`/call-logs/${callLogId}?flag=${flag}`);
     }
   };
 
@@ -123,6 +124,58 @@ export default function CampaignDetailsPage() {
           -
         </Badge>
       );
+    }
+  };
+
+  const downloadEntityCSV = () => {
+    try {
+      // Filter leads that have entity_result data
+      const leadsWithEntityData = leads.filter(lead => lead.entity_result);
+      
+      if (leadsWithEntityData.length === 0) {
+        toast.warning("No entity data available for download");
+        return;
+      }
+
+      // Create CSV headers
+      const headers = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result"];
+      
+      // Create CSV rows
+      const csvRows = [
+        headers.join(","), // Header row
+        ...leadsWithEntityData.map(lead => {
+          const leadName = `"${lead.leadName.replace(/"/g, '""')}"`;
+          const phoneNumber = `"${lead.leadNumber}"`;
+          const interested = `"${lead.interest === true ? 'Yes' : lead.interest === false ? 'No' : '-'}"`;
+          const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
+          
+          // Properly escape the entity result JSON for CSV
+          const entityResultJson = JSON.stringify(lead.entity_result);
+          const escapedEntityResult = entityResultJson.replace(/"/g, '""'); // Escape quotes
+          const entityResult = `"${escapedEntityResult}"`;
+          
+          return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult}`;
+        })
+      ];
+
+      // Create CSV content
+      const csvContent = csvRows.join("\n");
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success(`Downloaded entity data for ${leadsWithEntityData.length} leads`);
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      toast.error("Failed to download entity data");
     }
   };
 
@@ -206,10 +259,30 @@ export default function CampaignDetailsPage() {
       {/* Leads Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <User className="w-5 h-5 text-purple-600" />
-             <h2 className="text-lg font-semibold text-gray-900 m-4">Campaign Leads ({leads.length})</h2>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <User className="w-5 h-5 text-purple-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Campaign Leads ({leads.length})</h2>
+            </CardTitle>
+            <div className="flex flex-col items-end space-y-2">
+              <Button
+                onClick={downloadEntityCSV}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={leads.filter(lead => lead.entity_result).length === 0}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Extract Entity
+                {leads.filter(lead => lead.entity_result).length > 0 && (
+                  <Badge className="ml-2 bg-white text-purple-600 text-xs">
+                    {leads.filter(lead => lead.entity_result).length}
+                  </Badge>
+                )}
+              </Button>
+              <p className="text-xs text-gray-500 text-right">
+                Download CSV with lead names, phone numbers, and entity results
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
