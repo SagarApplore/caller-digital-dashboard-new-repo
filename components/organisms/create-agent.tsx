@@ -946,6 +946,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
   }, [mode, initialData]);
 
+  // Debug extraPrompts changes
+  useEffect(() => {
+    console.log("extraPrompts state changed:", extraPrompts);
+  }, [extraPrompts]);
+
   // Real-time validation feedback
   useEffect(() => {
     const validation = validateCurrentStep();

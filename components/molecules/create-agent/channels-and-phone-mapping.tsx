@@ -145,13 +145,20 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     };
 
     const handleSummaryPrompt = (value: string) => {
+      console.log("handleSummaryPrompt called with:", value);
+      console.log("Current extraPrompts:", extraPrompts);
       updateExtraPrompts({
+        ...extraPrompts,
+        summaryPrompt: value,
+      });
+      console.log("Updated extraPrompts should be:", {
         ...extraPrompts,
         summaryPrompt: value,
       });
     };
 
     const handleSuccessEvaluationPrompt = (value: string) => {
+      console.log("handleSuccessEvaluationPrompt called with:", value);
       updateExtraPrompts({
         ...extraPrompts,
         successEvaluationPrompt: value,
@@ -159,6 +166,7 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     };
 
     const handleFailureEvaluationPrompt = (value: string) => {
+      console.log("handleFailureEvaluationPrompt called with:", value);
       updateExtraPrompts({
         ...extraPrompts,
         failureEvaluationPrompt: value,
@@ -284,36 +292,51 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
               <Label htmlFor="summary-prompt" className="text-sm font-medium">
                 Summary Prompt
               </Label>
+              <div className="text-xs text-gray-500 mb-1">
+                Current value: "{extraPrompts.summaryPrompt}"
+              </div>
               <Textarea
                 id="summary-prompt"
-                className="h-32"
+                className="h-32 border-2 border-blue-200 focus:border-blue-500"
                 placeholder="Enter summary prompt (optional)"
                 value={extraPrompts.summaryPrompt}
                 onChange={(e) => handleSummaryPrompt(e.target.value)}
+                disabled={false}
+                readOnly={false}
               />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="success-evaluation-prompt" className="text-sm font-medium">
                 Success Evaluation Prompt
               </Label>
+              <div className="text-xs text-gray-500 mb-1">
+                Current value: "{extraPrompts.successEvaluationPrompt}"
+              </div>
               <Textarea
                 id="success-evaluation-prompt"
-                className="h-32"
+                className="h-32 border-2 border-blue-200 focus:border-blue-500"
                 placeholder="Enter Success Evaluation Prompt (optional)"
                 value={extraPrompts.successEvaluationPrompt}
                 onChange={(e) => handleSuccessEvaluationPrompt(e.target.value)}
+                disabled={false}
+                readOnly={false}
               />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="failure-evaluation-prompt" className="text-sm font-medium">
                 Failure Evaluation Prompt
               </Label>
+              <div className="text-xs text-gray-500 mb-1">
+                Current value: "{extraPrompts.failureEvaluationPrompt}"
+              </div>
               <Textarea
                 id="failure-evaluation-prompt"
-                className="h-32"
+                className="h-32 border-2 border-blue-200 focus:border-blue-500"
                 placeholder="Failure Evaluation Prompt (optional)"
                 value={extraPrompts.failureEvaluationPrompt}
                 onChange={(e) => handleFailureEvaluationPrompt(e.target.value)}
+                disabled={false}
+                readOnly={false}
               />
             </div>
           </div>
