@@ -47,7 +47,7 @@ export const CreditDisplay: React.FC = () => {
     console.log('👤 User ID:', user.id);
 
     // Set up Socket.IO connection for real-time updates
-    const socketInstance = io('http://localhost:8000', {
+    const socketInstance = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:8000', {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true
