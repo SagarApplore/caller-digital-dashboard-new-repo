@@ -37,6 +37,8 @@ interface FormDataType {
   notes: string;
   active: boolean;
   DIY: boolean;
+  costPerMin: number;
+  totalCredits: number;
 }
 
 export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCancel }) => {
@@ -70,12 +72,14 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     password: "",
     notes: "",
     active: true,
-    DIY: false
+    DIY: false,
+    costPerMin: 0,
+    totalCredits: 0
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (field: keyof FormDataType, value: string | boolean) => {
+  const handleInputChange = (field: keyof FormDataType, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
@@ -112,6 +116,14 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
 
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
+    }
+
+    if (formData.costPerMin < 0) {
+      newErrors.costPerMin = "Cost per minute must be a positive number";
+    }
+
+    if (formData.totalCredits < 0) {
+      newErrors.totalCredits = "Total credits must be a positive number";
     }
 
     setErrors(newErrors);
@@ -159,7 +171,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
         password: "",
         notes: "",
         active: true,
-        DIY: false
+        DIY: false,
+        costPerMin: 0,
+        totalCredits: 0
       });
       
       setErrors({});
@@ -280,6 +294,53 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-purple-600" />
+              Credit Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="costPerMin">Cost per Minute *</Label>
+                <Input
+                  id="costPerMin"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.costPerMin}
+                  onChange={(e) => handleInputChange("costPerMin", parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className={errors.costPerMin ? "border-red-500" : ""}
+                />
+                {errors.costPerMin && (
+                  <p className="text-red-500 text-sm mt-1">{errors.costPerMin}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="totalCredits">Total Credits *</Label>
+                <Input
+                  id="totalCredits"
+                  type="number"
+                  min="0"
+                  value={formData.totalCredits}
+                  onChange={(e) => handleInputChange("totalCredits", parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                  className={errors.totalCredits ? "border-red-500" : ""}
+                />
+                {errors.totalCredits && (
+                  <p className="text-red-500 text-sm mt-1">{errors.totalCredits}</p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Commented out Subscription Plan section - not needed for new requirement */}
+        {/*
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-purple-600" />
               Plan & Billing
             </CardTitle>
           </CardHeader>
@@ -311,6 +372,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
           </CardContent>
         </Card>
+        */}
       </div>
 
       {/* Primary Contact Information */}

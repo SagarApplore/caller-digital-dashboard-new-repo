@@ -282,7 +282,8 @@ class PhoneNumbersService {
   }
 
   // Call Python API after successful payment to register the number
-  async registerNumberWithPythonAPI(phoneNumber: string, paymentDetails: any, api_id: string, numberType: string = 'inbound'): Promise<any> {
+  async registerNumberWithPythonAPI(phoneNumber: string, paymentDetails: any, api_id: string, numberType: string = 'inbound',userName:string): Promise<any> {
+    console.log("userName",userName)
     try {
       // First call Python API to assign the number
       const pythonResponse = await backendPythonApiClient.post('/assign-number', {
@@ -291,13 +292,16 @@ class PhoneNumbersService {
         payment_id: paymentDetails.razorpay_payment_id,
         order_id: paymentDetails.razorpay_order_id,
         payment_status: 'success',
-        purchase_date: new Date().toISOString()
+        purchase_date: new Date().toISOString(),
+        call_type:numberType,
+        client_name:userName,
       });
 
       console.log('Python API response:', pythonResponse.data);
 
       // Extract data from Python response
       const { buy_response } = pythonResponse.data;
+      console.log("buy_response",buy_response)
       
       if (buy_response && buy_response.numbers && buy_response.numbers.length > 0) {
         const numberData = buy_response.numbers[0];
@@ -308,7 +312,9 @@ class PhoneNumbersService {
           phone_number: `+${numberData.number}`,
           api_id: buy_response.api_id,
           status: numberData.status === 'Success' ? 'active' : 'inactive',
-          numberType: numberType // Use the passed numberType parameter
+          numberType: numberType, // Use the passed numberType parameter,
+          plivoTrunkId: pythonResponse.data.trunk_info ? pythonResponse.data.trunk_info.trunk_id : null,
+          termination_domain:  pythonResponse.data.trunk_info? pythonResponse.data.trunk_info.termination_domain : null
         });
 
         console.log('Node.js API response:', nodeResponse.data);
