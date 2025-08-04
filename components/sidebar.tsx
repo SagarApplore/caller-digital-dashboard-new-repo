@@ -57,7 +57,7 @@ export function Sidebar() {
           </button>
           
           {/* Hover Tooltip */}
-          <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+          <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all duration-200 delay-100 z-50">
             <CreditDisplay />
           </div>
         </div>

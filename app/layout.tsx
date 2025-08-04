@@ -19,6 +19,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      </head>
       <body>
         <ThemeProvider
           attribute="class"
