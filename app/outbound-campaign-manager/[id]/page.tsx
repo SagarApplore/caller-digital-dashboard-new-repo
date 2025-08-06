@@ -26,6 +26,7 @@ interface CampaignLead {
   callLogId: string | null;
   createdAt: string;
   entity_result?: any;
+  callDuration?: number; // Duration in seconds from call log
 }
 
 interface CampaignDetails {
@@ -83,9 +84,9 @@ export default function CampaignDetailsPage() {
     }
   };
 
-  const handleViewCallLog = (callLogId: string,flag = "truncate") => {
+  const handleViewCallLog = (callLogId: string, flag = "truncate") => {
     if (callLogId) {
-      router.push(`/call-logs/${callLogId}?flag=${flag}`);
+      router.push(`/call-logs/${callLogId}?flag=${flag}&source=campaign&campaignId=${campaignId}`);
     }
   };
 
@@ -148,13 +149,14 @@ export default function CampaignDetailsPage() {
           const phoneNumber = `"${lead.leadNumber}"`;
           const interested = `"${lead.interest === true ? 'Yes' : lead.interest === false ? 'No' : '-'}"`;
           const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
+           const callDuration = `"${((lead?.callLogId?.call_duration)/60).toFixed(2) }"`;
           
           // Properly escape the entity result JSON for CSV
           const entityResultJson = JSON.stringify(lead.entity_result);
           const escapedEntityResult = entityResultJson.replace(/"/g, '""'); // Escape quotes
           const entityResult = `"${escapedEntityResult}"`;
           
-          return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult}`;
+          return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult},${callDuration}`;
         })
       ];
 
@@ -195,11 +197,11 @@ export default function CampaignDetailsPage() {
         <div className="flex items-center space-x-4">
           <Button
             variant="outline"
-            onClick={() => router.back()}
+            onClick={() => router.push("/outbound-campaign-manager")}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>Back to Campaigns</span>
           </Button>
           {/* <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -293,6 +295,7 @@ export default function CampaignDetailsPage() {
                   <TableHead className="font-medium text-gray-700">Phone Number</TableHead>
                   <TableHead className="font-medium text-gray-700">Interested</TableHead>
                   <TableHead className="font-medium text-gray-700">Call Status</TableHead>
+                  <TableHead className="font-medium text-gray-700">Call Duration (mins)</TableHead>
                   <TableHead className="font-medium text-gray-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -312,12 +315,15 @@ export default function CampaignDetailsPage() {
                       <TableCell>
                         {getStatusBadge(lead.status)}
                       </TableCell>
+                      <TableCell className="text-gray-700">
+                        {((lead?.callLogId?.call_duration)/60).toFixed(2)}
+                      </TableCell>
                       <TableCell>
                         {lead.callLogId ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleViewCallLog(lead.callLogId!)}
+                            onClick={() => handleViewCallLog(lead.callLogId._id!)}
                             className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                           >
                             <ArrowRight className="w-4 h-4" />
@@ -331,7 +337,7 @@ export default function CampaignDetailsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       No leads found for this campaign
                     </TableCell>
                   </TableRow>
