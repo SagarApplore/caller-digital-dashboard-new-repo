@@ -2,6 +2,7 @@
 
 import {
   Copy,
+  Download,
   Frown,
   Loader2,
   Pause,
@@ -308,6 +309,42 @@ const ViewCallLog = ({ id }: { id: string }) => {
     return `${mins}:${secs}`;
   };
 
+  const handleDownloadRecording = async () => {
+    if (!apiData?.recording_uri) {
+      toast.warning("No recording available for download");
+      return;
+    }
+
+    try {
+      // Fetch the audio file
+      const response = await axios.get(apiData.recording_uri, {
+        responseType: 'blob'
+      });
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'audio/wav' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with timestamp
+      const timestamp = new Date(apiData.createdAt).toISOString().split('T')[0];
+      const customerName = apiData?.clientId?.name || 'customer';
+      const agentName = apiData?.agentId?.agentName || 'agent';
+      link.download = `call_recording_${customerName}_${agentName}_${timestamp}.wav`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success("Recording downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading recording:", error);
+      toast.error("Failed to download recording. Please try again.");
+    }
+  };
+
   const handleExportEntityResults = async () => {
     if (!apiData?.entity_result) {
       toast.warning("No entity result data available for this call");
@@ -580,7 +617,17 @@ const ViewCallLog = ({ id }: { id: string }) => {
           <div className="rounded-lg">
             <div className="p-6 space-y-4 bg-gradient-to-r from-cyan-100 to-purple-100">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-bold">Audio Recording</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-lg font-bold">Audio Recording</span>
+                  <Button
+                    onClick={handleDownloadRecording}
+                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-1"
+                    disabled={!apiData?.recording_uri}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Recording
+                  </Button>
+                </div>
                 <span className="text-sm text-gray-500">
                   {utils.string.formatDateTime(apiData?.createdAt)}
                 </span>
