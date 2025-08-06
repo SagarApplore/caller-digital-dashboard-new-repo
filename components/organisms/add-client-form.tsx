@@ -126,6 +126,15 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       newErrors.totalCredits = "Total credits must be a positive number";
     }
 
+    if (!formData.timeZone ) {
+      newErrors.timeZone = "Please enter timeZone";
+    }
+
+       if (!formData.companySize ) {
+      newErrors.companySize = "Please enter companySize";
+    }
+    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -247,9 +256,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="companySize">Company Size</Label>
+              <Label htmlFor="companySize">Company Size *</Label>
               <Select value={formData.companySize} onValueChange={(value) => handleInputChange("companySize", value)}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.companySize ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select Size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,6 +269,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   <SelectItem value="1000+">1000+</SelectItem>
                 </SelectContent>
               </Select>
+                {errors.companySize && (
+                <p className="text-red-500 text-sm mt-1">{errors.companySize}</p>
+              )}
             </div>
 
             <div>
@@ -450,9 +462,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="timeZone">Time Zone</Label>
+              <Label htmlFor="timeZone">Time Zone *</Label>
               <Select value={formData.timeZone} onValueChange={(value) => handleInputChange("timeZone", value)}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.timeZone ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select Time Zone" />
                 </SelectTrigger>
                 <SelectContent>
@@ -467,7 +479,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
                   <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
                 </SelectContent>
+                  {errors.timeZone && (
+                <p className="text-red-500 text-sm mt-1">{errors.timeZone}</p>
+              )}
               </Select>
+              
             </div>
 
             <div>
