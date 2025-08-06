@@ -387,7 +387,7 @@ export function CampaignsPage() {
                         </TableCell>
                         <TableCell className="py-4 px-4">
                           <span className="text-sm text-gray-500">
-                            {utils.string.formatDate(campaign.createdAt)}
+                            {utils.string.formatDateTime(campaign.createdAt)}
                           </span>
                         </TableCell>
                       </TableRow>
