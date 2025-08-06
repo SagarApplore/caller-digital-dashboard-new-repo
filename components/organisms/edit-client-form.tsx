@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Building2, Crown, User, Upload } from "lucide-react";
 import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
 
 interface EditClientFormProps {
   clientId: string;
@@ -74,9 +75,15 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     const fetchClient = async () => {
       try {
         setFetching(true);
-        const response = await apiRequest(`/our-clients/${clientId}`, "GET");
+        console.log("Fetching client with ID:", clientId);
+        
+        const response = await apiRequest(`/our-clients/user/${clientId}`, "GET");
+        console.log("Client fetch response:", response);
+        
         if (response.data?.success) {
           const client = response.data.data;
+          console.log("Client data:", client);
+          
           setFormData({
             companyName: client.companyName || "",
             websiteUrl: client.websiteUrl || "",
@@ -96,10 +103,13 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
             costPerMin: client.costPerMin || 0,
             totalCredits: client.totalCredits || 0
           });
+        } else {
+          console.error("Client fetch failed:", response.data);
+          setErrors({ fetch: "Failed to fetch client data" });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching client:", error);
-        setErrors({ fetch: "Failed to fetch client data" });
+        setErrors({ fetch: error.message || "Failed to fetch client data" });
       } finally {
         setFetching(false);
       }
@@ -176,6 +186,9 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     setLoading(true);
 
     try {
+      console.log("Submitting client update for ID:", clientId);
+      console.log("Form data:", formData);
+      
       // Create FormData for file upload
       const submitData = new FormData();
       
@@ -188,13 +201,15 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
         }
       });
 
-      await apiRequest(`/our-clients/${clientId}`, "PUT", submitData);
+      console.log("Submitting to endpoint:", `/our-clients/user/${clientId}`);
+      const response = await apiRequest(`/our-clients/user/${clientId}`, "PUT", submitData);
+      console.log("Update response:", response);
       
       setErrors({});
       onSuccess?.();
     } catch (error: any) {
       console.error("Error updating client:", error);
-      setErrors({ submit: error?.response?.data?.message || "Failed to update client" });
+      setErrors({ submit: error?.message || "Failed to update client" });
     } finally {
       setLoading(false);
     }
@@ -523,7 +538,13 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
         </CardContent>
       </Card>
 
-      {/* Error Message */}
+      {/* Error Messages */}
+      {errors.fetch && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600 text-sm">{errors.fetch}</p>
+        </div>
+      )}
+      
       {errors.submit && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-red-600 text-sm">{errors.submit}</p>

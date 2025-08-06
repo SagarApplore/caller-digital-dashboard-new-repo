@@ -14,6 +14,15 @@ const endpoints = {
     get: "/agents",
     update: "/agents",
   },
+  clients: {
+    list: "/users/getClients",
+    create: "/our-clients/create",
+    get: "/our-clients/:id",
+    getByUserId: "/our-clients/user/:userId",
+    update: "/our-clients/:id",
+    updateByUserId: "/our-clients/user/:userId",
+    delete: "/users/deactivate/:id",
+  },
   knowledgeBase: {
     getAll: "/knowledgeBase",
     create: "/knowledgeBase",
