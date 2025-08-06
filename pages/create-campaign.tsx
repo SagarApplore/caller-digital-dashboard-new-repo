@@ -158,12 +158,18 @@ export function CreateCampaignPage() {
         return;
       }
 
-      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
+      // Normalize headers: trim whitespace, remove quotes, and convert to lowercase
+      const headers = lines[0]
+        .split(',')
+        .map(header => header.trim().replace(/['"]/g, ''));
+      
+      console.log("Found headers:", headers);
+      
       const requiredColumns = ['phone_number', 'name'];
       const missingColumns = requiredColumns.filter(col => !headers.includes(col));
 
       if (missingColumns.length > 0) {
-        setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has columns: phone_number, name`);
+        setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has exactly these columns: phone_number, name`);
         return;
       }
 
@@ -530,7 +536,7 @@ export function CreateCampaignPage() {
                         Required columns: <strong>phone_number</strong>, <strong>name</strong> (Optional: email, company, custom fields)
                       </p>
                       <p className="text-xs text-red-600 mt-1">
-                        ⚠️ Column names must be exactly: "phone_number" and "name" (with underscores)
+                        ⚠️ Column names must be exactly: "phone_number" and "name" 
                       </p>
                       <div className="mt-3">
                         <Button
