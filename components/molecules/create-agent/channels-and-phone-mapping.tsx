@@ -146,31 +146,26 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
 
     const handleSummaryPrompt = (value: string) => {
       console.log("handleSummaryPrompt called with:", value);
-      console.log("Current extraPrompts:", extraPrompts);
-      updateExtraPrompts({
-        ...extraPrompts,
+      updateExtraPrompts((prev) => ({
+        ...prev,
         summaryPrompt: value,
-      });
-      console.log("Updated extraPrompts should be:", {
-        ...extraPrompts,
-        summaryPrompt: value,
-      });
+      }));
     };
 
     const handleSuccessEvaluationPrompt = (value: string) => {
       console.log("handleSuccessEvaluationPrompt called with:", value);
-      updateExtraPrompts({
-        ...extraPrompts,
+      updateExtraPrompts((prev) => ({
+        ...prev,
         successEvaluationPrompt: value,
-      });
+      }));
     };
 
     const handleFailureEvaluationPrompt = (value: string) => {
       console.log("handleFailureEvaluationPrompt called with:", value);
-      updateExtraPrompts({
-        ...extraPrompts,
+      updateExtraPrompts((prev) => ({
+        ...prev,
         failureEvaluationPrompt: value,
-      });
+      }));
     };
 
     useEffect(() => {
