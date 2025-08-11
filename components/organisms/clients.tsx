@@ -170,6 +170,19 @@ export function ClientsPage() {
   // Filter state
   const [statusFilter, setStatusFilter] = useState<string>("all"); // "all", "active", "inactive"
 
+  // Ensure clients is always an array
+  const safeClients = Array.isArray(clients) ? clients : [];
+  
+  // Safe setClients function
+  const setSafeClients = (newClients: any) => {
+    if (Array.isArray(newClients)) {
+      setClients(newClients);
+    } else {
+      console.warn("Attempted to set non-array clients:", newClients);
+      setClients([]);
+    }
+  };
+
   // Calculate pagination info
   const pagination = {
     currentPage,
@@ -210,7 +223,7 @@ export function ClientsPage() {
       
       // Handle the new response structure with pagination
       if (response.data?.success && response.data?.data) {
-        const clientsData = response.data.data;
+        const clientsData = Array.isArray(response.data.data) ? response.data.data : [];
         const paginationData = response.data.pagination;
         
         console.log(`=== PAGINATION INFO ===`);
@@ -227,9 +240,9 @@ export function ClientsPage() {
           console.warn(`Duplicate IDs:`, duplicates);
         }
         
-        setClients(clientsData);
-        setTotalCount(paginationData.totalCount);
-        setTotalPages(paginationData.totalPages);
+        setSafeClients(clientsData);
+        setTotalCount(paginationData.totalCount || 0);
+        setTotalPages(paginationData.totalPages || 1);
         
         // Debug: Log client data structure
         console.log("=== CLIENT DATA ===");
@@ -261,11 +274,14 @@ export function ClientsPage() {
         const endIndex = startIndex + limit;
         const paginatedClients = clientsData.slice(startIndex, endIndex);
         
-        setClients(paginatedClients);
+        setSafeClients(paginatedClients);
         setTotalPages(Math.ceil(clientsData.length / limit));
       }
     } catch (error) {
       console.error("Error fetching clients:", error);
+      setSafeClients([]); // Ensure we set an empty array on error
+      setTotalCount(0);
+      setTotalPages(1);
       toast({
         title: "Error",
         description: "Failed to fetch clients",
@@ -445,7 +461,7 @@ export function ClientsPage() {
                   </Button>
                 </>
               )}
-              <span>Showing {clients.length} of {totalCount} clients</span>
+              <span>Showing {safeClients.length} of {totalCount} clients</span>
             </div>
           </div>
         </CardContent>
@@ -476,14 +492,14 @@ export function ClientsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : clients.length === 0 ? (
+              ) : safeClients.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     No clients found
                   </TableCell>
                 </TableRow>
               ) : (
-                clients.map((client) => (
+                safeClients.map((client) => (
                   <TableRow
                     key={client._id}
                     className="hover:bg-gray-50 border-gray-50"
@@ -492,19 +508,20 @@ export function ClientsPage() {
                       <div className="flex items-center space-x-3">
                         <Avatar className="w-8 h-8">
                           <AvatarFallback className="bg-purple-100 text-purple-600 text-sm">
-                            {client.name
+                            {(client.name || "")
                               .split(" ")
+                              .filter((n: string) => n && n.length > 0)
                               .map((n: string) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {client.name}
+                            {client.name || "Unknown"}
                           </div>
                           <div className="text-sm text-gray-500 flex items-center space-x-1">
                             <Mail className="w-3 h-3" />
-                            <span>{client.email}</span>
+                            <span>{client.email || "No email"}</span>
                           </div>
                         </div>
                       </div>
@@ -512,7 +529,7 @@ export function ClientsPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium text-gray-900">
-                          {client.assistant?.length || 0}
+                          {Array.isArray(client.assistant) ? client.assistant.length : 0}
                         </div>
                       </div>
                     </TableCell>
