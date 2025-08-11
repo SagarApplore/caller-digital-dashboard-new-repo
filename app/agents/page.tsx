@@ -4,8 +4,9 @@ import React, { useEffect, useState } from "react";
 import Agents, { AssistantCard } from "@/components/organisms/agents";
 import { ProtectedRoute } from "@/components/protected-route";
 import Dashboard from "@/components/templates/dashboard";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/atoms/input";
 import { useRouter } from "next/navigation";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
@@ -13,66 +14,40 @@ import endpoints from "@/lib/endpoints";
 export default function AgentsPage() {
   const [loading, setLoading] = useState(true);
   const [assistants, setAssistants] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
   const router = useRouter();
+
+  const fetchAssistants = async (search = "") => {
+    try {
+      setSearchLoading(true);
+      const params = search ? `?search=${encodeURIComponent(search)}` : "";
+      const response = await apiRequest(`${endpoints.assistants.list}${params}`, "GET");
+      setAssistants(response?.data?.data || []);
+    } catch (error) {
+      console.error("Error fetching agents:", error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAssistants = async () => {
-      const response = await apiRequest(endpoints.assistants.list, "GET");
-      setAssistants(response?.data?.data);
-    };
     fetchAssistants();
-    // new Promise((resolve) => setTimeout(resolve, 1000)).then(() => {
-    //   setAssistants([
-    //     {
-    //       id: "sophia",
-    //       name: "Sophia AI",
-    //       role: "Customer Support",
-    //       avatar: "/placeholder.svg?height=48&width=48",
-    //       status: "Live",
-    //       phoneNumbers: ["+1-555-0123", "+1-555-0124"],
-    //       languages: ["EN", "ES", "FR"],
-    //       contactMethods: ["phone", "chat", "email"],
-    //       stats: {
-    //         conversations: 2847,
-    //         csatScore: 98,
-    //         resolutionRate: 94,
-    //         lastActive: "Now",
-    //       },
-    //       showManage: true,
-    //     },
-    //     {
-    //       id: "max",
-    //       name: "Max AI",
-    //       role: "Sales Assistant",
-    //       avatar: "/placeholder.svg?height=48&width=48",
-    //       status: "Live",
-    //       languages: ["EN", "DE"],
-    //       contactMethods: ["phone", "whatsapp"],
-    //       stats: {
-    //         conversations: 1523,
-    //         csatScore: 96,
-    //         resolutionRate: 89,
-    //         lastActive: "2m ago",
-    //       },
-    //     },
-    //     {
-    //       id: "emma",
-    //       name: "Emma AI",
-    //       role: "Technical Support",
-    //       avatar: "/placeholder.svg?height=48&width=48",
-    //       status: "Test",
-    //       languages: ["EN"],
-    //       contactMethods: ["chat", "email"],
-    //       stats: {
-    //         conversations: 342,
-    //         csatScore: 92,
-    //         resolutionRate: 90,
-    //         lastActive: "Now",
-    //       },
-    //     },
-    //   ]);
-    // });
     setLoading(false);
   }, []);
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.trim() !== "") {
+        fetchAssistants(searchQuery.trim());
+      } else {
+        fetchAssistants();
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   return (
     <ProtectedRoute>
@@ -80,7 +55,9 @@ export default function AgentsPage() {
         header={{
           title: "Agents",
           subtitle: {
-            text: `${assistants.length} Active`,
+            text: searchQuery 
+              ? `${assistants.length} results for "${searchQuery}"`
+              : `${assistants.length} Active`,
             className:
               "text-purple-700 font-semibold text-xs bg-purple-50 px-2 py-1 rounded-full",
           },
@@ -103,7 +80,36 @@ export default function AgentsPage() {
             <Loader2 className="w-4 h-4 animate-spin" />
           </div>
         ) : (
-          <Agents assistants={assistants} />
+          <>
+            {/* Search Bar */}
+            <div className="mb-6 ml-3 mt-5">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search agents by name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full max-w-md"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
+                {searchLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 animate-spin" />
+                )}
+              </div>
+            </div>
+            
+            <Agents assistants={assistants} />
+          </>
         )}
       </Dashboard>
     </ProtectedRoute>

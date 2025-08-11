@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
+import { toast } from "react-toastify";
 
 interface AuthContextType {
   user: User | null;
@@ -141,8 +142,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setToken(token);
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      console.error("Login error details:", {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      
+      // The API utility throws error.response?.data, so error is already the response data
+      const errorMessage = error?.message || "Invalid credentials";
+      console.log("Extracted error message:", errorMessage);
+      
+      // Show toast error
+      toast.error(errorMessage);
+      
       return false;
     } finally {
       setIsLoading(false);
