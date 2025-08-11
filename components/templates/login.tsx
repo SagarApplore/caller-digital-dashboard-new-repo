@@ -34,6 +34,9 @@ export default function Login() {
     formState: { errors },
     watch,
     setValue,
+    reset,
+    getValues,
+    trigger,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -45,19 +48,39 @@ export default function Login() {
 
   const rememberMe = watch("rememberMe");
 
-  const onSubmit = async (data: LoginFormData) => {
+  // Debug form values
+  console.log('🔍 Current form values:', getValues());
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Get current form values
+    const formData = getValues();
+    console.log('🔐 Form submitted with data:', formData);
+    
+    // Validate form manually
+    const isValid = await trigger();
+    if (!isValid) {
+      console.log('❌ Form validation failed');
+      return;
+    }
+    
     setIsLoading(true);
     setError("");
 
     try {
-      const success = await login(data.email, data.password, data.rememberMe);
+      const success = await login(formData.email, formData.password, formData.rememberMe);
       if (success) {
         router.push("/");
       } else {
+        console.log('❌ Login failed, preserving form values');
         setError("Invalid email or password");
+        // Form values should be preserved since we're not using handleSubmit
       }
     } catch (err) {
+      console.log('💥 Login error, preserving form values');
       setError("An error occurred during login");
+      // Form values should be preserved since we're not using handleSubmit
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +111,7 @@ export default function Login() {
               {/* Form */}
               <form
                 className="gap-4 flex flex-col"
-                onSubmit={handleSubmit(onSubmit)}
+                onSubmit={handleFormSubmit}
               >
                 {/* Email Field */}
                 <div className="flex flex-col gap-1">
