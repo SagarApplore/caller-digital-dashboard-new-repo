@@ -2,6 +2,7 @@ const endpoints = {
   auth: {
     login: "/auth/login",
     me: "/auth/me",
+    changePassword: "/auth/change-password",
   },
   outboundCampaign: {
     getAll: "/outbound-campaigns",
