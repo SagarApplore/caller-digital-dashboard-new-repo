@@ -100,7 +100,7 @@ export default function PaymentRequiredComponent() {
                 setShowPurchaseModal(false);
                 setPurchaseAmount('');
                 // Redirect back to dashboard after successful purchase
-                router.push('/dashboard');
+                router.push('/');
               } else {
                 toast.error('Payment verification failed');
               }
