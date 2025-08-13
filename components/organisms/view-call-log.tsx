@@ -1,27 +1,47 @@
 "use client";
 
-import {
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent } from "@/components/organisms/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Phone, 
+  MessageSquare, 
+  Mail, 
+  Settings, 
+  ArrowUpDown, 
+  BarChart3, 
+  ChevronDown, 
+  Globe, 
+  Languages, 
+  Play, 
+  Trash2, 
+  MoreVertical, 
   Copy,
-  Download,
-  Frown,
-  Loader2,
-  Pause,
-  Play,
-  Search,
-  Smile,
   Star,
+  Smile,
+  Frown,
+  Download,
+  Loader2,
+  Brain,
+  Mic,
+  Ear,
+  Pause,
   Volume2,
   VolumeX,
-  Table,
+  Table
 } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
-import { Button } from "../ui/button";
 import WaveSurfer from "wavesurfer.js";
 import utils from "@/utils/index.util";
 import apiRequest from "@/utils/api";
 import axios from "axios";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "react-toastify";
 
 interface SenderDetails {
@@ -529,6 +549,55 @@ const ViewCallLog = ({ id }: { id: string }) => {
                   </span>
                 </div>
               </div>
+              
+              {/* LLM Provider */}
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500 flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  LLM Provider
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">
+                    {apiData?.agentId?.voice?.llmProvider?.providerName || "Not available"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {apiData?.agentId?.voice?.llmProvider?.model || "Model not specified"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Voice Provider */}
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500 flex items-center gap-2">
+                  <Mic className="w-4 h-4" />
+                  Voice Provider
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">
+                    {apiData?.agentId?.voice?.voiceProvider?.providerName || "Not available"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {apiData?.agentId?.voice?.voiceProvider?.model || "Model not specified"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Transcriber Provider */}
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-500 flex items-center gap-2">
+                  <Ear className="w-4 h-4" />
+                  Transcriber Provider
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold">
+                    {apiData?.agentId?.voice?.transcriberProvider?.providerName || "Not available"}
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {apiData?.agentId?.voice?.transcriberProvider?.model || "Model not specified"}
+                  </span>
+                </div>
+              </div>
+
               <div className="flex flex-col">
                 <span className="text-sm  text-gray-500">Model Version</span>
                 <span className="text-sm font-bold">v2.4.1</span>
