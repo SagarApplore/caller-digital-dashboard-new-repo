@@ -14,7 +14,7 @@ export function Sidebar() {
   const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Update routes with active state based on current path
-  const activeRoutes = updateActiveRoute(pathname ?? "/");
+  const activeRoutes = updateActiveRoute(pathname || "/");
 
   // Filter routes by user role
   const filteredRoutes = activeRoutes.filter(route =>
@@ -55,13 +55,18 @@ export function Sidebar() {
         <div className="flex-1"></div>
         <div className="flex flex-col space-y-2">
           {/* Credit Icon with Hover Tooltip */}
-          <div className="relative group">
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors">
+          <div className="relative">
+            <button 
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors peer"
+            >
               <Coins className="w-5 h-5" />
             </button>
             
             {/* Hover Tooltip */}
-            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all duration-200 delay-100 z-50">
+            <div 
+              className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-200 z-50"
+              style={{ marginBottom: '8px' }}
+            >
               <CreditDisplay />
             </div>
           </div>
