@@ -29,6 +29,7 @@ interface FormDataType {
   billing: string;
   contactFullName: string;
   contactEmail: string;
+  countryCode: string;
   contactPhone: string;
   contactJobTitle: string;
   timeZone: string;
@@ -65,6 +66,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     billing: "",
     contactFullName: "",
     contactEmail: "",
+    countryCode: "+1",
     contactPhone: "",
     contactJobTitle: "",
     timeZone: "",
@@ -114,6 +116,17 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       newErrors.contactEmail = "Please enter a valid email address";
     }
 
+    // Phone number validation
+    if (formData.contactPhone.trim()) {
+      // Remove all non-digit characters for validation
+      const phoneDigits = formData.contactPhone.replace(/\D/g, '');
+      if (phoneDigits.length < 10) {
+        newErrors.contactPhone = "Phone number must have at least 10 digits";
+      } else if (phoneDigits.length > 15) {
+        newErrors.contactPhone = "Phone number cannot exceed 15 digits";
+      }
+    }
+
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     }
@@ -156,7 +169,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       Object.keys(formData).forEach(key => {
         if (key === 'companyLogo' && formData[key as keyof FormDataType]) {
           submitData.append(key, formData[key as keyof FormDataType] as File);
-        } else if (key !== 'companyLogo') {
+        } else if (key === 'contactPhone') {
+          // Combine country code and phone number
+          const fullPhoneNumber = formData.countryCode + formData.contactPhone;
+          submitData.append(key, fullPhoneNumber);
+        } else if (key !== 'companyLogo' && key !== 'countryCode') {
           submitData.append(key, String(formData[key as keyof FormDataType]));
         }
       });
@@ -173,6 +190,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
         billing: "",
         contactFullName: "",
         contactEmail: "",
+        countryCode: "+1",
         contactPhone: "",
         contactJobTitle: "",
         timeZone: "",
@@ -443,12 +461,47 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
 
             <div>
               <Label htmlFor="contactPhone">Phone Number</Label>
-              <Input
-                id="contactPhone"
-                value={formData.contactPhone}
-                onChange={(e) => handleInputChange("contactPhone", e.target.value)}
-                placeholder="+1 (555) 000-0000"
-              />
+              <div className="flex gap-2">
+                <Select 
+                  value={formData.countryCode} 
+                  onValueChange={(value) => handleInputChange("countryCode", value)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="+1">+1 (US)</SelectItem>
+                    <SelectItem value="+44">+44 (UK)</SelectItem>
+                    <SelectItem value="+91">+91 (IN)</SelectItem>
+                    <SelectItem value="+61">+61 (AU)</SelectItem>
+                    <SelectItem value="+86">+86 (CN)</SelectItem>
+                    <SelectItem value="+81">+81 (JP)</SelectItem>
+                    <SelectItem value="+49">+49 (DE)</SelectItem>
+                    <SelectItem value="+33">+33 (FR)</SelectItem>
+                    <SelectItem value="+39">+39 (IT)</SelectItem>
+                    <SelectItem value="+34">+34 (ES)</SelectItem>
+                    <SelectItem value="+7">+7 (RU)</SelectItem>
+                    <SelectItem value="+55">+55 (BR)</SelectItem>
+                    <SelectItem value="+52">+52 (MX)</SelectItem>
+                    <SelectItem value="+27">+27 (ZA)</SelectItem>
+                    <SelectItem value="+971">+971 (AE)</SelectItem>
+                    <SelectItem value="+966">+966 (SA)</SelectItem>
+                    <SelectItem value="+65">+65 (SG)</SelectItem>
+                    <SelectItem value="+852">+852 (HK)</SelectItem>
+                    <SelectItem value="+82">+82 (KR)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="contactPhone"
+                  value={formData.contactPhone}
+                  onChange={(e) => handleInputChange("contactPhone", e.target.value)}
+                  placeholder="(555) 000-0000"
+                  className={errors.contactPhone ? "border-red-500" : ""}
+                />
+              </div>
+              {errors.contactPhone && (
+                <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
+              )}
             </div>
 
             <div>
