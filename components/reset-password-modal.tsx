@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import { Key, Eye, EyeOff, X, CheckCircle, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "react-toastify";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 
@@ -35,8 +35,6 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { toast } = useToast();
-
   const {
     register,
     handleSubmit,
@@ -62,10 +60,7 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
 
       if (response.data?.message) {
         setIsSuccess(true);
-        toast({
-          title: "Success",
-          description: "Password updated successfully",
-        });
+        toast.success("Password updated successfully");
         
         // Reset form and close modal after 2 seconds
         setTimeout(() => {
@@ -76,12 +71,8 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
       }
     } catch (error: any) {
       console.error("Password reset error:", error);
-      const errorMessage = error?.message || "Failed to update password";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to update password";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
