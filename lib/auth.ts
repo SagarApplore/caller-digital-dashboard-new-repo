@@ -5,6 +5,7 @@ export interface User {
   name?: string;
   role?: string;
   DIY?: boolean;
+  teamMemberOf?: string;
 }
 
 export interface AuthToken {

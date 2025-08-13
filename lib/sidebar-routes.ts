@@ -8,6 +8,7 @@ import {
   Hash,
   PhoneCall,
   CodeXml,
+  Users,
 } from "lucide-react";
 
 export interface SidebarRouteItem {
@@ -42,13 +43,14 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     isActive: false,
     roles: ["SUPER_ADMIN"], // Only show for SUPER_ADMIN
   },
-  // {
-  //   id: "team-members",
-  //   name: "Team Members",
-  //   path: "/team-members",
-  //   icon: Users,
-  //   isActive: false,
-  // },
+  {
+    id: "team-members",
+    name: "Team Members",
+    path: "/team-members",
+    icon: Users,
+    isActive: false,
+    roles: ["CLIENT_ADMIN"], // Only show for CLIENT_ADMIN
+  },
   {
     id: "agents",
     name: "Agents",

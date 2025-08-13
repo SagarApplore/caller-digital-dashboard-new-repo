@@ -74,6 +74,18 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 }) => {
   const { user } = useAuth();
   const router = useRouter();
+  
+  // Debug user object
+  useEffect(() => {
+    console.log("🔍 CreateAgent - User object:", {
+      user,
+      userRole: user?.role,
+      userTeamMemberOf: user?.teamMemberOf,
+      userID: user?.id,
+      userDIY: user?.DIY
+    });
+  }, [user]);
+  
   const [activeStep, setActiveStep] = useState(1);
   const [creating, setCreating] = useState(false);
   const [personaAndBehavior, setPersonaAndBehavior] =
@@ -98,12 +110,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       userRole: user?.role,
       userDIY: user?.DIY,
       isSuperAdmin: user?.role === 'SUPER_ADMIN',
-      isClientAdminWithDIY: user?.role === 'CLIENT_ADMIN' && user?.DIY === true
+      isClientAdminWithDIY: user?.role === 'CLIENT_ADMIN' && user?.DIY === true,
+      isTeamMember: user?.role === 'TEAM_MEMBER'
     });
     
     if (!user) return false;
     if (user.role === 'SUPER_ADMIN') return true;
     if (user.role === 'CLIENT_ADMIN' && user.DIY === true) return true;
+    if (user.role === 'TEAM_MEMBER') return true; // Team members should have DIY permissions
     return false;
   };
 
@@ -259,7 +273,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }>({
     phoneNumber: initialData?.agent_number || "",
     phoneNumberId: initialData?.phone_number_assignment || "",
-    numberType: initialData?.phone_number_type || "primary", // Initialize numberType
+    numberType: initialData?.phone_number_type || "", // Initialize numberType
   });
 
   // Debug logging for agent phone number initialization
@@ -1054,9 +1068,19 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
 
     setCreating(true);
+    
+    // Debug logging for team member client assignment
+    console.log("🔍 Team Member Debug:", {
+      user,
+      userRole: user?.role,
+      userTeamMemberOf: user?.teamMemberOf,
+      userID: user?.id,
+      clientValue: user?.id // Always user's own ID
+    });
+    
     const agentData: any = {
       agentName: personaAndBehavior.agentName,
-      client: user?.id,
+      client: user?.id, // Always send the user's own ID
       status: "active",
       channels: channels
         .filter((channel) => {
@@ -1074,7 +1098,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       call_type: agentPhoneNumber.numberType === 'inbound' ? 'inbound' : agentPhoneNumber.numberType === 'outbound' ? 'outbound' : undefined, // Set based on phone number type, undefined if no number selected
       agent_number: agentPhoneNumber.phoneNumber || "", // Phone number for the agent
       phone_number_assignment: agentPhoneNumber.phoneNumberId || null, // Phone number assignment ID
-      phone_number_type: agentPhoneNumber.numberType || "primary", // Phone number type
+      phone_number_type: agentPhoneNumber.numberType || "", // Phone number type
       summaryPrompt: extraPrompts.summaryPrompt,
       successEvaluationPrompt: extraPrompts.successEvaluationPrompt,
       failureEvaluationPrompt: extraPrompts.failureEvaluationPrompt,
@@ -1191,6 +1215,12 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       try {
         console.log("Create Agent - entity_data payload:", agentData.entity_data);
         console.log("Create Agent - full payload:", agentData);
+        console.log("🔍 Client field debug:", {
+          client: agentData.client,
+          userRole: user?.role,
+          userTeamMemberOf: user?.teamMemberOf,
+          userID: user?.id
+        });
         await apiRequest(endpoints.assistants.create, "POST", agentData);
       } catch (error) {
         console.error(error);
