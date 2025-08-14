@@ -12,7 +12,7 @@ import {
   TrendingDown,
   Play,
 } from "lucide-react";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "./card";
 import * as XLSX from 'xlsx';
 import {
@@ -23,7 +23,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Checkbox } from "../ui/checkbox";
 import { Progress } from "../ui/progress";
 import { Input } from "../atoms/input";
 import { Button } from "../ui/button";
@@ -40,6 +39,7 @@ import apiRequest from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip";
 import { toast } from "react-toastify";
+import { debounce } from "lodash";
 
 export interface Conversation {
   id: string;
@@ -88,9 +88,6 @@ export interface FilterState {
 }
 
 const CallLogs = () => {
-  const [selectedConversations, setSelectedConversations] = useState<string[]>(
-    []
-  );
   const [apiData, setApiData] = useState<any[]>([]);
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
@@ -158,7 +155,9 @@ const CallLogs = () => {
     startDate?: string,
     endDate?: string,
     page: number = currentPage,
-    limit: number = pageSize
+    limit: number = pageSize,
+    status?: string,
+    searchQuery?: string
   ) => {
     try {
       const params: any = {
@@ -174,6 +173,14 @@ const CallLogs = () => {
       if (endDate) {
         params.createdAtLe = endDate;
       }
+      if (status && status !== "all-status") {
+        params.hand_off = status === "escalated";
+      }
+      if (searchQuery && searchQuery.trim() !== "") {
+        params.search = searchQuery.trim();
+      }
+
+      console.log('🔍 Frontend API params:', params);
 
       const response = await apiRequest(
         "/vapi/call-logs/getData",
@@ -217,7 +224,7 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       await Promise.all([
-        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, currentPage, pageSize),
+        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, currentPage, pageSize, filters.status, filters.searchQuery),
         fetchAgents(),
       ]);
     } catch (err: any) {
@@ -233,7 +240,7 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
-      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, 1, pageSize);
+      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, 1, pageSize, filters.status, filters.searchQuery);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
@@ -252,7 +259,9 @@ const CallLogs = () => {
         dateInputs.startDate,
         dateInputs.endDate,
         1,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -279,7 +288,7 @@ const CallLogs = () => {
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when filter changes
     // Refetch data without date filter
-    fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize);
+    fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
   // Handle apply date filter from temp state
@@ -295,7 +304,9 @@ const CallLogs = () => {
         tempDateFilter.startDate,
         tempDateFilter.endDate,
         1,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -408,37 +419,14 @@ const CallLogs = () => {
       // Assistant filter is now handled server-side via API
       // No need for client-side filtering
 
-      // Status filter
-      if (
-        filters.status !== "all-status" &&
-        conversation.status !== filters.status
-      ) {
-        return false;
-      }
+      // Status filter is now handled server-side via API
+      // No need for client-side filtering
 
-      // Language filter
-      if (
-        filters.language !== "all-languages" &&
-        conversation.language !== filters.language
-      ) {
-        return false;
-      }
+      // Language filter is now handled server-side via API
+      // No need for client-side filtering
 
-      // Search query filter
-      if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        const searchableText = [
-          conversation.contact.name,
-          conversation.contact.identifier,
-          conversation.assistant.name,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        if (!searchableText.includes(query)) {
-          return false;
-        }
-      }
+      // Search query is now handled server-side via API
+      // No need for client-side filtering
 
       // Quick filters
       if (
@@ -523,7 +511,7 @@ const CallLogs = () => {
       // },
       {
         label: " Sentiment Score",
-        value:   sentimentMetrics.sentimentScore,
+        value:   sentimentMetrics?.sentimentScore,
         change: "N/A",
         trend: "up" as const,
       },
@@ -538,7 +526,30 @@ const CallLogs = () => {
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setSelectedConversations([]); // Clear selections when filters change
+  };
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (searchQuery: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        setCurrentPage(1); // Reset to first page when search changes
+        await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, filters.status, searchQuery);
+      } catch (err: any) {
+        console.error("Error fetching call logs with search:", err);
+        setError(err.message || "Failed to fetch call logs");
+      } finally {
+        setLoading(false);
+      }
+    }, 500), // 500ms delay
+    [filters.assistant, filters.startDate, filters.endDate, filters.status, pageSize]
+  );
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    updateFilter("searchQuery", value);
+    debouncedSearch(value);
   };
 
   // Function to fetch summary content from URL
@@ -714,7 +725,6 @@ const CallLogs = () => {
         [filterName]: !prev.quickFilters[filterName],
       },
     }));
-    setSelectedConversations([]);
   };
 
   const clearAllFilters = () => {
@@ -735,7 +745,7 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when clearing filters
-    fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize);
+    fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
   // Pagination functions
@@ -749,7 +759,9 @@ const CallLogs = () => {
         dateInputs.startDate,
         dateInputs.endDate,
         page,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error changing page:", err);
@@ -769,7 +781,9 @@ const CallLogs = () => {
         dateInputs.startDate,
         dateInputs.endDate,
         1,
-        newPageSize
+        newPageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error changing page size:", err);
@@ -779,17 +793,11 @@ const CallLogs = () => {
   };
 
   const toggleConversationSelection = (id: string) => {
-    setSelectedConversations((prev) =>
-      prev.includes(id) ? prev.filter((convId) => convId !== id) : [...prev, id]
-    );
+    // This function is no longer needed as there's no checkbox
   };
 
   const toggleAllConversations = () => {
-    setSelectedConversations((prev) =>
-      prev.length === filteredConversations.length
-        ? []
-        : filteredConversations.map((conv) => conv.id)
-    );
+    // This function is no longer needed as there's no checkbox
   };
 
   const getStatusBadge = (status: string) => {
@@ -1017,7 +1025,21 @@ const CallLogs = () => {
 
           <Select
             value={filters.status}
-            onValueChange={(value) => updateFilter("status", value)}
+            onValueChange={async (value) => {
+              try {
+                console.log('🔍 Status filter changed to:', value);
+                setLoading(true);
+                setError(null);
+                updateFilter("status", value);
+                // Trigger API call when status changes
+                await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, value, filters.searchQuery);
+              } catch (err: any) {
+                console.error("Error fetching call logs with status filter:", err);
+                setError(err.message || "Failed to fetch call logs");
+              } finally {
+                setLoading(false);
+              }
+            }}
           >
             <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder="All Status" />
@@ -1026,7 +1048,6 @@ const CallLogs = () => {
               <SelectItem value="all-status">All Status</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
               <SelectItem value="escalated">Escalated</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1052,7 +1073,7 @@ const CallLogs = () => {
             <Input
               placeholder="Search by assistant"
               value={filters.searchQuery}
-              onChange={(e) => updateFilter("searchQuery", e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 w-full sm:w-64"
             />
           </div>
@@ -1205,17 +1226,6 @@ const CallLogs = () => {
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12 bg-gray-50 sticky top-0">
-                    <Checkbox
-                      className="border-gray-300 border h-4 w-4 bg-white"
-                      checked={
-                        filteredConversations.length > 0 &&
-                        selectedConversations.length ===
-                          filteredConversations.length
-                      }
-                      onCheckedChange={toggleAllConversations}
-                    />
-                  </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Contact
                   </TableHead>
@@ -1247,7 +1257,7 @@ const CallLogs = () => {
                 {filteredConversations.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={10}
+                      colSpan={9}
                       className="p-8 text-center text-gray-500"
                     >
                       {apiData.length === 0
@@ -1261,17 +1271,6 @@ const CallLogs = () => {
                       key={conversation.id}
                       className="hover:bg-gray-50 border-gray-50"
                     >
-                      <TableCell className="p-2 sm:p-4">
-                        <Checkbox
-                          className="border-gray-300 border h-4 w-4 bg-white"
-                          checked={selectedConversations.includes(
-                            conversation.id
-                          )}
-                          onCheckedChange={() =>
-                            toggleConversationSelection(conversation.id)
-                          }
-                        />
-                      </TableCell>
                       <TableCell className="p-2 sm:p-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">

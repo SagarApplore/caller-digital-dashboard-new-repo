@@ -11,6 +11,7 @@ import { Key, Eye, EyeOff, X, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
+import { useAuth } from "@/components/providers/auth-provider";
 
 // Form validation schema
 const resetPasswordSchema = z.object({
@@ -30,6 +31,7 @@ interface ResetPasswordModalProps {
 }
 
 export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps) {
+  const { logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -60,13 +62,15 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
 
       if (response.data?.message) {
         setIsSuccess(true);
-        toast.success("Password updated successfully");
+        toast.success("Password updated successfully! You will be logged out for security reasons.");
         
-        // Reset form and close modal after 2 seconds
+        // Reset form and logout after 2 seconds
         setTimeout(() => {
           reset();
           setIsSuccess(false);
           onClose();
+          // Logout user and redirect to login page
+          logout();
         }, 2000);
       }
     } catch (error: any) {
@@ -118,7 +122,7 @@ export function ResetPasswordModal({ isOpen, onClose }: ResetPasswordModalProps)
               Password Updated Successfully!
             </h3>
             <p className="text-gray-600">
-              Your password has been changed. You can now close this window.
+              Your password has been changed. You will be automatically logged out for security reasons.
             </p>
           </div>
         ) : (
