@@ -97,6 +97,51 @@ export function CreateCampaignPage() {
   const [uploadError, setUploadError] = useState<string>("");
   const [campaignCreating, setCampaignCreating] = useState(false);
 
+  // Manual lead entry (fallback when user doesn't have a CSV)
+  const [manualName, setManualName] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
+  const [manualError, setManualError] = useState<string>("");
+
+  const generateCsvFromManualLead = () => {
+    setManualError("");
+    // Basic validation
+    const trimmedName = manualName.trim();
+    const trimmedPhone = manualPhone.trim();
+    if (!trimmedName || !trimmedPhone) {
+      setManualError("Please enter both phone number and name.");
+      return;
+    }
+    
+    // Enhanced phone number validation with country code
+    // Check for international format (starts with + followed by country code)
+    const phoneRegex = /^\+[1-9]\d{0,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      setManualError("Please enter a valid phone number with country code (e.g., +1234567890).");
+      return;
+    }
+    
+    // Extract digits for length validation
+    const digits = trimmedPhone.replace(/\D/g, "");
+    if (digits.length < 10 || digits.length > 15) {
+      setManualError("Phone number must have 10 to 15 digits including country code.");
+      return;
+    }
+    
+    // Validate country code (must start with +)
+    if (!trimmedPhone.startsWith('+')) {
+      setManualError("Phone number must include country code starting with + (e.g., +1 for US).");
+      return;
+    }
+    
+    // Build minimal CSV with required headers exactly as validated elsewhere
+    // Note: wrap values with quotes to be safe
+    const csvContent = `phone_number,name\n"${trimmedPhone}","${trimmedName}"`;
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const file = new File([blob], "manual_leads.csv", { type: "text/csv" });
+    // Reuse existing upload flow (validation + UI state)
+    handleFileUpload(file);
+  };
+
   // Additional fields required by backend API
   const [status, setStatus] = useState("running");
   const [connect, setConnect] = useState(false);
@@ -372,7 +417,7 @@ export function CreateCampaignPage() {
         router.push("/outbound-campaign-manager");
         return response.data;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Campaign creation failed:", error);
       
       // Handle specific error messages
@@ -438,7 +483,7 @@ export function CreateCampaignPage() {
                   />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Upload CSV File
+                  Select to Upload CSV File or add a number
                 </h3>
                 <p className="text-gray-600 mb-4">
                   Import leads from a CSV file with phone numbers, names, and
@@ -538,6 +583,25 @@ export function CreateCampaignPage() {
                       <p className="text-xs text-red-600 mt-1">
                         ⚠️ Column names must be exactly: "phone_number" and "name" 
                       </p>
+                      <div className="mt-6 text-sm text-gray-500">OR</div>
+                      <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:items-end">
+                        <div className="flex-1">
+                          <Label htmlFor="manual-phone" className="text-sm font-medium">Phone Number with Country Code (no CSV)</Label>
+                          <Input id="manual-phone" placeholder="e.g. +1 (555) 123-4567" value={manualPhone} onChange={(e)=>setManualPhone(e.target.value)} className="mt-1" />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="manual-name" className="text-sm font-medium">Name</Label>
+                          <Input id="manual-name" placeholder="e.g. John Doe" value={manualName} onChange={(e)=>setManualName(e.target.value)} className="mt-1" />
+                        </div>
+                        <div>
+                          <Button onClick={generateCsvFromManualLead} className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap">
+                            Generate CSV & Use
+                          </Button>
+                        </div>
+                      </div>
+                      {manualError && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{manualError}</div>
+                      )}
                       <div className="mt-3">
                         <Button
                           variant="outline"
