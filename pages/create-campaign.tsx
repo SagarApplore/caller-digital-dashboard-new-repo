@@ -132,10 +132,14 @@ export function CreateCampaignPage() {
       setManualError("Phone number must include country code starting with + (e.g., +1 for US).");
       return;
     }
-    
+     const phoneWithoutPlus = trimmedPhone.startsWith("+")
+    ? trimmedPhone.substring(1)
+    : trimmedPhone;
+
+    console.log("phoneWithoutPlus",phoneWithoutPlus)
     // Build minimal CSV with required headers exactly as validated elsewhere
     // Note: wrap values with quotes to be safe
-    const csvContent = `phone_number,name\n"${trimmedPhone}","${trimmedName}"`;
+    const csvContent = `phone_number,name\n"${phoneWithoutPlus}","${trimmedName}"`;
     const blob = new Blob([csvContent], { type: "text/csv" });
     const file = new File([blob], "manual_leads.csv", { type: "text/csv" });
     // Reuse existing upload flow (validation + UI state)
