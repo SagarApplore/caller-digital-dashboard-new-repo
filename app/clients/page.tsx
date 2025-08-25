@@ -60,10 +60,10 @@ export default function Clients() {
                   />
                 </DialogContent>
               </Dialog>
-              <Button className="bg-gray-100 hover:bg-gray-200">
+              {/* <Button className="bg-gray-100 hover:bg-gray-200">
                 <Download className="w-4 h-4 text-gray-700" />
                 <span className="text-sm text-gray-700">Export CSV</span>
-              </Button>
+              </Button> */}
             </div>
           ),
         }}
