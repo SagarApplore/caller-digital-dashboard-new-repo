@@ -517,7 +517,7 @@ export function ClientsPage() {
                         </Avatar>
                         <div>
                           <div className="font-medium text-gray-900">
-                            {client.name || "Unknown"}
+                            {client.companyName || client.name}
                           </div>
                           <div className="text-sm text-gray-500 flex items-center space-x-1">
                             <Mail className="w-3 h-3" />
