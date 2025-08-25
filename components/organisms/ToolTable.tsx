@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import apiRequest from '@/utils/api';
 import { toast } from 'react-toastify';
@@ -8,10 +8,42 @@ import { toast } from 'react-toastify';
 export default function ToolTable({ existingTools,setExistingTools }:any) {
   const [open, setOpen] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState('');
+  const [tooltipContent, setTooltipContent] = useState('');
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const handleOpen = (body: any) => {
     setSelectedResponse(JSON.stringify(body, null, 2));
     setOpen(true);
+  };
+  
+  // Format JSON for display and tooltip
+  const formatJSON = (data: any) => {
+    return JSON.stringify(data);
+  };
+  
+  // Format JSON for tooltip with better readability
+  const formatJSONForTooltip = (data: any) => {
+    return JSON.stringify(data, null, 2);
+  };
+
+  // Handle showing tooltip
+  const handleMouseEnter = (content: string, e: React.MouseEvent) => {
+    setTooltipContent(content);
+    setTooltipPosition({ x: e.clientX, y: e.clientY });
+    setShowTooltip(true);
+  };
+
+  // Handle hiding tooltip
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
+  // Handle tooltip position update on mouse move
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (showTooltip) {
+      setTooltipPosition({ x: e.clientX, y: e.clientY + 20 });
+    }
   };
   const handleDelete = async (id: string) => {
   if (!id) return;
@@ -30,6 +62,22 @@ export default function ToolTable({ existingTools,setExistingTools }:any) {
 
   return (
     <>
+      {/* Custom Tooltip */}
+      {showTooltip && (
+        <div 
+          className="fixed bg-white text-black p-4 rounded-md shadow-xl z-50 max-w-md whitespace-pre-wrap text-sm border border-gray-200"
+          style={{ 
+            left: `${tooltipPosition.x}px`, 
+            top: `${tooltipPosition.y}px`,
+            maxHeight: '400px',
+            overflow: 'auto',
+            fontFamily: 'monospace'
+          }}
+        >
+          <pre className="text-xs">{tooltipContent}</pre>
+        </div>
+      )}
+      
       {/* Table */}
       <div className="overflow-auto">
         <table className="min-w-full border text-sm text-left">
@@ -59,19 +107,44 @@ export default function ToolTable({ existingTools,setExistingTools }:any) {
                   {tool.api?.auth ? `${tool.api.auth} | ${tool.api.username}` : '-'}
                 </td>
                 <td className="px-4 py-2">{tool.api?.Params || '-'}</td>
-                <td className="px-4 py-2 whitespace-pre-wrap max-w-xs">
-                  {tool.api?.Body && Object.keys(tool.api.Body).length
-                    ? JSON.stringify(tool.api.Body)
-                    : '-'}
+                <td className="px-4 py-2 whitespace-pre-wrap max-w-xs overflow-hidden text-ellipsis">
+                  <div 
+                    className="max-w-xs overflow-hidden text-ellipsis cursor-pointer" 
+                    onMouseEnter={(e) => {
+                      const content = tool.api?.Body && Object.keys(tool.api.Body).length
+                        ? formatJSONForTooltip(tool.api.Body)
+                        : '-';
+                      handleMouseEnter(content, e);
+                    }}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseMove={handleMouseMove}
+                  >
+                    {tool.api?.Body && Object.keys(tool.api.Body).length
+                      ? formatJSON(tool.api.Body)
+                      : '-'}
+                  </div>
                 </td>
                 <td className="px-4 py-2">
                   {tool.api?.ResponseBody && Object.keys(tool.api.ResponseBody).length ? (
-                    <button
-                      className="text-blue-600 hover:underline"
-                      onClick={() => handleOpen(tool.api.ResponseBody)}
-                    >
-                      View Details
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        className="text-blue-600 hover:underline"
+                        onClick={() => handleOpen(tool.api.ResponseBody)}
+                      >
+                        View Details
+                      </button>
+                      <span 
+                        className="text-gray-500 cursor-pointer"
+                        onMouseEnter={(e) => {
+                          const content = formatJSONForTooltip(tool.api.ResponseBody);
+                          handleMouseEnter(content, e);
+                        }}
+                        onMouseLeave={handleMouseLeave}
+                        onMouseMove={handleMouseMove}
+                      >
+                        
+                      </span>
+                    </div>
                   ) : (
                     '-'
                   )}
