@@ -6,15 +6,17 @@ import { updateActiveRoute } from "@/lib/sidebar-routes";
 import { CreditDisplay } from "./credit-display";
 import { useState } from "react";
 import { ResetPasswordModal } from "./reset-password-modal";
+import { LogoutConfirmation } from "@/components/logout-confirmation";
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
 
   // Update routes with active state based on current path
-  const activeRoutes = updateActiveRoute(pathname || "/");
+  const activeRoutes = updateActiveRoute(pathname);
 
   // Filter routes by user role
   const filteredRoutes = activeRoutes.filter(route =>
@@ -84,7 +86,7 @@ export function Sidebar() {
             <HelpCircle className="w-5 h-5" />
           </button> */}
           <button
-            onClick={logout}
+            onClick={() => setShowLogoutConfirmation(true)}
             className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             title="Logout"
           >
@@ -103,6 +105,13 @@ export function Sidebar() {
           onClose={() => setShowResetPassword(false)}
         />
       )}
+
+      {/* Logout Confirmation */}
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={logout}
+      />
     </>
   );
 }

@@ -110,14 +110,16 @@ export const sidebarRoutes: SidebarRouteItem[] = [
 ];
 
 // Helper function to update active state
-export const updateActiveRoute = (currentPath: string) => {
+export const updateActiveRoute = (currentPath: string | null | undefined) => {
+  const path = currentPath || "/";
   return sidebarRoutes.map((route) => ({
     ...route,
-    isActive: route.path === currentPath,
+    isActive: route.path === path,
   }));
 };
 
 // Get active route
-export const getActiveRoute = (currentPath: string) => {
-  return sidebarRoutes.find((route) => route.path === currentPath);
+export const getActiveRoute = (currentPath: string | null | undefined) => {
+  const path = currentPath || "/";
+  return sidebarRoutes.find((route) => route.path === path);
 };

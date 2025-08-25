@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { LogoutConfirmation } from '@/components/logout-confirmation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard, AlertTriangle, Clock, Plus, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -136,7 +137,13 @@ export default function PaymentRequiredComponent() {
     router.push('/billing');
   };
 
-  const handleLogout = () => {
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirmation(true);
+  };
+
+  const handleLogoutConfirm = () => {
     // Simple logout - clear localStorage and redirect to login
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
@@ -308,7 +315,7 @@ export default function PaymentRequiredComponent() {
             </Button> */}
             
             <Button 
-              onClick={handleLogout} 
+              onClick={handleLogoutClick} 
               variant="outline" 
               className="w-full"
             >
@@ -322,6 +329,13 @@ export default function PaymentRequiredComponent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Logout Confirmation */}
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
-} 
+}

@@ -1,15 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
+import { LogoutConfirmation } from "@/components/logout-confirmation";
 
 export const AuthStatus = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
 
   if (!isAuthenticated) {
     return null;
   }
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirmation(true);
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirmation(false);
+  };
+
+  const handleLogoutConfirm = () => {
+    logout();
+  };
 
   return (
     <div className="flex items-center space-x-4 p-4 bg-white border border-gray-200 rounded-lg">
@@ -27,12 +42,18 @@ export const AuthStatus = () => {
       <Button
         variant="outline"
         size="sm"
-        onClick={logout}
+        onClick={handleLogoutClick}
         className="flex items-center space-x-1"
       >
         <LogOut className="w-3 h-3" />
         <span>Logout</span>
       </Button>
+
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 };
