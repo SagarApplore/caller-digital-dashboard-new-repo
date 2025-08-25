@@ -36,10 +36,7 @@ export default function Clients() {
           },
           children: (
             <div className="flex items-center justify-between gap-4">
-              <Input
-                placeholder="Search by name or email"
-                className="w-full max-w-[400px] bg-white"
-              />
+              
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button

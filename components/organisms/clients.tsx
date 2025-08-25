@@ -35,7 +35,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import utils from "@/utils/index.util";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import apiRequest from "@/utils/api";
 import {
   AlertDialog,
@@ -169,6 +169,18 @@ export function ClientsPage() {
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<string>("all"); // "all", "active", "inactive"
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
+  
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      console.log('Debounced search query updated:', searchQuery);
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // 500ms delay
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Ensure clients is always an array
   const safeClients = Array.isArray(clients) ? clients : [];
@@ -193,14 +205,26 @@ export function ClientsPage() {
     hasPrevPage: currentPage > 1,
   };
 
-  const fetchClients = async (page: number, limit: number, status = statusFilter) => {
+  const fetchClients = async (page: number, limit: number, status = statusFilter, search = searchQuery) => {
     setIsLoading(true);
     try {
+      console.log('=== FETCH CLIENTS CALLED ===');
+      console.log('Parameters received:', { page, limit, status, search });
+      
       // Build query parameters
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString()
       });
+      
+      // Add search query if provided
+      if (search && search.trim() !== "") {
+        const trimmedSearch = search.trim();
+        params.append("search", trimmedSearch);
+        console.log(`Adding search query: "${trimmedSearch}"`);
+      } else {
+        console.log('No search query provided or empty string');
+      }
       
       // Add status filter if not "all"
       if (status !== "all") {
@@ -211,13 +235,16 @@ export function ClientsPage() {
       }
       
       const queryString = params.toString();
-      console.log(`Final query string: ${queryString}`);
+      console.log(`Final query string: "${queryString}"`);
+      
+      // Log the full URL being requested
+      const fullUrl = `/users/getClients?${queryString}`;
+      console.log(`Making API request to: ${fullUrl}`);
       
       // Add pagination parameters to the API call
-      const response = await apiRequest(`/users/getClients?${queryString}`, "GET");
-      console.log(`=== FETCH CLIENTS ===`);
-      console.log(`Requested: page=${page}, limit=${limit}, status=${status}`);
-      console.log(`Query string: ${queryString}`);
+      const response = await apiRequest(fullUrl, "GET");
+      console.log(`=== FETCH CLIENTS RESPONSE ===`);
+      console.log(`Requested: page=${page}, limit=${limit}, status=${status}, search=${search}`);
       console.log(`Response status:`, response.status);
       console.log(`Response data:`, response.data);
       
@@ -292,10 +319,18 @@ export function ClientsPage() {
     }
   };
 
-  // Fetch clients on component mount only
+  // Fetch clients on component mount
   useEffect(() => {
-    fetchClients(currentPage, pageSize, statusFilter);
-  }, []); // Remove currentPage and pageSize dependencies
+    fetchClients(currentPage, pageSize, statusFilter, searchQuery);
+  }, [/* Empty dependency array means this only runs once on mount */]);
+  
+  // Fetch clients when debounced search query changes
+  useEffect(() => {
+    if (debouncedSearchQuery !== undefined) {
+      console.log('Triggering search with debounced query:', debouncedSearchQuery);
+      fetchClients(1, pageSize, statusFilter, debouncedSearchQuery);
+    }
+  }, [debouncedSearchQuery, pageSize, statusFilter]);
 
   const handlePageChange = async (page: number) => {
     try {
@@ -305,7 +340,7 @@ export function ClientsPage() {
       setIsPageLoading(true);
       setCurrentPage(page);
       // Pass the new page number directly to fetchClients
-      await fetchClients(page, pageSize, statusFilter);
+      await fetchClients(page, pageSize, statusFilter, debouncedSearchQuery);
       console.log(`=== PAGE CHANGE COMPLETE ===`);
     } catch (error) {
       console.error("Error changing page:", error);
@@ -328,7 +363,7 @@ export function ClientsPage() {
       setPageSize(newPageSize);
       setCurrentPage(1); // Reset to first page when changing page size
       // Pass the new page size directly to fetchClients
-      await fetchClients(1, newPageSize, statusFilter);
+      await fetchClients(1, newPageSize, statusFilter, debouncedSearchQuery);
       console.log(`=== PAGE SIZE CHANGE COMPLETE ===`);
     } catch (error) {
       console.error("Error changing page size:", error);
@@ -354,7 +389,7 @@ export function ClientsPage() {
       setCurrentPage(1); // Reset to first page when changing filter
       
       // Fetch clients with new filter - pass the new status directly
-      await fetchClients(1, pageSize, newStatus);
+      await fetchClients(1, pageSize, newStatus, debouncedSearchQuery);
       
       console.log(`=== STATUS FILTER CHANGE COMPLETE ===`);
       console.log(`Status filter updated to: ${newStatus}`);
@@ -418,6 +453,29 @@ export function ClientsPage() {
         <CardContent className="p-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Search Input */}
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  type="search"
+                  placeholder="Search by company or email"
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    console.log('Search input changed:', newValue);
+                    setSearchQuery(newValue);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      console.log('Enter key pressed with search query:', searchQuery);
+                      // Update the debounced search query immediately to trigger the search
+                      setDebouncedSearchQuery(searchQuery);
+                    }
+                  }}
+                />
+              </div>
+              
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">Status:</span>
                 <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
@@ -446,18 +504,32 @@ export function ClientsPage() {
             
             {/* Filter Summary */}
             <div className="flex items-center space-x-2 text-sm text-gray-600">
-              {statusFilter !== "all" && (
+              {(statusFilter !== "all" || searchQuery) && (
                 <>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                    {statusFilter === "active" ? "Active Only" : "Inactive Only"}
-                  </Badge>
+                  {statusFilter !== "all" && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                      {statusFilter === "active" ? "Active Only" : "Inactive Only"}
+                    </Badge>
+                  )}
+                  {searchQuery && (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-700">
+                      Search: {searchQuery}
+                    </Badge>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleStatusFilterChange("all")}
+                    onClick={() => {
+                      if (statusFilter !== "all" || searchQuery) {
+                        setStatusFilter("all");
+                        setSearchQuery("");
+                        setDebouncedSearchQuery("");
+                        fetchClients(1, pageSize, "all", "");
+                      }
+                    }}
                     className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
                   >
-                    Clear
+                    Clear All
                   </Button>
                 </>
               )}
