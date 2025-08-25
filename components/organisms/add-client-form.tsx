@@ -86,6 +86,30 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+    
+    // Real-time validation for website URL
+    if (field === "websiteUrl" && typeof value === "string") {
+      if (value.trim()) {
+        try {
+          const url = new URL(value);
+          if (!url.protocol || !url.hostname) {
+            setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+          } else {
+            // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+            const hostnameParts = url.hostname.split('.');
+            if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+              setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL with proper domain (e.g., https://example.com)" }));
+            } else {
+              setErrors(prev => ({ ...prev, websiteUrl: "" }));
+            }
+          }
+        } catch (error) {
+          setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+        }
+      } else {
+        setErrors(prev => ({ ...prev, websiteUrl: "" }));
+      }
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,6 +124,25 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
 
     if (!formData.companyName.trim()) {
       newErrors.companyName = "Company name is required";
+    }
+
+    // Website URL validation (only if provided)
+    if (formData.websiteUrl.trim()) {
+      try {
+        // Basic URL validation - must have protocol and valid format
+        const url = new URL(formData.websiteUrl);
+        if (!url.protocol || !url.hostname) {
+          newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+        } else {
+          // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+          const hostnameParts = url.hostname.split('.');
+          if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+            newErrors.websiteUrl = "Please enter a valid website URL with proper domain (e.g., https://example.com)";
+          }
+        }
+      } catch (error) {
+        newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+      }
     }
 
     if (!formData.industry) {
@@ -246,7 +289,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                 value={formData.websiteUrl}
                 onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
                 placeholder="https://example.com"
+                className={errors.websiteUrl ? "border-red-500" : ""}
               />
+              {errors.websiteUrl && (
+                <p className="text-red-500 text-sm mt-1">{errors.websiteUrl}</p>
+              )}
             </div>
 
             <div>
