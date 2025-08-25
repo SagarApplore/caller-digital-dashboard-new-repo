@@ -1414,9 +1414,9 @@ const CallLogs = () => {
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
+                  {/* <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
                     <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Contact
                   </TableHead>
@@ -1455,9 +1455,9 @@ const CallLogs = () => {
                     key={index}
                     className="hover:bg-gray-50 border-gray-50"
                   >
-                    <TableCell className="p-2 sm:p-4">
+                    {/* <TableCell className="p-2 sm:p-4">
                       <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="p-2 sm:p-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
