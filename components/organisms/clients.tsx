@@ -533,7 +533,7 @@ export function ClientsPage() {
                   </Button>
                 </>
               )}
-              <span>Showing {safeClients.length} of {totalCount} clients</span>
+              {/* <span>Showing {safeClients.length} of {totalCount} clients</span> */}
             </div>
           </div>
         </CardContent>
