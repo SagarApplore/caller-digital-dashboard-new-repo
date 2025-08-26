@@ -20,7 +20,7 @@ export function Sidebar() {
 
   // Filter routes by user role
   const filteredRoutes = activeRoutes.filter(route =>
-    !route.roles || (user && route.roles.includes(user.role))
+    !route.roles || (user && user.role && route.roles.includes(user.role))
   );
 
   const handleNavigation = (path: string) => {
@@ -73,28 +73,48 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Reset Password Icon */}
-          <button
-            onClick={() => setShowResetPassword(true)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title="Reset Password"
-          >
-            <Key className="w-5 h-5" />
-          </button>
-
           {/* <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50">
             <HelpCircle className="w-5 h-5" />
           </button> */}
-          <button
-            onClick={() => setShowLogoutConfirmation(true)}
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-          <button className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-purple-600" />
-          </button>
+          {/* User Profile with Hover Dropdown */}
+          <div className="relative">
+            <button className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center peer">
+              <User className="w-4 h-4 text-purple-600" />
+            </button>
+            
+            {/* User Profile Dropdown */}
+            <div 
+              className="absolute bottom-full left-0 mb-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-200 z-50"
+              style={{ marginBottom: '8px' }}
+            >
+              <div className="flex flex-col space-y-3">
+                {/* User Info */}
+                <div className="flex flex-col space-y-1 border-b border-gray-100 pb-3">
+                  <span className="text-sm font-medium text-gray-900">{user?.name || 'User'}</span>
+                  <span className="text-xs text-gray-500">{user?.email || 'No email'}</span>
+                </div>
+                
+                {/* Actions */}
+                <div className="flex flex-col space-y-2">
+                  <button
+                    onClick={() => setShowResetPassword(true)}
+                    className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>Reset Password</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowLogoutConfirmation(true)}
+                    className="flex items-center space-x-2 text-sm text-gray-700 hover:text-red-600 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
