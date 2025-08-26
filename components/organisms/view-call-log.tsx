@@ -358,7 +358,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success("Recording downloaded successfully!");
+      toast.success("Download started successfully!");
     } catch (error) {
       console.error("Error downloading recording:", error);
       toast.error("Failed to download recording. Please try again.");
