@@ -379,7 +379,7 @@ export default function ManageBrandsPage() {
                         )}
                       </div>
                       
-                      <Button
+                      {/* <Button
                         onClick={handleSearch}
                         disabled={isSearching || !searchTerm.trim()}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 h-11 rounded-lg font-medium"
@@ -395,7 +395,7 @@ export default function ManageBrandsPage() {
                             Search
                           </>
                         )}
-                      </Button>
+                      </Button> */}
                     </div>
                     
                     <div className="flex items-center gap-2">

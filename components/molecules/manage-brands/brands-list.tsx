@@ -201,9 +201,9 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
           <Building2 className="h-12 w-12 text-blue-600" />
         </div>
         <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-          No brands yet
+          No brands Found
         </h3>
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+        {/* <p className="text-gray-600 mb-8 max-w-md mx-auto">
           Create your first brand to start organizing your agents and phone numbers
         </p>
         <Button 
@@ -212,7 +212,7 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
         >
           <Plus className="h-5 w-5 mr-2" />
           Create Your First Brand
-        </Button>
+        </Button> */}
       </div>
     );
   }
