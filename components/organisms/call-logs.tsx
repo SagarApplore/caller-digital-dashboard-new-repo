@@ -293,6 +293,17 @@ const CallLogs = () => {
 
   // Handle apply date filter from temp state
   const handleApplyDateFilter = async () => {
+    // Validate that end date is not earlier than start date
+    if (tempDateFilter.startDate && tempDateFilter.endDate) {
+      const startDate = new Date(tempDateFilter.startDate);
+      const endDate = new Date(tempDateFilter.endDate);
+      
+      if (endDate < startDate) {
+        toast.error("End date cannot be earlier than start date");
+        return;
+      }
+    }
+    
     setDateInputs(tempDateFilter);
     setShowDateFilter(false);
     try {
