@@ -144,11 +144,14 @@ export default function PaymentRequiredComponent() {
   };
 
   const handleLogoutConfirm = () => {
-    // Simple logout - clear localStorage and redirect to login
+    // Proper logout - clear localStorage and redirect to login
     if (typeof window !== 'undefined') {
+      // Clear all auth-related localStorage items
       localStorage.removeItem('authToken');
       localStorage.removeItem('userData');
-      router.push('/login');
+      
+      // Use window.location.href for a full page reload to ensure clean state
+      window.location.href = '/login';
     }
   };
 

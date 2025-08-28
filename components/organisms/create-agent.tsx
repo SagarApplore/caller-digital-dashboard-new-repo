@@ -330,8 +330,12 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       }
       
       // Only voice and chat channels require first message
-      if ((channelId === "voice" || channelId === "chat") && !channel.firstMessage.trim()) {
-        errors.push(`${channel.name} first message is required`);
+      if ((channelId === "voice" || channelId === "chat")) {
+        if (!channel.firstMessage.trim()) {
+          errors.push(`${channel.name} first message is required`);
+        } else if (channel.firstMessageError) {
+          errors.push(channel.firstMessageError);
+        }
       }
     });
 
@@ -340,7 +344,15 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       errors.push("Agent phone number is required in edit mode");
     }
 
-    // Handoff configuration is optional - no validation needed
+    // Validate handoff number if handoff is enabled
+    if (handoffConfig.enabled) {
+      if (!handoffConfig.handoff_number) {
+        errors.push("Handoff phone number is required when handoff is enabled");
+      } else if (handoffConfig.error) {
+        errors.push(handoffConfig.error);
+      }
+    }
+    
     // Agent phone number mapping is optional - no validation needed
 
     return { isValid: errors.length === 0, errors };
@@ -430,6 +442,22 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     // Validate step 2 (Channels and Phone Mapping)
     const step2Validation = validateStep2();
     errors.push(...step2Validation.errors);
+    
+    // Validate handoff number if handoff is enabled
+    if (handoffConfig.enabled) {
+      if (!handoffConfig.handoff_number) {
+        toast.error("Handoff phone number is required when handoff is enabled");
+      } else if (handoffConfig.error) {
+        errors.push(handoffConfig.error);
+      } else {
+        // Additional validation to ensure number is at least 10 digits
+        const digitsOnly = handoffConfig.handoff_number.replace(/\D/g, '');
+        if (digitsOnly.length < 10) {
+          // errors.push("Handoff phone number must be at least 10 digits long");
+          toast.error("Handoff phone number must be at least 10 digits long")
+        }
+      }
+    }
 
     // Validate step 3 (Knowledge Base)
     const step3Validation = validateStep3();
@@ -1246,11 +1274,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     );
   };
 
-  const updateFirstMessage = (channelId: string, firstMessage: string) => {
+  const updateFirstMessage = (channelId: string, firstMessage: string, errorMessage?: string) => {
     setChannels((prev) =>
       prev.map((channel) =>
         channel.id === channelId
-          ? { ...channel, firstMessage: firstMessage }
+          ? { ...channel, firstMessage: firstMessage, firstMessageError: errorMessage }
           : channel
       )
     );

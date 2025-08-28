@@ -33,10 +33,12 @@ import {
   Circle,
   Trash2,
   AlertTriangle,
+  MoreVertical
 } from "lucide-react";
 import utils from "@/utils/index.util";
 import { useState, useEffect, useCallback } from "react";
 import apiRequest from "@/utils/api";
+import { AddCreditsModal } from "./add-credits-modal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +66,16 @@ import {
   Loader2,
 } from "lucide-react";
 import endpoints from "@/lib/endpoints";
+
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+
+
 
 const getPlanColor = (plan: string) => {
   switch (plan) {
@@ -158,6 +170,7 @@ export function ClientsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
+  const [addingCreditsClientId, setAddingCreditsClientId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Pagination state
@@ -446,6 +459,24 @@ export function ClientsPage() {
     setEditingClientId(null);
   };
 
+  const handleAddCredits = (clientId: string) => {
+    setAddingCreditsClientId(clientId);
+  };
+
+  const handleAddCreditsSuccess = async () => {
+    setAddingCreditsClientId(null);
+    toast({
+      title: "Success",
+      description: "Credits added successfully",
+    });
+    // Refresh the clients list
+    fetchClients(currentPage, pageSize, statusFilter);
+  };
+
+  const handleAddCreditsCancel = () => {
+    setAddingCreditsClientId(null);
+  };
+
   return (
     <div className="">
       {/* Filters */}
@@ -665,64 +696,64 @@ export function ClientsPage() {
                           : client.active}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        {/* <Button variant="outline" size="sm">
-                          View
-                        </Button> */}
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditClient(client._id)}
-                        >
-                          Edit
-                        </Button>
-                        {client.active && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:text-red-700 bg-transparent"
-                                disabled={deletingClientId === client._id}
-                              >
-                                {deletingClientId === client._id ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                                  Deactivate Client
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to deactivate{" "}
-                                  <strong>{client.name}</strong>? This action will:
-                                  <ul className="list-disc list-inside mt-2 space-y-1">
-                                    <li>Set the client as inactive</li>
-                                    <li>Deactivate all associated team members</li>
-                                    <li>This action can be reversed by an administrator</li>
-                                  </ul>
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteClient(client._id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Deactivate Client
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
+                    
+<TableCell className="text-right">
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" className="h-8 w-8 p-0">
+        <MoreVertical className="h-4 w-4" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      {client.active && (
+        <DropdownMenuItem onClick={() => handleAddCredits(client._id)}>
+          Add Credits
+        </DropdownMenuItem>
+      )}
+      <DropdownMenuItem onClick={() => handleEditClient(client._id)}>
+        Edit
+      </DropdownMenuItem>
+      {client.active && (
+        <>
+          <DropdownMenuSeparator />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem className="text-red-600">
+                Deactivate
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  Deactivate Client
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to deactivate{" "}
+                  <strong>{client.name}</strong>? This action will:
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Set the client as inactive</li>
+                    <li>Deactivate all associated team members</li>
+                    <li>This action can be reversed by an administrator</li>
+                  </ul>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleDeleteClient(client._id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Deactivate Client
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
+    </DropdownMenuContent>
+  </DropdownMenu>
+</TableCell>
                   </TableRow>
                 ))
               )}
@@ -903,6 +934,31 @@ export function ClientsPage() {
                 clientId={editingClientId}
                 onSuccess={handleEditSuccess}
                 onCancel={handleEditCancel}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Credits Modal */}
+      {addingCreditsClientId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Add Credits</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddCreditsCancel}
+                >
+                  ✕
+                </Button>
+              </div>
+              <AddCreditsModal
+                clientId={addingCreditsClientId}
+                onSuccess={handleAddCreditsSuccess}
+                onCancel={handleAddCreditsCancel}
               />
             </div>
           </div>

@@ -41,6 +41,7 @@ export interface Channel {
     allowedCharacters: number;
   };
   firstMessage: string;
+  firstMessageError?: string;
 }
 
 export interface PhoneNumber {
@@ -53,6 +54,7 @@ export interface PhoneNumber {
 export interface HandoffConfig {
   enabled: boolean;
   handoff_number: string;
+  error?: string;
 }
 
 export interface ExtraPrompts {
@@ -69,7 +71,7 @@ interface ChannelsAndPhoneMappingProps {
   channels: Channel[];
   toggleChannel: (channelId: string) => void;
   updatePrompt: (channelId: string, prompt: string) => void;
-  updateFirstMessage: (channelId: string, firstMessage: string) => void;
+  updateFirstMessage: (channelId: string, firstMessage: string, errorMessage?: string) => void;
   handoffConfig: HandoffConfig;
   updateHandoffConfig: (config: HandoffConfig) => void;
   extraPrompts: ExtraPrompts;
@@ -138,34 +140,49 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     };
 
     const handleHandoffNumberChange = (handoff_number: string) => {
+      // Remove white spaces from the input
+      const cleanedNumber = handoff_number.replace(/\s+/g, '');
+      
+      // Validate phone number - should be at least 10 digits
+      const digitsOnly = cleanedNumber.replace(/\D/g, '');
+      let error = undefined;
+      
+      if (cleanedNumber && digitsOnly.length < 10) {
+        error = "Phone number must be at least 10 digits long";
+      }
+      
       updateHandoffConfig({
         ...handoffConfig,
-        handoff_number,
+        handoff_number: cleanedNumber,
+        error: error
       });
     };
 
     const handleSummaryPrompt = (value: string) => {
       console.log("handleSummaryPrompt called with:", value);
-      updateExtraPrompts((prev) => ({
-        ...prev,
+      const updatedPrompts: ExtraPrompts = {
+        ...extraPrompts,
         summaryPrompt: value,
-      }));
+      };
+      updateExtraPrompts(updatedPrompts);
     };
 
     const handleSuccessEvaluationPrompt = (value: string) => {
       console.log("handleSuccessEvaluationPrompt called with:", value);
-      updateExtraPrompts((prev) => ({
-        ...prev,
+      const updatedPrompts: ExtraPrompts = {
+        ...extraPrompts,
         successEvaluationPrompt: value,
-      }));
+      };
+      updateExtraPrompts(updatedPrompts);
     };
 
     const handleFailureEvaluationPrompt = (value: string) => {
       console.log("handleFailureEvaluationPrompt called with:", value);
-      updateExtraPrompts((prev) => ({
-        ...prev,
+      const updatedPrompts: ExtraPrompts = {
+        ...extraPrompts,
         failureEvaluationPrompt: value,
-      }));
+      };
+      updateExtraPrompts(updatedPrompts);
     };
 
     useEffect(() => {
@@ -257,14 +274,30 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                           First Message <span className="text-red-500">*</span>
                         </Label>
                       </div>
-                      <Input
-                        id="first-message"
-                        placeholder="First Message..."
-                        value={channel.firstMessage}
-                        onChange={(e: any) =>
-                          updateFirstMessage(channel.id, e.target.value)
-                        }
-                      />
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          id="first-message"
+                          placeholder="First Message..."
+                          value={channel.firstMessage}
+                          className={channel.firstMessageError ? "border-red-500" : ""}
+                          onChange={(e: any) => {
+                            const value = e.target.value;
+                            // Validate for emojis and special characters
+                            const regex = /^[a-zA-Z0-9\s.,?!'"-:;()]+$/;
+                            
+                            if (!value || regex.test(value)) {
+                              // Valid input or empty
+                              updateFirstMessage(channel.id, value, "");
+                            } else {
+                              // Invalid input with special characters or emojis
+                              updateFirstMessage(channel.id, value, "Emojis and special characters are not allowed in the First Message.");
+                            }
+                          }}
+                        />
+                        {channel.firstMessageError && (
+                          <p className="text-red-500 text-sm">{channel.firstMessageError}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -385,10 +418,17 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                       placeholder="Enter handoff phone number (e.g., +91xxxxxxxx77)"
                       value={handoffConfig.handoff_number}
                       onChange={(e: any) => handleHandoffNumberChange(e.target.value)}
+                      className={handoffConfig.error ? "border-red-500" : ""}
                     />
-                    <p className="text-xs text-gray-500">
-                      Format: Country code + Phone number (e.g., +91xxxxxxxx77)
-                    </p>
+                    {handoffConfig.error ? (
+                      <p className="text-xs text-red-500">
+                        {handoffConfig.error}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-500">
+                        Format: Country code + Phone number (e.g., +91xxxxxxxx77)
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

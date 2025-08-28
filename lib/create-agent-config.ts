@@ -162,6 +162,7 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
   },
   {
     id: "chat",
@@ -176,6 +177,7 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
   },
   {
     id: "email",
@@ -190,5 +192,6 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
   },
 ];

@@ -11,9 +11,11 @@ import { Label } from '@/components/atoms/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from "react-toastify";
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, FileText, Eye, EyeOff } from 'lucide-react';
 import apiRequest from '@/utils/api';
+
 
 // Validation schema
 const createBrandFormSchema = (isEdit: boolean) => z.object({
@@ -67,7 +69,7 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   const {
     register,
@@ -124,20 +126,20 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
         console.log('Calling onSuccess with:', response.data.data);
         onSuccess(response.data.data);
         setIsOpen(false);
-        toast({
-          title: 'Success',
-          description: brand ? 'Brand updated successfully!' : 'Brand created successfully!',
-        });
+        toast.success(response.data.message)
+          
       } else {
         throw new Error(response.data?.message || 'Something went wrong');
       }
     } catch (error) {
       console.error('Error in brand form submission:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Something went wrong',
-        variant: 'destructive',
-      });
+      // const errorMessage = error?.response?.data?.message || "Failed to create team member";
+            toast.error(error.message);
+      // toast({
+      //   title: 'Error',
+      //   description: error instanceof Error ? error.message : 'Something went wrong',
+      //   variant: 'destructive',
+      // });
     } finally {
       setIsLoading(false);
     }
@@ -145,11 +147,11 @@ export default function BrandForm({ brand, onSuccess, onCancel }: BrandFormProps
 
   const handleFormSubmit = handleSubmit(onSubmit, (errors) => {
     console.log('Form validation errors:', errors);
-    toast({
-      title: 'Validation Error',
-      description: 'Please fix the form errors before submitting.',
-      variant: 'destructive',
-    });
+    // toast({
+    //   title: 'Validation Error',
+    //   description: 'Please fix the form errors before submitting.',
+    //   variant: 'destructive',
+    // });
   });
 
   const handleClose = () => {

@@ -46,6 +46,12 @@ const TeamMembersPage = () => {
     email: "",
     password: "",
   });
+  
+  const [formErrors, setFormErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
 
   // Fetch team members
   const fetchTeamMembers = async () => {
@@ -69,8 +75,50 @@ const TeamMembersPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.password) {
-      toast.error("Please fill in all fields");
+    // Reset previous errors
+    setFormErrors({
+      name: "",
+      email: "",
+      password: "",
+    });
+    
+    let hasErrors = false;
+    const newErrors = {
+      name: "",
+      email: "",
+      password: "",
+    };
+    
+    // Validate all fields
+    if (!formData.name) {
+      newErrors.name = "Full name is required";
+      hasErrors = true;
+    }
+    
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+      hasErrors = true;
+    } else {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "Please enter a valid email address";
+        hasErrors = true;
+      }
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+      hasErrors = true;
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters long";
+      hasErrors = true;
+    }
+    
+    // Update error state
+    setFormErrors(newErrors);
+    
+    if (hasErrors) {
       return;
     }
 
@@ -127,7 +175,14 @@ const TeamMembersPage = () => {
             className: "text-purple-700 font-semibold text-xs bg-purple-50 px-2 py-1 rounded-full",
           },
           children: (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) {
+                  // Reset form and errors when dialog is closed
+                  setFormData({ name: "", email: "", password: "" });
+                  setFormErrors({ name: "", email: "", password: "" });
+                }
+              }}>
               <DialogTrigger asChild>
                 <Button className="bg-purple-700 hover:bg-purple-800">
                   <Plus className="w-4 h-4 mr-2" />
@@ -146,9 +201,19 @@ const TeamMembersPage = () => {
                       type="text"
                       placeholder="Enter full name"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (!e.target.value) {
+                          setFormErrors({ ...formErrors, name: "Full name is required" });
+                        } else {
+                          setFormErrors({ ...formErrors, name: "" });
+                        }
+                      }}
+                      className={formErrors.name ? "border-red-500" : ""}
                     />
+                    {formErrors.name && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="email">Email</Label>
@@ -157,9 +222,24 @@ const TeamMembersPage = () => {
                       type="email"
                       placeholder="Enter email address"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (!e.target.value) {
+                          setFormErrors({ ...formErrors, email: "Email is required" });
+                        } else {
+                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                          if (!emailRegex.test(e.target.value)) {
+                            setFormErrors({ ...formErrors, email: "Please enter a valid email address" });
+                          } else {
+                            setFormErrors({ ...formErrors, email: "" });
+                          }
+                        }
+                      }}
+                      className={formErrors.email ? "border-red-500" : ""}
                     />
+                    {formErrors.email && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="password">Password</Label>
@@ -168,9 +248,21 @@ const TeamMembersPage = () => {
                       type="password"
                       placeholder="Enter password"
                       value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
+                      onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        if (!e.target.value) {
+                          setFormErrors({ ...formErrors, password: "Password is required" });
+                        } else if (e.target.value.length < 6) {
+                          setFormErrors({ ...formErrors, password: "Password must be at least 6 characters long" });
+                        } else {
+                          setFormErrors({ ...formErrors, password: "" });
+                        }
+                      }}
+                      className={formErrors.password ? "border-red-500" : ""}
                     />
+                    {formErrors.password && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+                    )}
                   </div>
                   <div className="flex justify-end space-x-2">
                     <Button
