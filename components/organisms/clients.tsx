@@ -718,7 +718,7 @@ export function ClientsPage() {
           <DropdownMenuSeparator />
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem className="text-red-600"  onSelect={(e) => e.preventDefault()}>
                 Deactivate
               </DropdownMenuItem>
             </AlertDialogTrigger>
