@@ -153,7 +153,7 @@ export function CreateCampaignPage() {
   const [successPrompt, setSuccessPrompt] = useState("");
   const [failurePrompt, setFailurePrompt] = useState("");
   const [scheduleTimestamp, setScheduleTimestamp] = useState("");
-  const [delay_between_calls, setDelayBetweenCalls] = useState(60);
+  const [delay_between_calls, setDelayBetweenCalls] = useState("60");
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -933,14 +933,15 @@ export function CreateCampaignPage() {
                   </Label>
                   <Input
                     id="delay-between-calls"
-                    type="number"
+                    type="string"
                     value={delay_between_calls}
-                    readOnly
-                    className="mt-1 bg-gray-50 cursor-not-allowed"
+                    onChange={(e) => setDelayBetweenCalls(e.target.value)}
+                    
+                    className="mt-1 bg-gray-50 cursor"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  {/* <p className="text-xs text-gray-500 mt-1">
                     Fixed at 60 seconds - cannot be modified
-                  </p>
+                  </p> */}
                 </div>
 
                 <div>
