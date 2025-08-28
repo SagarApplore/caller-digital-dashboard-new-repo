@@ -173,6 +173,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
     }
+    if (formData.password.length<6) {
+      newErrors.password = "Password should be at least 6 characters long";
+    }
 
     if (formData.costPerMin < 0) {
       newErrors.costPerMin = "Cost per minute must be a positive number";
