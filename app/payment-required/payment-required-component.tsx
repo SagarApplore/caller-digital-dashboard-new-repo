@@ -147,8 +147,9 @@ export default function PaymentRequiredComponent() {
     // Proper logout - clear localStorage and redirect to login
     if (typeof window !== 'undefined') {
       // Clear all auth-related localStorage items
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
+      localStorage.clear()
+      // localStorage.removeItem('authToken');
+      // localStorage.removeItem('userData');
       
       // Use window.location.href for a full page reload to ensure clean state
       window.location.href = '/login';
