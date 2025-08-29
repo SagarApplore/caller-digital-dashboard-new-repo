@@ -1144,6 +1144,19 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           key: item.key,
           value: item.value
         })), // Array of entity data key-value pairs
+      ...(!hasDIYPermission() && {
+    voice: {
+      firstMessageMode: "AI_SPEAKS_FIRST",
+      firstMessage: channels.find(
+        (channel) => channel.id.toLowerCase() === "voice"
+      )?.firstMessage,
+      agentPrompt: channels.find(
+        (channel) => channel.id.toLowerCase() === "voice"
+      )?.prompt?.value,
+      temperature: 0.5,
+      maxTokens: 100,
+    },
+  }),
     };
 
     // Only include integration data if user has DIY permissions
@@ -1220,6 +1233,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
 
     if (mode === "edit" && agentId) {
+      try{
       // Update existing agent - merge with existing data
       const updateData = {
         ...initialData,
@@ -1239,6 +1253,20 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         "PUT",
         updateData
       );
+        //  setCreating(false);
+         toast.success(
+     
+         responseMessages.agent.update
+         
+    );
+    router.back();
+    }catch(error){
+       
+       toast.error(
+        error.message
+      );
+        setCreating(false);
+    }
     } else {
       try {
         console.log("Create Agent - entity_data payload:", agentData.entity_data);
@@ -1250,18 +1278,31 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           userID: user?.id
         });
         await apiRequest(endpoints.assistants.create, "POST", agentData);
+            // setCreating(false);
+    toast.success(
+     
+         responseMessages.agent.create
+    );
+    router.back();
+  
       } catch (error) {
         console.error(error);
+         
+         toast.error(
+        error.message
+      );
+      setCreating(false);
+       
       }
     }
 
-    setCreating(false);
-    toast.success(
-      mode === "edit"
-        ? responseMessages.agent.update
-        : responseMessages.agent.create
-    );
-    router.back();
+    // setCreating(false);
+    // toast.success(
+    //   mode === "edit"
+    //     ? responseMessages.agent.update
+    //     : responseMessages.agent.create
+    // );
+    // router.back();
   }
 
   const updatePrompt = (channelId: string, prompt: string) => {
