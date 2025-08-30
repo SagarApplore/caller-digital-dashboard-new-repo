@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Phone, User, CheckCircle, XCircle, Download } from "lucide-react";
+import { ArrowLeft, ArrowRight, Phone, User, CheckCircle, XCircle, Download, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/organisms/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/atoms/input";
+import { Label } from "@/components/atoms/label";
 import apiRequest from "@/utils/api";
 import { toast } from "react-toastify";
 
@@ -23,7 +26,11 @@ interface CampaignLead {
   leadNumber: number;
   interest: boolean | null;
   status: "answered" | "unanswered";
-  callLogId: string | null;
+  callLogId: {
+    _id: string;
+    call_start_time: string;
+    call_duration: number;
+  } | null;
   createdAt: string;
   entity_result?: any;
   callDuration?: number; // Duration in seconds from call log
@@ -49,6 +56,13 @@ export default function CampaignDetailsPage() {
   const [campaignDetails, setCampaignDetails] = useState<CampaignDetails | null>(null);
   const [leads, setLeads] = useState<CampaignLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    interested: "all",
+    callStatus: "all",
+    startDateFrom: "",
+    startDateTo: ""
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
   const campaignId = params?.id as string;
 
@@ -72,7 +86,25 @@ export default function CampaignDetailsPage() {
   const fetchCampaignLeads = async () => {
     try {
       setLoading(true);
-      const response = await apiRequest(`/campaign-results/${campaignId}`, "GET");
+      
+      // Build query parameters for filters
+      const queryParams = new URLSearchParams();
+      if (filters.interested && filters.interested !== "all") {
+        queryParams.append('interested', filters.interested);
+      }
+      if (filters.callStatus && filters.callStatus !== "all") {
+        queryParams.append('callStatus', filters.callStatus);
+      }
+      if (filters.startDateFrom) {
+        queryParams.append('startDateFrom', filters.startDateFrom);
+      }
+      if (filters.startDateTo) {
+        queryParams.append('startDateTo', filters.startDateTo);
+      }
+      
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      const response = await apiRequest(`/campaign-results/${campaignId}${queryString}`, "GET");
+      
       if (response.data?.success) {
         setLeads(response.data.data);
       }
@@ -82,6 +114,34 @@ export default function CampaignDetailsPage() {
     } finally {
       setLoading(false);
     }
+  };
+  
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+  
+  const applyFilters = () => {
+    console.log("After reste hit")
+    fetchCampaignLeads();
+  };
+//   useEffect(() => {
+//   fetchCampaignLeads();
+// }, [filters]);
+  const resetFilters = () => {
+    setFilters({
+      interested: "all",
+      callStatus: "all",
+      startDateFrom: "",
+      startDateTo: ""
+    });
+    // Fetch without filters
+    // applyFilters()
+    // setTimeout(() => {
+    //   fetchCampaignLeads();
+    // }, 1);
   };
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
@@ -113,15 +173,15 @@ export default function CampaignDetailsPage() {
     );
   };
 
-  const getInterestBadge = (interest: boolean | null) => {
-    if (interest === true) {
+  const getInterestBadge = (interest: any | null) => {
+    if ((interest === "true") ||(interest === true )) {
       return (
         <Badge className="bg-green-100 text-green-800 border-green-200">
           <CheckCircle className="w-3 h-3 mr-1" />
           Yes
         </Badge>
       );
-    } else if (interest === false) {
+    } else if ((interest === "false") ||(interest === false )) {
       return (
         <Badge className="bg-red-100 text-red-800 border-red-200">
           <XCircle className="w-3 h-3 mr-1" />
@@ -158,7 +218,7 @@ export default function CampaignDetailsPage() {
           const phoneNumber = `"${lead.leadNumber}"`;
           const interested = `"${lead.interest === true ? 'Yes' : lead.interest === false ? 'No' : '-'}"`;
           const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
-           const callDuration = `"${((lead?.callLogId?.call_duration)/60).toFixed(2) }"`;
+           const callDuration = lead?.callLogId ? `"${((lead.callLogId.call_duration)/60).toFixed(2) }"` : `"-"`;
           
           // Properly escape the entity result JSON for CSV
           const entityResultJson = JSON.stringify(lead.entity_result);
@@ -275,7 +335,16 @@ export default function CampaignDetailsPage() {
               <User className="w-5 h-5 text-purple-600" />
               <h2 className="text-lg font-semibold text-gray-900">Campaign Leads ({leads.length})</h2>
             </CardTitle>
-            <div className="flex flex-col items-end space-y-2">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-1"
+              >
+                <Filter className="w-4 h-4" />
+                <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
+              </Button>
               <Button
                 onClick={downloadEntityCSV}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
@@ -289,10 +358,102 @@ export default function CampaignDetailsPage() {
                   </Badge>
                 )}
               </Button>
-              <p className="text-xs text-gray-500 text-right">
-                Download CSV with lead names, phone numbers, and entity results
-              </p>
             </div>
+          </div>
+          
+          {/* Filters Section */}
+          {showFilters && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-700">Filter Leads</h3>
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="text-gray-500 hover:text-gray-700">
+                  <X className="w-3 h-3 mr-1" />
+                  Reset Filters
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Interested Filter */}
+                <div>
+                  <Label htmlFor="interested-filter" className="text-xs font-medium text-gray-700 mb-1 block">
+                    Interested
+                  </Label>
+                  <Select 
+                    value={filters.interested} 
+                    onValueChange={(value) => handleFilterChange('interested', value)}
+                  >
+                    <SelectTrigger id="interested-filter" className="w-full">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="true">Yes</SelectItem>
+                      <SelectItem value="false">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Call Status Filter */}
+                <div>
+                  <Label htmlFor="call-status-filter" className="text-xs font-medium text-gray-700 mb-1 block">
+                    Call Status
+                  </Label>
+                  <Select 
+                    value={filters.callStatus} 
+                    onValueChange={(value) => handleFilterChange('callStatus', value)}
+                  >
+                    <SelectTrigger id="call-status-filter" className="w-full">
+                      <SelectValue placeholder="All" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="answered">Answered</SelectItem>
+                      <SelectItem value="unanswered">Unanswered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Call Start Date From */}
+                <div>
+                  <Label htmlFor="start-date-from" className="text-xs font-medium text-gray-700 mb-1 block">
+                    Call Date From
+                  </Label>
+                  <Input
+                    id="start-date-from"
+                    type="date"
+                    value={filters.startDateFrom}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('startDateFrom', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                
+                {/* Call Start Date To */}
+                <div>
+                  <Label htmlFor="start-date-to" className="text-xs font-medium text-gray-700 mb-1 block">
+                    Call Date To
+                  </Label>
+                  <Input
+                    id="start-date-to"
+                    type="date"
+                    value={filters.startDateTo}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange('startDateTo', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <Button onClick={applyFilters} className="bg-purple-600 hover:bg-purple-700 text-white">
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-2">
+            <p className="text-xs text-gray-500 text-right">
+              Download CSV with lead names, phone numbers, and entity results
+            </p>
           </div>
         </CardHeader>
         <CardContent>
@@ -326,17 +487,17 @@ export default function CampaignDetailsPage() {
                         {getStatusBadge(lead.status)}
                       </TableCell>
                       <TableCell className="text-gray-700">
-                        {(formatDate(lead?.callLogId?.call_start_time))}
+                        {lead?.callLogId ? formatDate(lead.callLogId.call_start_time) : "-"}
                       </TableCell>
                       <TableCell className="text-gray-700">
-                        {((lead?.callLogId?.call_duration)/60).toFixed(2)}
+                        {lead?.callLogId ? ((lead.callLogId.call_duration)/60).toFixed(2) : "-"}
                       </TableCell>
                       <TableCell>
                         {lead.callLogId ? (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleViewCallLog(lead.callLogId._id!)}
+                            onClick={() => lead.callLogId && handleViewCallLog(lead.callLogId._id)}
                             className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                           >
                             <ArrowRight className="w-4 h-4" />
