@@ -416,7 +416,7 @@ export default function CampaignDetailsPage() {
                 {/* Call Start Date From */}
                 <div>
                   <Label htmlFor="start-date-from" className="text-xs font-medium text-gray-700 mb-1 block">
-                    Call Date From
+                    Call Start Date From
                   </Label>
                   <Input
                     id="start-date-from"
@@ -430,7 +430,7 @@ export default function CampaignDetailsPage() {
                 {/* Call Start Date To */}
                 <div>
                   <Label htmlFor="start-date-to" className="text-xs font-medium text-gray-700 mb-1 block">
-                    Call Date To
+                    Call Start Date To
                   </Label>
                   <Input
                     id="start-date-to"
