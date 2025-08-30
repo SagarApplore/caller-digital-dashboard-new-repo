@@ -1,6 +1,6 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { HelpCircle, User, LogOut, Coins, Key } from "lucide-react";
+import { HelpCircle, User, LogOut, Coins, Key,SquareUser ,BriefcaseBusiness} from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
 import { updateActiveRoute } from "@/lib/sidebar-routes";
 import { CreditDisplay } from "./credit-display";
@@ -95,7 +95,21 @@ export function Sidebar() {
                 </div>
                 
                 {/* Actions */}
+                
                 <div className="flex flex-col space-y-2">
+                   <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                  <BriefcaseBusiness className="w-4 h-4" />
+                   <span >{`Org Name: ${user?.companyName}`}</span>
+                   </div>
+                   
+                  <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                  <SquareUser className="w-4 h-4" />
+                   <span >{`Account Type: ${user?.DIY ? "DIY" :"NON-DIY"}`}</span>
+                   </div>
+                   <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                  <User className="w-4 h-4" />
+                   <span >{`Role: ${user?.role}`}</span>
+                   </div>
                   <button
                     onClick={() => setShowResetPassword(true)}
                     className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors"

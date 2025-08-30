@@ -70,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   role: response.data.data.role,
                   DIY: response.data.data.DIY,
                   teamMemberOf: response.data.data.teamMemberOf,
+                  companyName:response.data?.data?.companyName
                 };
                 
                 console.log('User data from getMe:', userData);
@@ -122,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role: response?.data?.role,
         DIY: response?.data?.DIY,
         teamMemberOf: response?.data?.teamMemberOf,
+        companyName:response?.data?.companyName
       };
 
       console.log('Login response:', response?.data);

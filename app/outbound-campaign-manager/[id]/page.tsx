@@ -83,6 +83,15 @@ export default function CampaignDetailsPage() {
       setLoading(false);
     }
   };
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
   const handleViewCallLog = (callLogId: string, flag = "truncate") => {
     if (callLogId) {
@@ -295,6 +304,7 @@ export default function CampaignDetailsPage() {
                   <TableHead className="font-medium text-gray-700">Phone Number</TableHead>
                   <TableHead className="font-medium text-gray-700">Interested</TableHead>
                   <TableHead className="font-medium text-gray-700">Call Status</TableHead>
+                  <TableHead className="font-medium text-gray-700">Call Start Time </TableHead>
                   <TableHead className="font-medium text-gray-700">Call Duration (mins)</TableHead>
                   <TableHead className="font-medium text-gray-700">Actions</TableHead>
                 </TableRow>
@@ -314,6 +324,9 @@ export default function CampaignDetailsPage() {
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(lead.status)}
+                      </TableCell>
+                      <TableCell className="text-gray-700">
+                        {(formatDate(lead?.callLogId?.call_start_time))}
                       </TableCell>
                       <TableCell className="text-gray-700">
                         {((lead?.callLogId?.call_duration)/60).toFixed(2)}
