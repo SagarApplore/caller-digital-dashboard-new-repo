@@ -30,6 +30,7 @@ import utils from "@/utils/index.util";
 import { Progress } from "@/components/ui/progress";
 import { useCallback } from "react";
 import { Separator } from "@/components/ui/separator";
+import { AddProviderModal } from "@/components/AddProviderModel";
 
 const llmProviders = [
   {
@@ -102,6 +103,7 @@ export function LLMConfigPage() {
             <TabsTrigger value="models">Model Settings</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="addProvider">Add Provider</TabsTrigger>
           </TabsList>
         </div>
 
@@ -436,6 +438,11 @@ export function LLMConfigPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="addProvider" className="p-4 mt-0 flex flex-col gap-8">
+  <div className="flex justify-start">
+    <AddProviderModal />
+  </div>
+</TabsContent>
       </Tabs>
     </>
   );

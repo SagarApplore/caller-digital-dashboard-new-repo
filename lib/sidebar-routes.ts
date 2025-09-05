@@ -101,12 +101,13 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     path: "/function-tools",
     icon: CodeXml,
   },
-  // {
-  //   id: "llm-config",
-  //   name: "LLM Config",
-  //   path: "/llm-provider-config",
-  //   icon: Settings,
-  // },
+  {
+    id: "llm-config",
+    name: "LLM Config",
+    path: "/llm-provider-config",
+    icon: Users,
+    roles: ["SUPER_ADMIN"],
+  },
 ];
 
 // Helper function to update active state
