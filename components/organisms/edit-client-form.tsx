@@ -47,6 +47,8 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
   const [fetching, setFetching] = useState(true);
   const [pricingModels, setPricingModels] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 
   const [formData, setFormData] = useState<FormDataType>({
     companyName: "",
@@ -89,7 +91,7 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
             websiteUrl: client.websiteUrl || "",
             industry: client.industry || "",
             companySize: client.companySize || "",
-            companyLogo: null,
+            companyLogo: client.companyLogo,
             billing: client.subscriptionPlan || "",
             contactFullName: client.contactFullName || "",
             contactEmail: client.contactEmail || "",
@@ -103,10 +105,24 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
             costPerMin: client.costPerMin || 0,
             totalCredits: client.totalCredits || 0
           });
-        } else {
-          console.error("Client fetch failed:", response.data);
-          setErrors({ fetch: "Failed to fetch client data" });
-        }
+         if (client.companyLogo?.startsWith("s3://")) {
+  try {
+    const signedUrlRes = await apiRequest(
+      `/s3KeyExtraction?s3Uri=${encodeURIComponent(client.companyLogo)}`,
+      "GET"
+    );
+
+    if (signedUrlRes?.data?.url) {
+      setPreviewUrl(signedUrlRes.data.url);
+    }
+  } catch (err) {
+    console.error("Failed to load logo preview", err);
+  }
+}
+// Assuming this is the logo URL from backend
+}
+
+       
       } catch (error: any) {
         console.error("Error fetching client:", error);
         setErrors({ fetch: error.message || "Failed to fetch client data" });
@@ -160,12 +176,20 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     }
   };
 
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     setFormData(prev => ({ ...prev, companyLogo: file }));
+  //   }
+  // };
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, companyLogo: file }));
-    }
-  };
+  const file = e.target.files?.[0];
+  if (file) {
+    setFormData(prev => ({ ...prev, companyLogo: file }));
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+};
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -348,16 +372,32 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
 
             <div>
               <Label htmlFor="companyLogo">Company Logo</Label>
-              <div className="flex items-center space-x-4">
-                <Input
-                  id="companyLogo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="flex-1"
-                />
-                <Upload className="w-5 h-5 text-gray-400" />
-              </div>
+            <div>
+
+  <div className="flex items-center space-x-4">
+    <Input
+      id="companyLogo"
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      className="flex-1"
+    />
+    <Upload className="w-5 h-5 text-gray-400" />
+  </div>
+
+  {/* Logo preview */}
+  {previewUrl && (
+    <div className="mt-2">
+      <p className="text-sm text-gray-600 mb-1">Logo Preview:</p>
+      <img
+        src={previewUrl}
+        alt="Company Logo Preview"
+        className="w-24 h-24 object-cover border rounded-md"
+      />
+    </div>
+  )}
+</div>
+
             </div>
           </CardContent>
         </Card>

@@ -46,6 +46,8 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
   const [loading, setLoading] = useState(false);
   const [pricingModels, setPricingModels] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
 
   useEffect(() => {
     setPricingLoading(true);
@@ -112,12 +114,24 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     }
   };
 
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     setFormData(prev => ({ ...prev, companyLogo: file }));
+  //   }
+  // };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, companyLogo: file }));
-    }
-  };
+  const file = e.target.files?.[0];
+  if (file) {
+    setFormData(prev => ({ ...prev, companyLogo: file }));
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+  }
+};
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -260,7 +274,8 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+   <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Company Information */}
         <Card>
@@ -343,28 +358,43 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="companyLogo">Company Logo</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
-                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Drop logo here or click to upload</p>
-                <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
-                <input
-                  type="file"
-                  id="companyLogo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => document.getElementById('companyLogo')?.click()}
-                >
-                  Choose File
-                </Button>
-              </div>
+             <Label htmlFor="companyLogo">Company Logo</Label>
+<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+  <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+  <p className="text-sm text-gray-600 mb-1">Drop logo here or click to upload</p>
+  <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+
+  <input
+    type="file"
+    id="companyLogo"
+    accept="image/*"
+    onChange={handleFileChange}
+    className="hidden"
+  />
+
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    className="mt-2"
+    onClick={() => document.getElementById('companyLogo')?.click()}
+  >
+    Choose File
+  </Button>
+
+  {/* Logo Preview */}
+  {logoPreview && (
+    <div className="mt-4">
+      <p className="text-sm font-medium mb-2">Preview:</p>
+      <img
+        src={logoPreview}
+        alt="Logo Preview"
+        className="mx-auto h-20 object-contain"
+      />
+    </div>
+  )}
+</div>
+
             </div>
           </CardContent>
         </Card>

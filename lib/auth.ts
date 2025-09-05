@@ -6,7 +6,9 @@ export interface User {
   role?: string;
   DIY?: boolean;
   teamMemberOf?: string;
-  companyName:string
+  companyName:string,
+  companyLogo?:string
+
 }
 
 export interface AuthToken {

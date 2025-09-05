@@ -1,12 +1,21 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
-import { HelpCircle, User, LogOut, Coins, Key,SquareUser ,BriefcaseBusiness} from "lucide-react";
+import {
+  HelpCircle,
+  User,
+  LogOut,
+  Coins,
+  Key,
+  SquareUser,
+  BriefcaseBusiness,
+} from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
 import { updateActiveRoute } from "@/lib/sidebar-routes";
 import { CreditDisplay } from "./credit-display";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResetPasswordModal } from "./reset-password-modal";
 import { LogoutConfirmation } from "@/components/logout-confirmation";
+import apiRequest from "@/utils/api";
 
 export function Sidebar() {
   const router = useRouter();
@@ -14,18 +23,45 @@ export function Sidebar() {
   const { logout, user } = useAuth();
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Update routes with active state based on current path
   const activeRoutes = updateActiveRoute(pathname);
 
   // Filter routes by user role
-  const filteredRoutes = activeRoutes.filter(route =>
-    !route.roles || (user && user.role && route.roles.includes(user.role))
+  const filteredRoutes = activeRoutes.filter(
+    (route) =>
+      !route.roles || (user && user.role && route.roles.includes(user.role))
   );
 
   const handleNavigation = (path: string) => {
     router.push(path);
   };
+
+  useEffect(() => {
+    const fetchLogoUrl = async () => {
+      if (user?.companyLogo) {
+        try {
+          // const res = await fetch(
+          //   `/s3KeyExtraction?s3Uri=${encodeURIComponent(user.companyLogo)}`
+          // );
+
+           const signedUrlRes = await apiRequest(
+                `/s3KeyExtraction?s3Uri=${encodeURIComponent(user.companyLogo)}`,
+                "GET"
+              );
+        
+          if (signedUrlRes?.data.url) {
+            setLogoUrl(signedUrlRes?.data?.url);
+          }
+        } catch (error) {
+          console.error("Failed to fetch logo URL:", error);
+        }
+      }
+    };
+
+    fetchLogoUrl();
+  }, [user?.companyLogo]);
 
   return (
     <>
@@ -58,16 +94,14 @@ export function Sidebar() {
         <div className="flex flex-col space-y-2">
           {/* Credit Icon with Hover Tooltip */}
           <div className="relative">
-            <button 
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors peer"
-            >
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition-colors peer">
               <Coins className="w-5 h-5" />
             </button>
-            
+
             {/* Hover Tooltip */}
-            <div 
+            <div
               className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-200 z-50"
-              style={{ marginBottom: '8px' }}
+              style={{ marginBottom: "8px" }}
             >
               <CreditDisplay />
             </div>
@@ -81,35 +115,58 @@ export function Sidebar() {
             <button className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center peer">
               <User className="w-4 h-4 text-purple-600" />
             </button>
-            
+
             {/* User Profile Dropdown */}
-            <div 
+            <div
               className="absolute bottom-full left-0 mb-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-3 opacity-0 invisible peer-hover:opacity-100 peer-hover:visible hover:opacity-100 hover:visible transition-all duration-200 z-50"
-              style={{ marginBottom: '8px' }}
+              style={{ marginBottom: "8px" }}
             >
               <div className="flex flex-col space-y-3">
                 {/* User Info */}
-                <div className="flex flex-col space-y-1 border-b border-gray-100 pb-3">
+                {/* <div className="flex flex-col space-y-1 border-b border-gray-100 pb-3">
                   <span className="text-sm font-medium text-gray-900">{user?.name || 'User'}</span>
                   <span className="text-xs text-gray-500">{user?.email || 'No email'}</span>
+                </div> */}
+                <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt="Company Logo"
+                      className="w-8 h-8 rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-xs font-bold text-gray-600">
+                      {user?.companyName?.charAt(0) || "C"}
+                    </div>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      {user?.name || "User"}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {user?.email || "No email"}
+                    </span>
+                  </div>
                 </div>
-                
+
                 {/* Actions */}
-                
+
                 <div className="flex flex-col space-y-2">
-                   <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
-                  <BriefcaseBusiness className="w-4 h-4" />
-                   <span >{`Org Name: ${user?.companyName}`}</span>
-                   </div>
-                   
-                  <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
-                  <SquareUser className="w-4 h-4" />
-                   <span >{`Account Type: ${user?.DIY ? "DIY" :"NON-DIY"}`}</span>
-                   </div>
-                   <div  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
-                  <User className="w-4 h-4" />
-                   <span >{`Role: ${user?.role}`}</span>
-                   </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                    <BriefcaseBusiness className="w-4 h-4" />
+                    <span>{`Org Name: ${user?.companyName}`}</span>
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                    <SquareUser className="w-4 h-4" />
+                    <span>{`Account Type: ${
+                      user?.DIY ? "DIY" : "NON-DIY"
+                    }`}</span>
+                  </div>
+                  <div className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors">
+                    <User className="w-4 h-4" />
+                    <span>{`Role: ${user?.role}`}</span>
+                  </div>
                   <button
                     onClick={() => setShowResetPassword(true)}
                     className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 transition-colors"
@@ -117,7 +174,7 @@ export function Sidebar() {
                     <Key className="w-4 h-4" />
                     <span>Reset Password</span>
                   </button>
-                  
+
                   <button
                     onClick={() => setShowLogoutConfirmation(true)}
                     className="flex items-center space-x-2 text-sm text-gray-700 hover:text-red-600 transition-colors"

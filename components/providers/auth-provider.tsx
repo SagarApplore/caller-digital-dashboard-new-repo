@@ -123,7 +123,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         role: response?.data?.role,
         DIY: response?.data?.DIY,
         teamMemberOf: response?.data?.teamMemberOf,
-        companyName:response?.data?.companyName
+        companyName:response?.data?.companyName,
+        companyLogo:response?.data?.companyLogo
       };
 
       console.log('Login response:', response?.data);
