@@ -177,11 +177,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     if (formData.contactPhone.trim()) {
       // Remove all non-digit characters for validation
       const phoneDigits = formData.contactPhone.replace(/\D/g, '');
-      if (phoneDigits.length < 10) {
-        newErrors.contactPhone = "Phone number must have at least 10 digits";
-      } else if (phoneDigits.length > 15) {
-        newErrors.contactPhone = "Phone number cannot exceed 15 digits";
-      }
+      if (phoneDigits.length !== 10) {
+        newErrors.contactPhone = "Phone number must be 10 digits long";
+      } 
     }
 
     if (!formData.password.trim()) {
@@ -551,24 +549,24 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="+1">+1 (US)</SelectItem>
-                    <SelectItem value="+44">+44 (UK)</SelectItem>
+                    {/* <SelectItem value="+44">+44 (UK)</SelectItem> */}
                     <SelectItem value="+91">+91 (IN)</SelectItem>
-                    <SelectItem value="+61">+61 (AU)</SelectItem>
-                    <SelectItem value="+86">+86 (CN)</SelectItem>
-                    <SelectItem value="+81">+81 (JP)</SelectItem>
-                    <SelectItem value="+49">+49 (DE)</SelectItem>
-                    <SelectItem value="+33">+33 (FR)</SelectItem>
-                    <SelectItem value="+39">+39 (IT)</SelectItem>
-                    <SelectItem value="+34">+34 (ES)</SelectItem>
-                    <SelectItem value="+7">+7 (RU)</SelectItem>
-                    <SelectItem value="+55">+55 (BR)</SelectItem>
+                    <SelectItem value="+61">+63 (PH)</SelectItem>
+                    {/* <SelectItem value="+86">+86 (CN)</SelectItem> */}
+                    {/* <SelectItem value="+81">+81 (JP)</SelectItem> */}
+                    {/* <SelectItem value="+49">+49 (DE)</SelectItem> */}
+                    {/* <SelectItem value="+33">+33 (FR)</SelectItem> */}
+                    {/* <SelectItem value="+39">+39 (IT)</SelectItem> */}
+                    {/* <SelectItem value="+34">+34 (ES)</SelectItem> */}
+                    {/* <SelectItem value="+7">+7 (RU)</SelectItem> */}
+                    {/* <SelectItem value="+55">+55 (BR)</SelectItem> */}
                     <SelectItem value="+52">+52 (MX)</SelectItem>
-                    <SelectItem value="+27">+27 (ZA)</SelectItem>
-                    <SelectItem value="+971">+971 (AE)</SelectItem>
-                    <SelectItem value="+966">+966 (SA)</SelectItem>
-                    <SelectItem value="+65">+65 (SG)</SelectItem>
-                    <SelectItem value="+852">+852 (HK)</SelectItem>
-                    <SelectItem value="+82">+82 (KR)</SelectItem>
+                    {/* <SelectItem value="+27">+27 (ZA)</SelectItem> */}
+                    {/* <SelectItem value="+971">+971 (AE)</SelectItem> */}
+                    {/* <SelectItem value="+966">+966 (SA)</SelectItem> */}
+                    <SelectItem value="+65">+977 (NEP)</SelectItem>
+                    <SelectItem value="+852">+880 (BAN)</SelectItem>
+                    <SelectItem value="+82">+234 (NIG)</SelectItem>
                   </SelectContent>
                 </Select>
                 <Input
