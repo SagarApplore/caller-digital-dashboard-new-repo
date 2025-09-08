@@ -424,7 +424,9 @@ const ViewCallLog = ({ id }: { id: string }) => {
 
       console.log("Entity Results Export - CSV Content:", csvContent);
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const bom = "\uFEFF";
+const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `entity_results_${apiData._id || 'call'}.csv`;

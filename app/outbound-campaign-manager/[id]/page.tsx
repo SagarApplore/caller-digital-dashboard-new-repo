@@ -230,7 +230,10 @@ export default function CampaignDetailsPage() {
       ];
 
       // Create CSV content
-      const csvContent = csvRows.join("\n");
+      const bom = "\uFEFF";
+const csvContent = bom + csvRows.join("\n");
+
+ 
       
       // Create and download file
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
