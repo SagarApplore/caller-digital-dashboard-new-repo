@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/organisms/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -1018,6 +1019,457 @@ const VoiceIntegration = ({
           </CardContent>
         </Card>
 
+                 {/* AI Voice Settings */}
+                     <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+          <CardContent className="p-4 space-y-4">
+  <div className="space-y-4">
+    <h2 className="text-lg font-semibold text-gray-900">AI Voice Settings</h2>
+
+    {/* Voice Activity Detection */}
+  
+<Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-base font-medium text-gray-900">
+          Voice Activity Detection
+        </h3>
+        {/* <p className="text-sm text-gray-600">
+          Automatically detect when a speaker is talking
+        </p> */}
+      </div>
+      <Switch
+        checked={voiceIntegration.voiceActivityDetectionEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            voiceActivityDetectionEnabled: checked,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.voiceActivityDetectionEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Minimum Speech Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Speech Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.01}
+              max={1.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_speech_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_speech_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.01}
+              max={1.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_speech_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_speech_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum speech required to start a chunk.
+          </p>
+        </div>
+
+        {/* Minimum Silence Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Silence Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.2}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_silence_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_silence_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.2}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_silence_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_silence_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Silence duration to consider speech ended.
+          </p>
+        </div>
+
+        {/* Prefix Padding Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Prefix Padding Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.0}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.prefix_padding_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    prefix_padding_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.0}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.prefix_padding_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    prefix_padding_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Padding added before speech chunk.
+          </p>
+        </div>
+
+        {/* Max Buffered Speech */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Max Buffered Speech (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={10.0}
+              max={300.0}
+              step={1}
+              value={voiceIntegration.vad.max_buffered_speech}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    max_buffered_speech: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={10.0}
+              max={300.0}
+              step={1}
+              value={voiceIntegration.vad.max_buffered_speech}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    max_buffered_speech: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum speech buffer duration.
+          </p>
+        </div>
+
+        {/* Activation Threshold */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Activation Threshold
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={0.9}
+              step={0.01}
+              value={voiceIntegration.vad.activation_threshold}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    activation_threshold: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={0.9}
+              step={0.01}
+              value={voiceIntegration.vad.activation_threshold}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    activation_threshold: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Higher = conservative (may miss soft speech). Lower = sensitive (may detect noise).
+          </p>
+        </div>
+
+        {/* Sample Rate */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Sample Rate
+          </label>
+          <Select
+            value={voiceIntegration.vad.sample_rate} 
+            onValueChange={(value) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: {
+                  ...prev.vad,
+                  sample_rate: value,
+                },
+              }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select sample rate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="8000">8 kHz</SelectItem>
+              <SelectItem value="16000">16 kHz</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">Select between 8kHz or 16kHz.</p>
+        </div>
+
+        {/* Force CPU */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Force CPU
+            </label>
+            <p className="text-xs text-gray-500">
+              Whether to force CPU for inference.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.vad.force_cpu}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: {
+                  ...prev.vad,
+                  force_cpu: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+
+    {/* Placeholder for 2nd toggle card (we’ll add logic later) */}
+   <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-base font-medium text-gray-900">Turn Detectors</h3>
+      </div>
+      <Switch
+        checked={voiceIntegration.turnDetectorsEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            turnDetectorsEnabled: checked,
+            turnDetectors: checked
+              ? prev.turnDetectors || {
+                  min_endpointing_delay: 0.5,
+                  max_endpointing_delay: 6.0,
+                }
+              : prev.turnDetectors,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.turnDetectorsEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Minimum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Seconds to wait before considering the turn complete.
+          </p>
+        </div>
+
+        {/* Maximum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Maximum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum wait time if user is likely to continue speaking.
+          </p>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+  </div>
+  </CardContent>
+  </Card>
         {/* Background Noise Checkbox */}
         <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
           <CardContent className="p-4 space-y-4">

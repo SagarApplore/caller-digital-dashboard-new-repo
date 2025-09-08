@@ -74,7 +74,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 }) => {
   const { user } = useAuth();
   const router = useRouter();
-  
+
   // Debug user object
   useEffect(() => {
     console.log("🔍 CreateAgent - User object:", {
@@ -82,10 +82,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       userRole: user?.role,
       userTeamMemberOf: user?.teamMemberOf,
       userID: user?.id,
-      userDIY: user?.DIY
+      userDIY: user?.DIY,
     });
   }, [user]);
-  
+
   const [activeStep, setActiveStep] = useState(1);
   const [creating, setCreating] = useState(false);
   const [personaAndBehavior, setPersonaAndBehavior] =
@@ -105,30 +105,30 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
   // Check if user has DIY permissions
   const hasDIYPermission = () => {
-    console.log('hasDIYPermission check:', {
+    console.log("hasDIYPermission check:", {
       user,
       userRole: user?.role,
       userDIY: user?.DIY,
-      isSuperAdmin: user?.role === 'SUPER_ADMIN',
-      isClientAdminWithDIY: user?.role === 'CLIENT_ADMIN' && user?.DIY === true,
-      isTeamMember: user?.role === 'TEAM_MEMBER'
+      isSuperAdmin: user?.role === "SUPER_ADMIN",
+      isClientAdminWithDIY: user?.role === "CLIENT_ADMIN" && user?.DIY === true,
+      isTeamMember: user?.role === "TEAM_MEMBER",
     });
-    
+
     if (!user) return false;
-    if (user.role === 'SUPER_ADMIN') return true;
-    if (user.role === 'CLIENT_ADMIN' && user.DIY === true) return true;
-    if (user.role === 'TEAM_MEMBER') return true; // Team members should have DIY permissions
+    if (user.role === "SUPER_ADMIN") return true;
+    if (user.role === "CLIENT_ADMIN" && user.DIY === true) return true;
+    if (user.role === "TEAM_MEMBER") return true; // Team members should have DIY permissions
     return false;
   };
 
   // Get available steps based on DIY permission
   const getAvailableSteps = () => {
     const baseSteps = [1, 2, 3]; // Persona, Channels, Knowledge Base
-    
+
     if (hasDIYPermission()) {
       return [...baseSteps, 4, 5, 6]; // Include Voice, Chat, Email integrations
     }
-    
+
     return baseSteps; // Only basic steps for non-DIY users
   };
 
@@ -207,20 +207,47 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       selectedSTTProviderName:
         initialData?.voice?.transcriberProvider?.providerName || null,
       selectedTTSVoiceId: initialData?.voice?.voiceProvider?.voiceId || null,
-      selectedTTSVoiceName: initialData?.voice?.voiceProvider?.voiceName || null,
+      selectedTTSVoiceName:
+        initialData?.voice?.voiceProvider?.voiceName || null,
       selectedLLMModel: initialData?.voice?.llmProvider?.model || null,
       selectedLLMModelName: initialData?.voice?.llmProvider?.model || null,
-      selectedLLMProvider: initialData?.voice?.llmProvider?.providerName || null,
+      selectedLLMProvider:
+        initialData?.voice?.llmProvider?.providerName || null,
       selectedLLMProviderName:
         initialData?.voice?.llmProvider?.providerName || null,
       backgroundNoiseEnabled: initialData?.voice?.background_noise || false,
+      voiceActivityDetectionEnabled: !!initialData?.voice?.vad,
+      turnDetectorsEnabled: !!initialData?.voice?.turnDetectors,
+
+      vad: {
+        min_speech_duration:
+          initialData?.voice?.vad?.min_speech_duration ?? 0.05,
+        min_silence_duration:
+          initialData?.voice?.vad?.min_silence_duration ?? 0.55,
+        prefix_padding_duration:
+          initialData?.voice?.vad?.prefix_padding_duration ?? 0.5,
+        max_buffered_speech:
+          initialData?.voice?.vad?.max_buffered_speech ?? 60.0,
+        activation_threshold:
+          initialData?.voice?.vad?.activation_threshold ?? 0.5,
+        sample_rate: initialData?.voice?.vad?.sample_rate ?? "16000",
+        force_cpu: initialData?.voice?.vad?.force_cpu ?? true,
+      },
+      turnDetectors: {
+        min_endpointing_delay:
+          initialData?.voice?.turnDetectors?.min_endpointing_delay ?? 0.5,
+        max_endpointing_delay:
+          initialData?.voice?.turnDetectors?.max_endpointing_delay ?? 6.0,
+      },
     };
-    
+
     console.log("🔍 Initializing voice integration:", {
       initialData: initialData?.voice,
-      backgroundNoiseEnabled: voiceData.backgroundNoiseEnabled
+      backgroundNoiseEnabled: voiceData.backgroundNoiseEnabled,
+      voiceActivityDetectionEnabled: voiceData.voiceActivityDetectionEnabled,
+      turnDetectorsEnabled: voiceData.turnDetectorsEnabled,
     });
-    
+
     return voiceData;
   };
 
@@ -273,14 +300,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }>({
     phoneNumber: initialData?.agent_number || "",
     phoneNumberId: initialData?.phone_number_assignment || "",
-    numberType: initialData?.phone_number_type || "", // Initialize numberType
+    numberType: initialData?.call_type || "", // Initialize numberType
   });
 
   // Debug logging for agent phone number initialization
   console.log("Agent phone number state:", {
     initialData: initialData,
     agentPhoneNumber: agentPhoneNumber,
-    mode: mode
+    mode: mode,
   });
 
   // Debug: log mode
@@ -323,14 +350,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     // Validate each active channel
     activeChannels.forEach((channel) => {
       const channelId = channel.id.toLowerCase();
-      
+
       // All channels require a prompt
       if (!channel.prompt.value.trim()) {
         errors.push(`${channel.name} prompt is required`);
       }
-      
+
       // Only voice and chat channels require first message
-      if ((channelId === "voice" || channelId === "chat")) {
+      if (channelId === "voice" || channelId === "chat") {
         if (!channel.firstMessage.trim()) {
           errors.push(`${channel.name} first message is required`);
         } else if (channel.firstMessageError) {
@@ -340,7 +367,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     });
 
     // Phone number validation for edit mode
-    if (mode === "edit" && phoneMappingRef.current && !phoneMappingRef.current.isPhoneNumberValid()) {
+    if (
+      mode === "edit" &&
+      phoneMappingRef.current &&
+      !phoneMappingRef.current.isPhoneNumberValid()
+    ) {
       errors.push("Agent phone number is required in edit mode");
     }
 
@@ -352,7 +383,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         errors.push(handoffConfig.error);
       }
     }
-    
+
     // Agent phone number mapping is optional - no validation needed
 
     return { isValid: errors.length === 0, errors };
@@ -442,7 +473,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     // Validate step 2 (Channels and Phone Mapping)
     const step2Validation = validateStep2();
     errors.push(...step2Validation.errors);
-    
+
     // Validate handoff number if handoff is enabled
     if (handoffConfig.enabled) {
       if (!handoffConfig.handoff_number) {
@@ -451,10 +482,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         errors.push(handoffConfig.error);
       } else {
         // Additional validation to ensure number is at least 10 digits
-        const digitsOnly = handoffConfig.handoff_number.replace(/\D/g, '');
+        const digitsOnly = handoffConfig.handoff_number.replace(/\D/g, "");
         if (digitsOnly.length < 10) {
           // errors.push("Handoff phone number must be at least 10 digits long");
-          toast.error("Handoff phone number must be at least 10 digits long")
+          toast.error("Handoff phone number must be at least 10 digits long");
         }
       }
     }
@@ -489,7 +520,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       }
 
       // Validate first message only for voice and chat channels
-      if ((channelId === "voice" || channelId === "chat") && !channel.firstMessage.trim()) {
+      if (
+        (channelId === "voice" || channelId === "chat") &&
+        !channel.firstMessage.trim()
+      ) {
         errors.push(`${channel.name} first message is required`);
       }
 
@@ -574,22 +608,30 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
 
     // Check if the target step should be skipped based on channel activation and DIY permissions
-    const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
-    const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
-    const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
+    const chatChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "chat"
+    )?.active;
+    const emailChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "email"
+    )?.active;
+    const voiceChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "voice"
+    )?.active;
 
     // If user doesn't have DIY permissions, skip integration steps
     if (!hasDIYPermission()) {
       // For non-DIY users, only allow steps 1, 2, 3
       if (step > 3) {
-        toast.error("Integration features are not available for your account. Please contact support to enable DIY features.");
+        toast.error(
+          "Integration features are not available for your account. Please contact support to enable DIY features."
+        );
         return;
       }
     }
 
     // If trying to navigate to step 4 (Voice Integration) but voice is not active, skip to next available step
     if (step === 4 && !voiceChannelActive) {
-      const nextStep = chatChannelActive ? 5 : (emailChannelActive ? 6 : 7);
+      const nextStep = chatChannelActive ? 5 : emailChannelActive ? 6 : 7;
       setActiveStep(nextStep);
       return;
     }
@@ -684,7 +726,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           name: "Hindi",
           key: "hi",
         },
-        
       ];
 
       setPersonaAndBehavior((prev) => ({
@@ -727,7 +768,10 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           console.log("Fetched agent data:", agentData);
           console.log("Voice data:", agentData?.voice);
           console.log("Voice provider:", agentData?.voice?.voiceProvider);
-          console.log("Transcriber provider:", agentData?.voice?.transcriberProvider);
+          console.log(
+            "Transcriber provider:",
+            agentData?.voice?.transcriberProvider
+          );
           console.log("LLM provider:", agentData?.voice?.llmProvider);
           console.log("Channels:", agentData?.channels);
           console.log("Email data:", agentData?.email);
@@ -809,6 +853,28 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             selectedLLMProviderName:
               agentData.voice?.llmProvider?.providerName || null,
             backgroundNoiseEnabled: agentData.voice?.background_noise || false,
+            voiceActivityDetectionEnabled: !!agentData?.voice?.vad,
+            turnDetectorsEnabled: !!agentData?.voice?.turnDetectors,
+            vad: {
+              min_speech_duration:
+                agentData?.voice?.vad?.min_speech_duration ?? 0.05,
+              min_silence_duration:
+                agentData?.voice?.vad?.min_silence_duration ?? 0.55,
+              prefix_padding_duration:
+                agentData?.voice?.vad?.prefix_padding_duration ?? 0.5,
+              max_buffered_speech:
+                agentData?.voice?.vad?.max_buffered_speech ?? 60.0,
+              activation_threshold:
+                agentData?.voice?.vad?.activation_threshold ?? 0.5,
+              sample_rate: agentData?.voice?.vad?.sample_rate ?? "16000",
+              force_cpu: agentData?.voice?.vad?.force_cpu ?? true,
+            },
+            turnDetectors: {
+              min_endpointing_delay:
+                agentData?.voice?.turnDetectors?.min_endpointing_delay ?? 0.5,
+              max_endpointing_delay:
+                agentData?.voice?.turnDetectors?.max_endpointing_delay ?? 6.0,
+            },
           });
 
           setEmailIntegration({
@@ -871,22 +937,27 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           console.log("Setting agent phone number:", {
             agent_number: agentData.agent_number,
             phone_number_assignment: agentData.phone_number_assignment,
-            agentData: agentData
+            agentData: agentData,
           });
           setAgentPhoneNumber({
             phoneNumber: agentData.agent_number || "",
             phoneNumberId: agentData.phone_number_assignment || "",
-            numberType: agentData.phone_number_type || "primary", // Set numberType
+            numberType: agentData?.call_type || "", // Set numberType
           });
 
           // Update entity data
           if (agentData.entity_data && Array.isArray(agentData.entity_data)) {
-            console.log("Setting entity data from agentData:", agentData.entity_data);
-            const entityDataItems = agentData.entity_data.map((item: any, index: number) => ({
-              key: item.key || "",
-              value: item.value || "",
-              id: Date.now().toString() + index, // Generate unique ID
-            }));
+            console.log(
+              "Setting entity data from agentData:",
+              agentData.entity_data
+            );
+            const entityDataItems = agentData.entity_data.map(
+              (item: any, index: number) => ({
+                key: item.key || "",
+                value: item.value || "",
+                id: Date.now().toString() + index, // Generate unique ID
+              })
+            );
             setEntityData(entityDataItems);
           }
         } catch (error) {
@@ -903,11 +974,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // Ensure agent phone number is properly set when initialData changes
   useEffect(() => {
     if (mode === "edit" && initialData?.agent_number) {
-      console.log("Setting agent phone number from initialData:", initialData.agent_number);
+      console.log(
+        "Setting agent phone number from initialData:",
+        initialData.agent_number
+      );
       setAgentPhoneNumber({
         phoneNumber: initialData.agent_number || "",
         phoneNumberId: initialData.phone_number_assignment || "",
-        numberType: initialData.phone_number_type || "primary", // Set numberType
+        numberType: initialData.call_type || "", // Set numberType
       });
     }
   }, [mode, initialData]);
@@ -917,32 +991,39 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     if (mode === "edit" && initialData) {
       console.log("Setting email and chat integration from initialData:", {
         email: initialData.email,
-        chats: initialData.chats
+        chats: initialData.chats,
       });
-      
+
       // Update email integration
       if (initialData.email) {
         setEmailIntegration({
           selectedLLMModel: initialData.email?.llmProvider?.model || null,
           selectedLLMModelName: initialData.email?.llmProvider?.model || null,
-          selectedLLMProvider: initialData.email?.llmProvider?.providerName || null,
-          selectedLLMProviderName: initialData.email?.llmProvider?.providerName || null,
+          selectedLLMProvider:
+            initialData.email?.llmProvider?.providerName || null,
+          selectedLLMProviderName:
+            initialData.email?.llmProvider?.providerName || null,
         });
       }
-      
+
       // Update chat integration
       if (initialData.chats) {
         setChatIntegration({
           selectedLLMModel: initialData.chats?.llmProvider?.model || null,
           selectedLLMModelName: initialData.chats?.llmProvider?.model || null,
-          selectedLLMProvider: initialData.chats?.llmProvider?.providerName || null,
-          selectedLLMProviderName: initialData.chats?.llmProvider?.providerName || null,
+          selectedLLMProvider:
+            initialData.chats?.llmProvider?.providerName || null,
+          selectedLLMProviderName:
+            initialData.chats?.llmProvider?.providerName || null,
         });
       }
 
       // Update channels
       if (initialData.channels) {
-        console.log("Updating channels from initialData:", initialData.channels);
+        console.log(
+          "Updating channels from initialData:",
+          initialData.channels
+        );
         setChannels(
           initialChannels.map((channel) => {
             const channelId = channel.id.toLowerCase();
@@ -964,7 +1045,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
                 ...channel.prompt,
                 value: existingChannel?.agentPrompt || channel.prompt.value,
               },
-              firstMessage: existingChannel?.firstMessage || channel.firstMessage,
+              firstMessage:
+                existingChannel?.firstMessage || channel.firstMessage,
             };
           })
         );
@@ -972,12 +1054,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
       // Update entity data
       if (initialData.entity_data && Array.isArray(initialData.entity_data)) {
-        console.log("Updating entity data from initialData:", initialData.entity_data);
-        const entityDataItems = initialData.entity_data.map((item: any, index: number) => ({
-          key: item.key || "",
-          value: item.value || "",
-          id: Date.now().toString() + index, // Generate unique ID
-        }));
+        console.log(
+          "Updating entity data from initialData:",
+          initialData.entity_data
+        );
+        const entityDataItems = initialData.entity_data.map(
+          (item: any, index: number) => ({
+            key: item.key || "",
+            value: item.value || "",
+            id: Date.now().toString() + index, // Generate unique ID
+          })
+        );
         setEntityData(entityDataItems);
       }
     }
@@ -1052,17 +1139,29 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       );
 
       // Check if we need to handle step navigation after toggling
-      const chatChannelActive = updatedChannels.find(ch => ch.id.toLowerCase() === "chat")?.active;
-      const emailChannelActive = updatedChannels.find(ch => ch.id.toLowerCase() === "email")?.active;
+      const chatChannelActive = updatedChannels.find(
+        (ch) => ch.id.toLowerCase() === "chat"
+      )?.active;
+      const emailChannelActive = updatedChannels.find(
+        (ch) => ch.id.toLowerCase() === "email"
+      )?.active;
 
       // If user is on step 5 (Chat Integration) and chat is being disabled, move to next available step
-      if (activeStep === 5 && channelId.toLowerCase() === "chat" && !chatChannelActive) {
+      if (
+        activeStep === 5 &&
+        channelId.toLowerCase() === "chat" &&
+        !chatChannelActive
+      ) {
         const nextStep = emailChannelActive ? 6 : 7;
         setActiveStep(nextStep);
       }
 
       // If user is on step 6 (Email Integration) and email is being disabled, move to next available step
-      if (activeStep === 6 && channelId.toLowerCase() === "email" && !emailChannelActive) {
+      if (
+        activeStep === 6 &&
+        channelId.toLowerCase() === "email" &&
+        !emailChannelActive
+      ) {
         setActiveStep(7);
       }
 
@@ -1096,16 +1195,16 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
 
     setCreating(true);
-    
+
     // Debug logging for team member client assignment
     console.log("🔍 Team Member Debug:", {
       user,
       userRole: user?.role,
       userTeamMemberOf: user?.teamMemberOf,
       userID: user?.id,
-      clientValue: user?.id // Always user's own ID
+      clientValue: user?.id, // Always user's own ID
     });
-    
+
     const agentData: any = {
       agentName: personaAndBehavior.agentName,
       client: user?.id, // Always send the user's own ID
@@ -1123,10 +1222,15 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       tone: personaAndBehavior.tones
         .filter((tone) => tone.selected)
         .map((tone) => tone.name.toLowerCase()),
-      call_type: agentPhoneNumber.numberType === 'inbound' ? 'inbound' : agentPhoneNumber.numberType === 'outbound' ? 'outbound' : undefined, // Set based on phone number type, undefined if no number selected
+      call_type:
+        agentPhoneNumber.numberType === "inbound"
+          ? "inbound"
+          : agentPhoneNumber.numberType === "outbound"
+          ? "outbound"
+          : undefined, // Set based on phone number type, undefined if no number selected
       agent_number: agentPhoneNumber.phoneNumber || "", // Phone number for the agent
       phone_number_assignment: agentPhoneNumber.phoneNumberId || null, // Phone number assignment ID
-      phone_number_type: agentPhoneNumber.numberType || "", // Phone number type
+    
       summaryPrompt: extraPrompts.summaryPrompt,
       successEvaluationPrompt: extraPrompts.successEvaluationPrompt,
       failureEvaluationPrompt: extraPrompts.failureEvaluationPrompt,
@@ -1139,35 +1243,35 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       handoff: handoffConfig.enabled,
       handoff_number: handoffConfig.enabled ? handoffConfig.handoff_number : "",
       entity_data: entityData
-        .filter(item => item.key && item.key.trim() !== "") // Only include items with non-empty keys
-        .map(item => ({
+        .filter((item) => item.key && item.key.trim() !== "") // Only include items with non-empty keys
+        .map((item) => ({
           key: item.key,
-          value: item.value
+          value: item.value,
         })), // Array of entity data key-value pairs
       ...(!hasDIYPermission() && {
-    voice: {
-      firstMessageMode: "AI_SPEAKS_FIRST",
-      firstMessage: channels.find(
-        (channel) => channel.id.toLowerCase() === "voice"
-      )?.firstMessage,
-      agentPrompt: channels.find(
-        (channel) => channel.id.toLowerCase() === "voice"
-      )?.prompt?.value,
-      temperature: 0.5,
-      maxTokens: 100,
-    },
-  }),
+        voice: {
+          firstMessageMode: "AI_SPEAKS_FIRST",
+          firstMessage: channels.find(
+            (channel) => channel.id.toLowerCase() === "voice"
+          )?.firstMessage,
+          agentPrompt: channels.find(
+            (channel) => channel.id.toLowerCase() === "voice"
+          )?.prompt?.value,
+          temperature: 0.5,
+          maxTokens: 100,
+        },
+      }),
     };
 
     // Only include integration data if user has DIY permissions
     if (hasDIYPermission()) {
       // Add voice integration data
-      if (channels.find(ch => ch.id.toLowerCase() === "voice")?.active) {
+      if (channels.find((ch) => ch.id.toLowerCase() === "voice")?.active) {
         console.log("🔍 Voice Integration Debug:", {
           backgroundNoiseEnabled: voiceIntegration.backgroundNoiseEnabled,
-          voiceIntegration: voiceIntegration
+          voiceIntegration: voiceIntegration,
         });
-        
+
         agentData.voice = {
           llmProvider: {
             model: voiceIntegration.selectedLLMModelName,
@@ -1193,13 +1297,15 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           temperature: 0.5,
           maxTokens: 100,
           background_noise: voiceIntegration.backgroundNoiseEnabled,
+          vad: voiceIntegration.voiceActivityDetectionEnabled ? voiceIntegration.vad : undefined,
+          turnDetectors: voiceIntegration.turnDetectorsEnabled ? voiceIntegration.turnDetectors : undefined,
         };
-        
+
         console.log("🔍 Voice Object Debug:", agentData.voice);
       }
 
       // Add chat integration data
-      if (channels.find(ch => ch.id.toLowerCase() === "chat")?.active) {
+      if (channels.find((ch) => ch.id.toLowerCase() === "chat")?.active) {
         agentData.chats = {
           llmProvider: {
             model: chatIntegration.selectedLLMModelName,
@@ -1217,7 +1323,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       }
 
       // Add email integration data
-      if (channels.find(ch => ch.id.toLowerCase() === "email")?.active) {
+      if (channels.find((ch) => ch.id.toLowerCase() === "email")?.active) {
         agentData.email = {
           llmProvider: {
             model: emailIntegration.selectedLLMModelName,
@@ -1233,66 +1339,58 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
 
     if (mode === "edit" && agentId) {
-      try{
-      // Update existing agent - merge with existing data
-      const updateData = {
-        ...initialData,
-        ...agentData,
-      };
-      console.log("🔍 Edit Agent Debug:", {
-        mode,
-        agentId,
-        initialData: initialData?.voice,
-        agentData: agentData?.voice,
-        updateData: updateData?.voice,
-        backgroundNoiseEnabled: voiceIntegration.backgroundNoiseEnabled
-      });
-      console.log("Edit Agent - entity_data payload:", updateData.entity_data);
-      await apiRequest(
-        `${endpoints.assistants.update}/${agentId}`,
-        "PUT",
-        updateData
-      );
+      try {
+        // Update existing agent - merge with existing data
+        const updateData = {
+          ...initialData,
+          ...agentData,
+        };
+        console.log("🔍 Edit Agent Debug:", {
+          mode,
+          agentId,
+          initialData: initialData?.voice,
+          agentData: agentData?.voice,
+          updateData: updateData?.voice,
+          backgroundNoiseEnabled: voiceIntegration.backgroundNoiseEnabled,
+        });
+        console.log(
+          "Edit Agent - entity_data payload:",
+          updateData.entity_data
+        );
+        await apiRequest(
+          `${endpoints.assistants.update}/${agentId}`,
+          "PUT",
+          updateData
+        );
         //  setCreating(false);
-         toast.success(
-     
-         responseMessages.agent.update
-         
-    );
-    router.back();
-    }catch(error){
-       
-       toast.error(
-        error.message
-      );
+        toast.success(responseMessages.agent.update);
+        router.back();
+      } catch (error: any) {
+        toast.error(error.message);
         setCreating(false);
-    }
+      }
     } else {
       try {
-        console.log("Create Agent - entity_data payload:", agentData.entity_data);
+        console.log(
+          "Create Agent - entity_data payload:",
+          agentData.entity_data
+        );
         console.log("Create Agent - full payload:", agentData);
         console.log("🔍 Client field debug:", {
           client: agentData.client,
           userRole: user?.role,
           userTeamMemberOf: user?.teamMemberOf,
-          userID: user?.id
+          userID: user?.id,
         });
         await apiRequest(endpoints.assistants.create, "POST", agentData);
-            // setCreating(false);
-    toast.success(
-     
-         responseMessages.agent.create
-    );
-    router.back();
-  
-      } catch (error) {
+        // setCreating(false);
+        toast.success(responseMessages.agent.create);
+        router.back();
+      } catch (error: any) {
         console.error(error);
-         
-         toast.error(
-        error.message
-      );
-      setCreating(false);
-       
+
+        toast.error(error.message);
+        setCreating(false);
       }
     }
 
@@ -1315,11 +1413,19 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     );
   };
 
-  const updateFirstMessage = (channelId: string, firstMessage: string, errorMessage?: string) => {
+  const updateFirstMessage = (
+    channelId: string,
+    firstMessage: string,
+    errorMessage?: string
+  ) => {
     setChannels((prev) =>
       prev.map((channel) =>
         channel.id === channelId
-          ? { ...channel, firstMessage: firstMessage, firstMessageError: errorMessage }
+          ? {
+              ...channel,
+              firstMessage: firstMessage,
+              firstMessageError: errorMessage,
+            }
           : channel
       )
     );
@@ -1332,27 +1438,33 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       return 3; // Only Persona, Channels, Knowledge Base
     }
 
-    const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
-    const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
-    const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
-    
+    const chatChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "chat"
+    )?.active;
+    const emailChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "email"
+    )?.active;
+    const voiceChannelActive = channels.find(
+      (ch) => ch.id.toLowerCase() === "voice"
+    )?.active;
+
     let totalSteps = 3; // Base steps: 1, 2, 3
-    
+
     // Add voice integration step if voice channel is active
     if (voiceChannelActive) {
       totalSteps++;
     }
-    
+
     // Add chat integration step if chat channel is active
     if (chatChannelActive) {
       totalSteps++;
     }
-    
+
     // Add email integration step if email channel is active
     if (emailChannelActive) {
       totalSteps++;
     }
-    
+
     return totalSteps;
   };
 
@@ -1370,25 +1482,31 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         <ul className="flex flex-col gap-2 list-none">
           {agentSteps.map((step) => {
             // Check if step should be shown based on channel activation and DIY permissions
-            const chatChannelActive = channels.find(ch => ch.id.toLowerCase() === "chat")?.active;
-            const emailChannelActive = channels.find(ch => ch.id.toLowerCase() === "email")?.active;
-            const voiceChannelActive = channels.find(ch => ch.id.toLowerCase() === "voice")?.active;
-            
+            const chatChannelActive = channels.find(
+              (ch) => ch.id.toLowerCase() === "chat"
+            )?.active;
+            const emailChannelActive = channels.find(
+              (ch) => ch.id.toLowerCase() === "email"
+            )?.active;
+            const voiceChannelActive = channels.find(
+              (ch) => ch.id.toLowerCase() === "voice"
+            )?.active;
+
             // Hide integration steps for non-DIY users
             if (!hasDIYPermission() && step.id > 3) {
               return null;
             }
-            
+
             // Hide step 4 (Voice Integration) if voice is not active
             if (step.id === 4 && !voiceChannelActive) {
               return null;
             }
-            
+
             // Hide step 5 (Chat Integration) if chat is not active
             if (step.id === 5 && !chatChannelActive) {
               return null;
             }
-            
+
             // Hide step 6 (Email Integration) if email is not active
             if (step.id === 6 && !emailChannelActive) {
               return null;
@@ -1454,7 +1572,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               extraPrompts={extraPrompts}
               updateExtraPrompts={setExtraPrompts}
               agentPhoneNumber={agentPhoneNumber}
-              updateAgentPhoneNumber={(phoneNumber, phoneNumberId, numberType) =>
+              updateAgentPhoneNumber={(
+                phoneNumber,
+                phoneNumberId,
+                numberType
+              ) =>
                 setAgentPhoneNumber({ phoneNumber, phoneNumberId, numberType })
               }
               mode={mode || "create"}
@@ -1483,11 +1605,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
           {activeStep === 4 && !hasDIYPermission() && (
             <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Voice Integration Not Available</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Voice Integration Not Available
+              </h3>
               <p className="text-gray-600 mb-4">
-                DIY features are not enabled for your account. Please contact support to enable integration features.
+                DIY features are not enabled for your account. Please contact
+                support to enable integration features.
               </p>
-              <Button 
+              <Button
                 onClick={() => handleStepChange(3)}
                 className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
               >
@@ -1496,36 +1621,46 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             </div>
           )}
 
-          {activeStep === 5 && hasDIYPermission() && channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
-            <ChatIntegration
-              chatIntegration={chatIntegration}
-              setChatIntegration={setChatIntegration}
-              mode={mode}
-            />
-          )}
+          {activeStep === 5 &&
+            hasDIYPermission() &&
+            channels.find((ch) => ch.id.toLowerCase() === "chat")?.active && (
+              <ChatIntegration
+                chatIntegration={chatIntegration}
+                setChatIntegration={setChatIntegration}
+                mode={mode}
+              />
+            )}
 
-          {activeStep === 5 && hasDIYPermission() && !channels.find(ch => ch.id.toLowerCase() === "chat")?.active && (
-            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chat Integration Not Available</h3>
-              <p className="text-gray-600 mb-4">
-                Please enable the Live Chat channel in the Channels & Phone Mapping step to configure chat integration.
-              </p>
-              <Button 
-                onClick={() => handleStepChange(2)}
-                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
-              >
-                Go to Channels & Phone Mapping
-              </Button>
-            </div>
-          )}
+          {activeStep === 5 &&
+            hasDIYPermission() &&
+            !channels.find((ch) => ch.id.toLowerCase() === "chat")?.active && (
+              <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Chat Integration Not Available
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Please enable the Live Chat channel in the Channels & Phone
+                  Mapping step to configure chat integration.
+                </p>
+                <Button
+                  onClick={() => handleStepChange(2)}
+                  className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+                >
+                  Go to Channels & Phone Mapping
+                </Button>
+              </div>
+            )}
 
           {activeStep === 5 && !hasDIYPermission() && (
             <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Chat Integration Not Available</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Chat Integration Not Available
+              </h3>
               <p className="text-gray-600 mb-4">
-                DIY features are not enabled for your account. Please contact support to enable integration features.
+                DIY features are not enabled for your account. Please contact
+                support to enable integration features.
               </p>
-              <Button 
+              <Button
                 onClick={() => handleStepChange(3)}
                 className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
               >
@@ -1534,36 +1669,46 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             </div>
           )}
 
-          {activeStep === 6 && hasDIYPermission() && channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
-            <EmailIntegration
-              emailIntegration={emailIntegration}
-              setEmailIntegration={setEmailIntegration}
-              mode={mode}
-            />
-          )}
+          {activeStep === 6 &&
+            hasDIYPermission() &&
+            channels.find((ch) => ch.id.toLowerCase() === "email")?.active && (
+              <EmailIntegration
+                emailIntegration={emailIntegration}
+                setEmailIntegration={setEmailIntegration}
+                mode={mode}
+              />
+            )}
 
-          {activeStep === 6 && hasDIYPermission() && !channels.find(ch => ch.id.toLowerCase() === "email")?.active && (
-            <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration Not Available</h3>
-              <p className="text-gray-600 mb-4">
-                Please enable the Email Support channel in the Channels & Phone Mapping step to configure email integration.
-              </p>
-              <Button 
-                onClick={() => handleStepChange(2)}
-                className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
-              >
-                Go to Channels & Phone Mapping
-              </Button>
-            </div>
-          )}
+          {activeStep === 6 &&
+            hasDIYPermission() &&
+            !channels.find((ch) => ch.id.toLowerCase() === "email")?.active && (
+              <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Email Integration Not Available
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Please enable the Email Support channel in the Channels &
+                  Phone Mapping step to configure email integration.
+                </p>
+                <Button
+                  onClick={() => handleStepChange(2)}
+                  className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
+                >
+                  Go to Channels & Phone Mapping
+                </Button>
+              </div>
+            )}
 
           {activeStep === 6 && !hasDIYPermission() && (
             <div className="p-8 bg-white rounded-lg shadow-lg shadow-gray-200 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Integration Not Available</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Email Integration Not Available
+              </h3>
               <p className="text-gray-600 mb-4">
-                DIY features are not enabled for your account. Please contact support to enable integration features.
+                DIY features are not enabled for your account. Please contact
+                support to enable integration features.
               </p>
-              <Button 
+              <Button
                 onClick={() => handleStepChange(3)}
                 className="bg-purple-100 text-purple-700 hover:bg-purple-200 font-semibold"
               >
