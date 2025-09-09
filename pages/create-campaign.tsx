@@ -695,7 +695,7 @@ export function CreateCampaignPage() {
                           <div className="mt-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
                             <h4 className="font-medium text-gray-900 mb-2">Select Columns to Import</h4>
                             <p className="text-sm text-gray-600 mb-3">
-                              Required columns are selected by default. Choose additional columns to include in your campaign.
+                              Required columns are selected by default. Choose additional required columns to include in your campaign.
                             </p>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                               {csvColumns.map((column) => (
