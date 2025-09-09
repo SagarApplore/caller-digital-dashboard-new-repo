@@ -96,6 +96,11 @@ export function CreateCampaignPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string>("");
   const [campaignCreating, setCampaignCreating] = useState(false);
+  
+  // CSV column selection states
+  const [csvColumns, setCsvColumns] = useState<string[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState<{[key: string]: boolean}>({});
+  const [requiredColumns] = useState<string[]>(['phone_number', 'name']);
 
   // Manual lead entry (fallback when user doesn't have a CSV)
   const [manualName, setManualName] = useState("");
@@ -210,17 +215,26 @@ export function CreateCampaignPage() {
       // Normalize headers: trim whitespace, remove quotes, and convert to lowercase
       const headers = lines[0]
         .split(',')
-        .map(header => header.trim().replace(/['"]/g, ''));
+        .map(header => header.trim().replace(/['"]*/g, ''));
       
       console.log("Found headers:", headers);
       
-      const requiredColumns = ['phone_number', 'name'];
       const missingColumns = requiredColumns.filter(col => !headers.includes(col));
 
       if (missingColumns.length > 0) {
         setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has exactly these columns: phone_number, name`);
         return;
       }
+      
+      // Store the CSV columns for selection
+      setCsvColumns(headers);
+      
+      // Initialize selected columns - required columns are selected by default
+      const initialSelectedColumns: {[key: string]: boolean} = {};
+      headers.forEach(column => {
+        initialSelectedColumns[column] = requiredColumns.includes(column);
+      });
+      setSelectedColumns(initialSelectedColumns);
 
       console.log("CSV validation passed. Headers found:", headers);
     } catch (validationError) {
@@ -393,6 +407,12 @@ export function CreateCampaignPage() {
         Object.entries(campaignData).forEach(([key, value]) => {
           formData.append(key, value.toString());
         });
+        
+        // Add selected columns
+        const selectedColumnsList = Object.entries(selectedColumns)
+          .filter(([_, isSelected]) => isSelected)
+          .map(([column]) => column);
+        formData.append("selectedColumns", JSON.stringify(selectedColumnsList));
 
         const response = await apiRequest(
           endpoints.outboundCampaign.create,
@@ -644,29 +664,75 @@ export function CreateCampaignPage() {
 
                     {/* Upload Success */}
                     {uploadStatus === "success" && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">
+                                {uploadedFile.name}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                • Uploaded successfully
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">
-                              {uploadedFile.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              • Uploaded successfully
-                            </p>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveFile}
+                            className="text-gray-500 hover:text-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleRemoveFile}
-                          className="text-gray-500 hover:text-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        
+                        {/* CSV Column Selection */}
+                        {csvColumns.length > 0 && (
+                          <div className="mt-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <h4 className="font-medium text-gray-900 mb-2">Select Columns to Import</h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                              Required columns are selected by default. Choose additional columns to include in your campaign.
+                            </p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {csvColumns.map((column) => (
+                                <div key={column} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`column-${column}`}
+                                    checked={selectedColumns[column] || false}
+                                    onChange={(e) => {
+                                      // Don't allow unchecking required columns
+                                      if (requiredColumns.includes(column) && !e.target.checked) {
+                                        return;
+                                      }
+                                      setSelectedColumns({
+                                        ...selectedColumns,
+                                        [column]: e.target.checked,
+                                      });
+                                    }}
+                                    disabled={requiredColumns.includes(column)}
+                                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                  />
+                                  <label
+                                    htmlFor={`column-${column}`}
+                                    className={`text-sm ${requiredColumns.includes(column) ? 'font-medium text-purple-700' : 'text-gray-700'}`}
+                                  >
+                                    {column}
+                                    {requiredColumns.includes(column) && (
+                                      <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                                        Required
+                                      </span>
+                                    )}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
