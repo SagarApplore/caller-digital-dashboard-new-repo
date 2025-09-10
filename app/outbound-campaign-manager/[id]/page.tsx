@@ -354,12 +354,12 @@ const csvContent = bom + csvRows.join("\n");
                 disabled={leads.filter(lead => lead.entity_result).length === 0}
               >
                 <Download className="w-4 h-4 mr-2" />
-                Extract Entity
-                {leads.filter(lead => lead.entity_result).length > 0 && (
+                Extract Data
+                {/* {leads.filter(lead => lead.entity_result).length > 0 && (
                   <Badge className="ml-2 bg-white text-purple-600 text-xs">
                     {leads.filter(lead => lead.entity_result).length}
                   </Badge>
-                )}
+                )} */}
               </Button>
             </div>
           </div>
