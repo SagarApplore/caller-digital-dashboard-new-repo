@@ -170,6 +170,8 @@ export function ClientsPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
+   const [clientAssociatedNumbersFlag, setClientAssociatedNumbersFlag] = useState<boolean | null>(false);
+   const [clientAssociatedNumbers, setClientAssociatedNumbers] = useState<string | null>("");
   const [addingCreditsClientId, setAddingCreditsClientId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -445,6 +447,24 @@ export function ClientsPage() {
     setEditingClientId(clientId);
   };
 
+  const handleAssociatedNumbers = async (clientId: string) =>{
+    if(!clientId){
+      return
+    }
+    setClientAssociatedNumbersFlag(true);
+    try{
+
+    
+    const url = `/phone-number-assignment`
+    const response = await apiRequest(url,"GET",{},{clientId})
+    console.log("response phone numbers ",response.data.data)
+      setClientAssociatedNumbers(response.data.data)
+    }catch(error){
+      console.log("Error fetching phone numbers")
+    }
+
+  }
+
   const handleEditSuccess = async () => {
     setEditingClientId(null);
     toast({
@@ -713,6 +733,9 @@ export function ClientsPage() {
       <DropdownMenuItem onClick={() => handleEditClient(client._id)}>
         Edit
       </DropdownMenuItem>
+       <DropdownMenuItem onClick={() => handleAssociatedNumbers(client._id)}>
+        Associated Numbers
+      </DropdownMenuItem>
       {client.active && (
         <>
           <DropdownMenuSeparator />
@@ -964,6 +987,76 @@ export function ClientsPage() {
           </div>
         </div>
       )}
+
+      {/* Number Modal*/}
+       {/* Number Modal*/}
+{clientAssociatedNumbersFlag && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">
+            Associated Numbers
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setClientAssociatedNumbersFlag(false)}
+          >
+            ✕
+          </Button>
+        </div>
+
+        {/* Numbers Table */}
+        <div className="rounded-lg shadow border border-gray-200">
+          <Table>
+            <TableHeader className="bg-gray-100">
+              <TableRow>
+                <TableHead>Number</TableHead>
+                <TableHead>Purchase Date</TableHead>
+                <TableHead>Linked with Agent</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clientAssociatedNumbers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-6">
+                    No numbers associated
+                  </TableCell>
+                </TableRow>
+              ) : (
+                clientAssociatedNumbers.map((num: any) => (
+                  <TableRow key={num._id}>
+                    <TableCell>{num.phone_number}</TableCell>
+                    <TableCell>
+                      {new Date(num.createdAt).toLocaleDateString("en-IN", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      {num.agentId && num.agentId._id ? (
+                        <span className="text-green-600 font-medium">
+                          Linked ({num.agentId.agentName})
+                        </span>
+                      ) : (
+                        <span className="text-red-600 font-medium">
+                          Not Linked
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

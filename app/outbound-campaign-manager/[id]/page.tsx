@@ -468,7 +468,7 @@ const csvContent = bom + csvRows.join("\n");
                   <TableHead className="font-medium text-gray-700">Phone Number</TableHead>
                   <TableHead className="font-medium text-gray-700">Interested</TableHead>
                   <TableHead className="font-medium text-gray-700">Call Status</TableHead>
-                  <TableHead className="font-medium text-gray-700">Call Start Time </TableHead>
+                  <TableHead className="font-medium text-gray-700">Call Start Date </TableHead>
                   <TableHead className="font-medium text-gray-700">Call Duration (mins)</TableHead>
                   <TableHead className="font-medium text-gray-700">Actions</TableHead>
                 </TableRow>
