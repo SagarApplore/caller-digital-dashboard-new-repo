@@ -563,7 +563,54 @@ const CallLogs = () => {
     debouncedSearch(value);
   };
 
+
+    // Function to fetch transcript content from URL
+
+  const fetchTranscriptContent = async (transcriptUrl: string): Promise<string> => {
+  if (!transcriptUrl) return "";
+
+  try {
+    // Request transcript file (could be .txt, .json, or .vtt depending on how it's stored)
+    const response = await fetch(transcriptUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/plain,application/json,text/vtt",
+      },
+    });
+
+    if (response.ok) {
+      const contentType = response.headers.get("Content-Type") || "";
+
+      let content = "";
+      if (contentType.includes("application/json")) {
+        const jsonData = await response.json();
+        // Assuming transcript JSON has an array of items with "text"
+        if (Array.isArray(jsonData)) {
+          content = jsonData.map((line: any) => line.text || "").join(" ");
+        } else if (jsonData.transcript) {
+          content = jsonData.transcript;
+        } else {
+          content = JSON.stringify(jsonData, null, 2);
+        }
+      } else {
+        // For plain text, VTT, or SRT
+        content = await response.text();
+      }
+
+      return content.trim();
+    } else {
+      console.warn(`Failed to fetch transcript from ${transcriptUrl}: ${response.status} ${response.statusText}`);
+      return `[Failed to fetch transcript: ${response.status}]`;
+    }
+  } catch (error) {
+    console.error(`Error fetching transcript from ${transcriptUrl}:`, error);
+    return `[Error: ${error instanceof Error ? error.message : "Unknown error"}]`;
+  }
+};
+
+
   // Function to fetch summary content from URL
+
   const fetchSummaryContent = async (summaryUrl: string): Promise<string> => {
     if (!summaryUrl) return "";
     
@@ -602,7 +649,7 @@ const CallLogs = () => {
       // Fetch summary content for all logs
       const exportDataPromises = callLogs.map(async (log) => {
         const summaryContent = await fetchSummaryContent(log.summary_uri);
-        
+        const transcriptContent = await fetchTranscriptContent((log.transcript_uri))
         // Process entity_result data
         let entityResultData = "";
         if (log.entity_result) {
@@ -635,7 +682,9 @@ const CallLogs = () => {
           "Customer Name": log.clientId?.name || "",
           "Agent Name": log.agentId?.agentName || "",
           "Duration (ms)": log.call_duration || "",
+          "Transcript Content":transcriptContent || "",
           "Summary Content": summaryContent || "",
+          "Transcript URL":log.transcript_uri ||"",
           "Summary URL": log.summary_uri || "",
           "Audio URL": log.recording_uri || "",
           "Agent Number": log.agent_phone_number || "",
