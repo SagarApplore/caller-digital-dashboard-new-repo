@@ -1031,7 +1031,7 @@ export function CreateCampaignPage() {
 
           {/* Schedule Settings */}
           
-          {/* <Card className="mb-6">
+          <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <Clock className="w-5 h-5 text-purple-600" />
@@ -1121,19 +1121,19 @@ export function CreateCampaignPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                      {/* <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
                       <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
                       <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem> */}
                       <SelectItem value="Asia/Kolkata">Mumbai (IST)</SelectItem>
-                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                      {/* <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </CardContent>
-          </Card> */}
+          </Card>
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-6">
