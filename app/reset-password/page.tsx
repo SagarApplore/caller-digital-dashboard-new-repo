@@ -13,6 +13,11 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+   // resend otp states
+  const [timeLeft, setTimeLeft] = useState(120); // 10 mins = 600 seconds
+  const [isResending, setIsResending] = useState(false);
+
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -22,6 +27,35 @@ function ResetPasswordForm() {
       if (emailParam) setEmail(emailParam);
     }
   }, [searchParams]);
+
+
+    useEffect(() => {
+    if (timeLeft <= 0) return;
+    const interval = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+    const handleResendOtp = async () => {
+    try {
+      setIsResending(true);
+      await apiRequest("/auth/forgot-password", "POST", { email });
+      setSuccess("OTP resent successfully!");
+      setTimeLeft(120); // reset timer after resend
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to resend OTP");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+    const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +98,7 @@ function ResetPasswordForm() {
           onChange={e => setEmail(e.target.value)}
           required
         />
+          <div className="flex space-x-2">
         <Input
           type="text"
           placeholder="Enter OTP"
@@ -71,6 +106,20 @@ function ResetPasswordForm() {
           onChange={e => setOtp(e.target.value)}
           required
         />
+         <Button
+            type="button"
+            variant="outline"
+            disabled={timeLeft > 0 || isResending}
+            onClick={handleResendOtp}
+            
+          >
+            {isResending
+              ? "Resending..."
+              : timeLeft > 0
+              ? `Resend in ${formatTime(timeLeft)}`
+              : "Resend OTP"}
+          </Button>
+          </div>
         <Input
           type="password"
           placeholder="New Password"
@@ -87,7 +136,7 @@ function ResetPasswordForm() {
         />
         {error && <div className="text-red-600 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-2.5 rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" type="submit"  disabled={loading}>
           {loading ? "Resetting..." : "Reset Password"}
         </Button>
       </form>
