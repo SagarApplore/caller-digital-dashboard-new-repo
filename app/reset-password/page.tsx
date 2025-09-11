@@ -81,7 +81,7 @@ function ResetPasswordForm() {
         setError(res.data?.message || "Failed to reset password");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to reset password");
+      setError(err?.message || "Failed to reset password");
     } finally {
       setLoading(false);
     }

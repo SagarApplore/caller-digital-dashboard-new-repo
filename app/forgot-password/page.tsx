@@ -25,10 +25,12 @@ export default function ForgotPasswordPage() {
           router.push(`/reset-password?email=${encodeURIComponent(email)}`);
         }, 1000);
       } else {
+       
         setError(res.data?.message || "Failed to send OTP");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to send OTP");
+   
+      setError(err?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
