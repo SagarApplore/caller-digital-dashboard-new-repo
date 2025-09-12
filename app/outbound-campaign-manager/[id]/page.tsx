@@ -351,7 +351,7 @@ const csvContent = bom + csvRows.join("\n");
               <Button
                 onClick={downloadEntityCSV}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
-                disabled={leads.filter(lead => lead.entity_result).length === 0}
+                // disabled={leads.filter(lead => lead.entity_result).length === 0}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Extract Data
