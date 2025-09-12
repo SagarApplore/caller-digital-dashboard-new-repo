@@ -13,6 +13,7 @@ import {
   Play,
 } from "lucide-react";
 import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "./card";
 import * as XLSX from 'xlsx';
 import {
@@ -145,7 +146,9 @@ const CallLogs = () => {
   
   
   // Pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const searchParams = useSearchParams();
+  const pageParam = searchParams?.get('page');
+  const [currentPage, setCurrentPage] = useState<number>(pageParam ? parseInt(pageParam) : 1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
@@ -218,13 +221,16 @@ const CallLogs = () => {
     }
   };
 
-  // Fetch all data on component mount
+  // Fetch all data (used for retry button)
   const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
+      // Use the current page from state
+      const page = currentPage;
+      console.log("fetch 1")
       await Promise.all([
-        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, currentPage, pageSize, filters.status, filters.searchQuery),
+        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, page, pageSize, filters.status, filters.searchQuery),
         fetchAgents(),
       ]);
     } catch (err: any) {
@@ -239,8 +245,10 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      setCurrentPage(1); // Reset to first page when filter changes
-      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, 1, pageSize, filters.status, filters.searchQuery);
+      // Use current page from URL or state instead of resetting to 1
+      const currentPageToUse = currentPage;
+      console.log("fetch 2 with page:", currentPageToUse)
+      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, currentPageToUse, pageSize, filters.status, filters.searchQuery);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
@@ -254,6 +262,7 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+       console.log("fetch 3")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
@@ -288,6 +297,7 @@ const CallLogs = () => {
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when filter changes
     // Refetch data without date filter
+     console.log("fetch 4")
     fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
@@ -310,6 +320,7 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+       console.log("fetch 5")
       await fetchCallLogs(
         filters.assistant,
         tempDateFilter.startDate,
@@ -327,7 +338,14 @@ const CallLogs = () => {
   };
 
   useEffect(() => {
-    fetchAllData();
+    // Use the page from URL parameters when component mounts
+    const initialPage = pageParam ? parseInt(pageParam) : 1;
+    // Set current page from URL parameter
+    setCurrentPage(initialPage);
+    // Fetch data with the correct page
+     console.log("fetch 6")
+    fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, initialPage, pageSize, filters.status, filters.searchQuery);
+    fetchAgents();
   }, []);
 
   // Refetch call logs when assistant filter changes
@@ -545,7 +563,9 @@ const CallLogs = () => {
       try {
         setLoading(true);
         setError(null);
-        setCurrentPage(1); // Reset to first page when search changes
+        // For search, we still want to reset to page 1 as this is expected behavior
+        setCurrentPage(1); 
+        console.log("fetch 7")
         await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, filters.status, searchQuery);
       } catch (err: any) {
         console.error("Error fetching call logs with search:", err);
@@ -805,6 +825,7 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when clearing filters
+     console.log("fetch 8")
     fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
@@ -814,6 +835,9 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(page);
+      // Update URL with the new page parameter
+      router.push(`/call-logs?page=${page}`, { scroll: false });
+       console.log("fetch 9")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
@@ -836,6 +860,7 @@ const CallLogs = () => {
       setError(null);
       setPageSize(newPageSize);
       setCurrentPage(1); // Reset to first page when changing page size
+       console.log("fetch 10")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
@@ -1092,6 +1117,7 @@ const CallLogs = () => {
                 setError(null);
                 updateFilter("status", value);
                 // Trigger API call when status changes
+                 console.log("fetch 11")
                 await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, value, filters.searchQuery);
               } catch (err: any) {
                 console.error("Error fetching call logs with status filter:", err);
@@ -1453,7 +1479,7 @@ const CallLogs = () => {
                           size="sm"
                           className="text-blue-600 hover:text-blue-800 p-0"
                           onClick={() =>
-                            router.push(`/call-logs/${conversation.id}`)
+                            router.push(`/call-logs/${conversation.id}?page=${currentPage}`)
                           }
                         >
                           <Play className="w-4 h-4 mr-1" />

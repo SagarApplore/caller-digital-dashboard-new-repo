@@ -300,6 +300,7 @@ const ViewCallLog = ({ id }: { id: string }) => {
         });
         wavesurfer.current?.on("finish", () => {
           setCurrentTime(wavesurfer.current?.getDuration() ?? 0);
+           setPlay(false);
         });
       });
 
