@@ -131,11 +131,16 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     };
 
     const handleHandoffToggle = (enabled: boolean) => {
+      let error = undefined;
+       if (enabled && !handoffConfig.handoff_number) {
+    error = "Phone number is required when handoff is enabled";
+  }
       updateHandoffConfig({
         ...handoffConfig,
         enabled,
         // Reset phone number when disabling handoff
         handoff_number: enabled ? handoffConfig.handoff_number : "",
+        error
       });
     };
 
