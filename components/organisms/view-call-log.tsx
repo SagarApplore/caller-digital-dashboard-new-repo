@@ -561,10 +561,10 @@ const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
                 </span>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">
-                    {apiData?.agentId?.voice?.llmProvider?.providerName || "Not available"}
+                    {apiData?.agentConfig?.llmProvider?.providerName || "Not available"}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {apiData?.agentId?.voice?.llmProvider?.model || "Model not specified"}
+                    {apiData?.agentConfig?.llmProvider?.model || "Model not specified"}
                   </span>
                 </div>
               </div>
@@ -577,10 +577,10 @@ const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
                 </span>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">
-                    {apiData?.agentId?.voice?.voiceProvider?.providerName || "Not available"}
+                    {apiData?.agentConfig?.voiceProvider?.providerName || "Not available"}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {apiData?.agentId?.voice?.voiceProvider?.model || "Model not specified"}
+                    {apiData?.agentConfig?.voiceProvider?.model || "Model not specified"}
                   </span>
                 </div>
               </div>
@@ -593,10 +593,10 @@ const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
                 </span>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold">
-                    {apiData?.agentId?.voice?.transcriberProvider?.providerName || "Not available"}
+                    {apiData?.agentConfig?.transcriberProvider?.providerName || "Not available"}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {apiData?.agentId?.voice?.transcriberProvider?.model || "Model not specified"}
+                    {apiData?.agentConfig?.transcriberProvider?.model || "Model not specified"}
                   </span>
                 </div>
               </div>
