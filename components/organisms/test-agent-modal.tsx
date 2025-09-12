@@ -76,7 +76,7 @@ export default function TestAgentModal({
         serverUrl
       });
 
-      // Build query parameters with agent metadata
+      // Prepare agent data for token request
       console.log('Agent data for token request:', {
         agentId: agent._id,
         agentName: agent.agentName,
@@ -94,26 +94,33 @@ export default function TestAgentModal({
       } else if (agent.client && typeof agent.client === 'object') {
         clientIdValue = agent.client._id || agent.client.id || '';
       }
-
-      const params = new URLSearchParams({
+      
+      // Create request body with all agent data
+      const requestBody = {
         room: newRoomName,
         username: newParticipantName,
         agentId: agent._id,
         agentName: agent.agentName || '',
-        agentChannels: JSON.stringify(agent.channels || []),
-        agentLanguages: JSON.stringify(agent.languages || []),
-        agentVoice: JSON.stringify(agent.voice || {}),
-        agentEmail: JSON.stringify(agent.email || {}),
-        agentChats: JSON.stringify(agent.chats || {}),
+        agentChannels: agent.channels || [],
+        agentLanguages: agent.languages || [],
+        agentVoice: agent.voice || {},
+        agentEmail: agent.email || {},
+        agentChats: agent.chats || {},
         clientId: clientIdValue,
-        workspaceId: agent.workspace || ''
-      });
+        workspaceId: agent.workspace || '',
+        agentPrompt: agent.prompt || ''
+      };
 
       console.log('Client ID being sent:', clientIdValue);
-      console.log('Full params:', params.toString());
-
-      // Use the new Next.js token API with metadata
-      const tokenResponse = await fetch(`/api/token?${params.toString()}`);
+      
+      // Use POST request to avoid URL length limitations
+      const tokenResponse = await fetch('/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
       const data = await tokenResponse.json();
 
       console.log('Token response:', data);
