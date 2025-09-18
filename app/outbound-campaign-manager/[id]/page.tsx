@@ -49,6 +49,13 @@ interface CampaignDetails {
     totalInterested: number;
   };
 }
+const formatDuration = (seconds: number) => {
+  if (!seconds || isNaN(seconds)) return "-";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+};
+
 
 export default function CampaignDetailsPage() {
   const params = useParams();
@@ -492,9 +499,13 @@ const csvContent = bom + csvRows.join("\n");
                       <TableCell className="text-gray-700">
                         {lead?.callLogId ? formatDate(lead.callLogId.call_start_time) : "-"}
                       </TableCell>
-                      <TableCell className="text-gray-700">
+                      {/* <TableCell className="text-gray-700">
                         {lead?.callLogId ? ((lead.callLogId.call_duration)/60).toFixed(2) : "-"}
-                      </TableCell>
+                      </TableCell> */}
+                      <TableCell className="text-gray-700">
+  {lead?.callLogId ? formatDuration(lead.callLogId.call_duration) : "-"}
+</TableCell>
+
                       <TableCell>
                         {lead.callLogId ? (
                           <Button
