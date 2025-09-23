@@ -259,13 +259,19 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
       const submitData = new FormData();
       
       // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (key === 'companyLogo' && formData[key as keyof FormDataType]) {
-          submitData.append(key, formData[key as keyof FormDataType] as File);
-        } else if (key !== 'companyLogo') {
-          submitData.append(key, String(formData[key as keyof FormDataType]));
-        }
-      });
+    Object.keys(formData).forEach(key => {
+  // Skip sending costPerMin and totalCredits
+  if (key === "costPerMin" || key === "totalCredits") {
+    return;
+  }
+
+  if (key === "companyLogo" && formData[key as keyof FormDataType]) {
+    submitData.append(key, formData[key as keyof FormDataType] as File);
+  } else if (key !== "companyLogo") {
+    submitData.append(key, String(formData[key as keyof FormDataType]));
+  }
+});
+
 
       console.log("Submitting to endpoint:", `/our-clients/user/${clientId}`);
       const response = await apiRequest(`/our-clients/user/${clientId}`, "PUT", submitData);
@@ -422,6 +428,7 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
                   value={formData.costPerMin}
                   onChange={(e) => handleInputChange("costPerMin", parseFloat(e.target.value) || 0)}
                   placeholder="0.00"
+                  disabled
                   className={errors.costPerMin ? "border-red-500" : ""}
                 />
                 {errors.costPerMin && (
@@ -438,6 +445,7 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
                   value={formData.totalCredits}
                   onChange={(e) => handleInputChange("totalCredits", parseInt(e.target.value) || 0)}
                   placeholder="0"
+                   disabled
                   className={errors.totalCredits ? "border-red-500" : ""}
                 />
                 {errors.totalCredits && (
