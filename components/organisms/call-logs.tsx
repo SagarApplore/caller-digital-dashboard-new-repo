@@ -230,7 +230,7 @@ const CallLogs = () => {
       const page = currentPage;
       console.log("fetch 1")
       await Promise.all([
-        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, page, pageSize, filters.status, filters.searchQuery),
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, page, pageSize, filters.status, filters.searchQuery),
         fetchAgents(),
       ]);
     } catch (err: any) {
@@ -248,7 +248,7 @@ const CallLogs = () => {
       // Use current page from URL or state instead of resetting to 1
       const currentPageToUse = currentPage;
       console.log("fetch 2 with page:", currentPageToUse)
-      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, currentPageToUse, pageSize, filters.status, filters.searchQuery);
+      await fetchCallLogs(assistantId, dateInputs.startDate, dateInputs.endDate, currentPageToUse, pageSize, filters.status, filters.searchQuery);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
@@ -566,7 +566,7 @@ const CallLogs = () => {
         // For search, we still want to reset to page 1 as this is expected behavior
         setCurrentPage(1); 
         console.log("fetch 7")
-        await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, filters.status, searchQuery);
+        await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, 1, pageSize, filters.status, searchQuery);
       } catch (err: any) {
         console.error("Error fetching call logs with search:", err);
         setError(err.message || "Failed to fetch call logs");
@@ -574,7 +574,7 @@ const CallLogs = () => {
         setLoading(false);
       }
     }, 500), // 500ms delay
-    [filters.assistant, filters.startDate, filters.endDate, filters.status, pageSize]
+    [filters.assistant, dateInputs.startDate, dateInputs.endDate, filters.status, pageSize]
   );
 
   // Handle search input change
@@ -1118,7 +1118,7 @@ const CallLogs = () => {
                 updateFilter("status", value);
                 // Trigger API call when status changes
                  console.log("fetch 11")
-                await fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, 1, pageSize, value, filters.searchQuery);
+                await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, 1, pageSize, value, filters.searchQuery);
               } catch (err: any) {
                 console.error("Error fetching call logs with status filter:", err);
                 setError(err.message || "Failed to fetch call logs");
