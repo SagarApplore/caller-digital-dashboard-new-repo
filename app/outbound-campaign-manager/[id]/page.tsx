@@ -24,7 +24,7 @@ interface CampaignLead {
   _id: string;
   leadName: string;
   leadNumber: number;
-  interest: boolean | null;
+  interest: any | null;
   status: "answered" | "unanswered";
   callLogId: {
     _id: string;
@@ -204,61 +204,53 @@ export default function CampaignDetailsPage() {
     }
   };
 
-  const downloadEntityCSV = () => {
-    try {
-      // Filter leads that have entity_result data
-      const leadsWithEntityData = leads.filter(lead => lead.entity_result);
-      
-      if (leadsWithEntityData.length === 0) {
-        toast.warning("No entity data available for download");
-        return;
-      }
+ const downloadEntityCSV = () => {
+  try {
+    const leadsWithEntityData = leads.filter(lead => lead.entity_result);
 
-      // Create CSV headers
-      const headers = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result"];
-      
-      // Create CSV rows
-      const csvRows = [
-        headers.join(","), // Header row
-        ...leadsWithEntityData.map(lead => {
-          const leadName = `"${lead.leadName.replace(/"/g, '""')}"`;
-          const phoneNumber = `"${lead.leadNumber}"`;
-          const interested = `"${lead.interest === true ? 'Yes' : lead.interest === false ? 'No' : '-'}"`;
-          const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
-           const callDuration = lead?.callLogId ? `"${((lead.callLogId.call_duration)/60).toFixed(2) }"` : `"-"`;
-          
-          // Properly escape the entity result JSON for CSV
-          const entityResultJson = JSON.stringify(lead.entity_result);
-          const escapedEntityResult = entityResultJson.replace(/"/g, '""'); // Escape quotes
-          const entityResult = `"${escapedEntityResult}"`;
-          
-          return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult},${callDuration}`;
-        })
-      ];
+    const headers = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result", "Call Duration"];
 
-      // Create CSV content
-      const bom = "\uFEFF";
-const csvContent = bom + csvRows.join("\n");
+    const csvRows = [
+      headers.join(","), 
+      ...leads.map(lead => {
+       const leadName = `"${(lead?.leadName ?? "N/A").replace(/"/g, '""')}"`;
+        const phoneNumber = `"${lead.leadNumber}"`;
+        const interested = `"${lead.interest == "true" ? 'Yes' : lead.interest == "false" ? 'No' : '-'}"`;
+        const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
 
- 
-      
-      // Create and download file
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      link.setAttribute("href", url);
-      link.setAttribute("download", `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = "hidden";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success(`Downloaded entity data for ${leadsWithEntityData.length} leads`);
-    } catch (error) {
-      console.error("Error downloading CSV:", error);
-      toast.error("Failed to download entity data");
-    }
-  };
+        // ✅ Use the same frontend formatting
+        const callDuration = lead?.callLogId 
+          ? `"${formatDuration(lead.callLogId.call_duration)}"` 
+          : `"-"`;
+
+        const entityResultJson = JSON.stringify(lead.entity_result);
+        const escapedEntityResult = entityResultJson.replace(/"/g, '""');
+        const entityResult = `"${escapedEntityResult}"`;
+
+        return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult},${callDuration}`;
+      })
+    ];
+
+    const bom = "\uFEFF";
+    const csvContent = bom + csvRows.join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success(`Downloaded entity data for ${leadsWithEntityData.length} leads`);
+  } catch (error) {
+    console.error("Error downloading CSV:", error);
+    toast.error("Failed to download entity data");
+  }
+};
+
 
   if (loading) {
     return (
