@@ -1467,6 +1467,96 @@ const VoiceIntegration = ({
   </CardContent>
 </Card>
 
+{/* 3rd toggle card */}
+  <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-base font-medium text-gray-900">Voicemail Detection</h3>
+      </div>
+      <Switch
+        checked={voiceIntegration.voiceMailDetectionEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            voiceMailDetectionEnabled: checked,
+            turnDetectors: checked
+              ? prev.turnDetectors || {
+                  enable_voicemail: false,
+                  voicemail_action: "End Call",
+                }
+              : prev.turnDetectors,
+          }))
+        }
+
+        
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+
+    {voiceIntegration.voiceMailDetectionEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Enable Voicemail Detection */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Enable Voicemail Detection
+            </label>
+            <p className="text-xs text-gray-500">
+            Enables voicemail detection.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.voiceMailDetection.enable_voicemail}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: {
+                  ...prev.voiceMailDetection,
+                  enable_voicemail: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+
+        {/* Voicemail Action*/}
+       <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Voicemail Action
+          </label>
+          <Select
+            value={voiceIntegration.voiceMailDetection.voicemail_action} 
+            onValueChange={(value) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: {
+                  ...prev.voiceMailDetection,
+                  voicemail_action: value,
+                },
+              }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select sample rate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="End Call">End Call</SelectItem>
+              <SelectItem value="Play Response">Play Response</SelectItem>
+              <SelectItem value="Route to Workflow">Route to Workflow</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">Defines system behavior after voicemail detection.</p>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
   </div>
   </CardContent>
   </Card>

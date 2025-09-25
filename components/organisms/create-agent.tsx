@@ -218,6 +218,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       backgroundNoiseEnabled: initialData?.voice?.background_noise || false,
       voiceActivityDetectionEnabled: !!initialData?.voice?.vad,
       turnDetectorsEnabled: !!initialData?.voice?.turnDetectors,
+      voiceMailDetectionEnabled: !!initialData?.voice?.voiceMailDetection,
 
       vad: {
         min_speech_duration:
@@ -239,6 +240,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         max_endpointing_delay:
           initialData?.voice?.turnDetectors?.max_endpointing_delay ?? 6.0,
       },
+       voiceMailDetection:{
+        enable_voicemail:   initialData?.voice?.voiceMailDetection?.enable_voicemail ?? false,
+         voicemail_action:
+            initialData?.voice?.voiceMailDetection?.voicemail_action ?? "End Call",
+      
+     
+        }
+      
     };
 
     console.log("🔍 Initializing voice integration:", {
@@ -855,6 +864,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             backgroundNoiseEnabled: agentData.voice?.background_noise || false,
             voiceActivityDetectionEnabled: !!agentData?.voice?.vad,
             turnDetectorsEnabled: !!agentData?.voice?.turnDetectors,
+            voiceMailDetectionEnabled: !!agentData?.voice?.voiceMailDetection,
             vad: {
               min_speech_duration:
                 agentData?.voice?.vad?.min_speech_duration ?? 0.05,
@@ -875,6 +885,13 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               max_endpointing_delay:
                 agentData?.voice?.turnDetectors?.max_endpointing_delay ?? 6.0,
             },
+              voiceMailDetection:{
+        enable_voicemail:   agentData?.voice?.voiceMailDetection?.enable_voicemail ?? false,
+         voicemail_action:
+            agentData?.voice?.voiceMailDetection?.voicemail_action ?? "End Call",
+     
+        }
+
           });
 
           setEmailIntegration({
@@ -1299,6 +1316,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           background_noise: voiceIntegration.backgroundNoiseEnabled,
           vad: voiceIntegration.voiceActivityDetectionEnabled ? voiceIntegration.vad : undefined,
           turnDetectors: voiceIntegration.turnDetectorsEnabled ? voiceIntegration.turnDetectors : undefined,
+          voiceMailDetection: voiceIntegration.voiceMailDetectionEnabled ? voiceIntegration.voiceMailDetection : undefined,
         };
 
         console.log("🔍 Voice Object Debug:", agentData.voice);
