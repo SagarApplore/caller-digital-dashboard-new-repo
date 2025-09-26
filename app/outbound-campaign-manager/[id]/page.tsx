@@ -19,6 +19,7 @@ import { Input } from "@/components/atoms/input";
 import { Label } from "@/components/atoms/label";
 import apiRequest from "@/utils/api";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
 
 interface CampaignLead {
   _id: string;
@@ -204,52 +205,108 @@ export default function CampaignDetailsPage() {
     }
   };
 
- const downloadEntityCSV = () => {
+//  const downloadEntityCSV = () => {
+//   try {
+//     const leadsWithEntityData = leads.filter(lead => lead.entity_result);
+
+//     const headers = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result", "Call Duration"];
+
+//     const csvRows = [
+//       headers.join(","), 
+//       ...leads.map(lead => {
+//        const leadName = `"${(lead?.leadName ?? "N/A").replace(/"/g, '""')}"`;
+//         const phoneNumber = `"${lead.leadNumber}"`;
+//         const interested = `"${lead.interest == "true" ? 'Yes' : lead.interest == "false" ? 'No' : '-'}"`;
+//         const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
+
+//         // ✅ Use the same frontend formatting
+//         const callDuration = lead?.callLogId 
+//           ? `"${formatDuration(lead.callLogId.call_duration)}"` 
+//           : `"-"`;
+
+//         const entityResultJson = JSON.stringify(lead.entity_result);
+//         const escapedEntityResult = entityResultJson.replace(/"/g, '""');
+//         const entityResult = `"${escapedEntityResult}"`;
+
+//         return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult},${callDuration}`;
+//       })
+//     ];
+
+//     const bom = "\uFEFF";
+//     const csvContent = bom + csvRows.join("\n");
+
+//     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+//     const link = document.createElement("a");
+//     const url = URL.createObjectURL(blob);
+//     link.setAttribute("href", url);
+//     link.setAttribute("download", `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.csv`);
+//     link.style.visibility = "hidden";
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+
+//     toast.success(`Downloaded entity data for ${leadsWithEntityData.length} leads`);
+//   } catch (error) {
+//     console.error("Error downloading CSV:", error);
+//     toast.error("Failed to download entity data");
+//   }
+// };
+
+
+
+const downloadEntityExcel = () => {
   try {
     const leadsWithEntityData = leads.filter(lead => lead.entity_result);
 
-    const headers = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result", "Call Duration"];
+    // ------------------ SHEET 1: Leads Data ------------------
+    const leadHeaders = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result", "Call Duration"];
 
-    const csvRows = [
-      headers.join(","), 
-      ...leads.map(lead => {
-       const leadName = `"${(lead?.leadName ?? "N/A").replace(/"/g, '""')}"`;
-        const phoneNumber = `"${lead.leadNumber}"`;
-        const interested = `"${lead.interest == "true" ? 'Yes' : lead.interest == "false" ? 'No' : '-'}"`;
-        const callStatus = `"${lead.status === 'answered' ? 'Answered' : 'Unanswered'}"`;
+    const leadRows = leads.map(lead => {
+      const leadName = lead?.leadName ?? "N/A";
+      const phoneNumber = lead.leadNumber ?? "N/A";
+      const interested = lead.interest === "true" ? "Yes" : lead.interest === "false" ? "No" : "-";
+      const callStatus = lead.status === "answered" ? "Answered" : "Unanswered";
+      const callDuration = lead?.callLogId ? formatDuration(lead.callLogId.call_duration) : "-";
+      const entityResult = lead.entity_result ? JSON.stringify(lead.entity_result) : "-";
 
-        // ✅ Use the same frontend formatting
-        const callDuration = lead?.callLogId 
-          ? `"${formatDuration(lead.callLogId.call_duration)}"` 
-          : `"-"`;
+      return [leadName, phoneNumber, interested, callStatus, entityResult, callDuration];
+    });
 
-        const entityResultJson = JSON.stringify(lead.entity_result);
-        const escapedEntityResult = entityResultJson.replace(/"/g, '""');
-        const entityResult = `"${escapedEntityResult}"`;
+    const leadsSheet = XLSX.utils.aoa_to_sheet([leadHeaders, ...leadRows]);
 
-        return `${leadName},${phoneNumber},${interested},${callStatus},${entityResult},${callDuration}`;
-      })
-    ];
 
-    const bom = "\uFEFF";
-    const csvContent = bom + csvRows.join("\n");
+    // ------------------ SHEET 2: Entity Results ------------------
+    // Collect all unique keys from entity_result objects
+    const allKeys = new Set();
+    leadsWithEntityData.forEach(lead => {
+      Object.keys(lead.entity_result || {}).forEach(key => allKeys.add(key));
+    });
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const entityHeaders = Array.from(allKeys);
 
-    toast.success(`Downloaded entity data for ${leadsWithEntityData.length} leads`);
+    const entityRows = leadsWithEntityData.map(lead => {
+      return entityHeaders.map(key => lead.entity_result?.[key] ?? ""); // empty if missing
+    });
+
+    const entitySheet = XLSX.utils.aoa_to_sheet([entityHeaders, ...entityRows]);
+
+
+    // ------------------ CREATE WORKBOOK ------------------
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, leadsSheet, "Leads Data");
+    XLSX.utils.book_append_sheet(workbook, entitySheet, "Entity Results");
+
+    // ------------------ EXPORT ------------------
+    const fileName = `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast.success(`Downloaded data for ${leads.length} leads`);
   } catch (error) {
-    console.error("Error downloading CSV:", error);
-    toast.error("Failed to download entity data");
+    console.error("Error downloading Excel:", error);
+    toast.error("Failed to download data");
   }
 };
+
 
 
   if (loading) {
@@ -348,7 +405,7 @@ export default function CampaignDetailsPage() {
                 <span>{showFilters ? 'Hide Filters' : 'Show Filters'}</span>
               </Button>
               <Button
-                onClick={downloadEntityCSV}
+                onClick={downloadEntityExcel}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
                 // disabled={leads.filter(lead => lead.entity_result).length === 0}
               >
