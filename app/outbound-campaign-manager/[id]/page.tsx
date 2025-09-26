@@ -254,47 +254,42 @@ export default function CampaignDetailsPage() {
 
 
 
+
 const downloadEntityExcel = () => {
   try {
     const leadsWithEntityData = leads.filter(lead => lead.entity_result);
 
-    // ------------------ SHEET 1: Leads Data ------------------
-    const leadHeaders = ["Lead Name", "Phone Number", "Interested", "Call Status", "Entity Result", "Call Duration"];
+    // ------------------ COLLECT ENTITY KEYS ------------------
+    const allEntityKeys = new Set();
+    leadsWithEntityData.forEach(lead => {
+      Object.keys(lead.entity_result || {}).forEach(key => allEntityKeys.add(key));
+    });
+    const entityHeaders = Array.from(allEntityKeys);
 
-    const leadRows = leads.map(lead => {
+    // ------------------ HEADERS ------------------
+    const baseHeaders = ["Lead Name", "Phone Number", "Interested", "Call Status", "Call Duration"];
+    const headers = [...baseHeaders, ...entityHeaders];
+
+    // ------------------ ROWS ------------------
+    const rows = leads.map(lead => {
       const leadName = lead?.leadName ?? "N/A";
       const phoneNumber = lead.leadNumber ?? "N/A";
       const interested = lead.interest === "true" ? "Yes" : lead.interest === "false" ? "No" : "-";
       const callStatus = lead.status === "answered" ? "Answered" : "Unanswered";
       const callDuration = lead?.callLogId ? formatDuration(lead.callLogId.call_duration) : "-";
-      const entityResult = lead.entity_result ? JSON.stringify(lead.entity_result) : "-";
 
-      return [leadName, phoneNumber, interested, callStatus, entityResult, callDuration];
+      // fill entity values dynamically
+      const entityValues = entityHeaders.map(key => lead.entity_result?.[key] ?? "");
+
+      return [leadName, phoneNumber, interested, callStatus, callDuration, ...entityValues];
     });
 
-    const leadsSheet = XLSX.utils.aoa_to_sheet([leadHeaders, ...leadRows]);
-
-
-    // ------------------ SHEET 2: Entity Results ------------------
-    // Collect all unique keys from entity_result objects
-    const allKeys = new Set();
-    leadsWithEntityData.forEach(lead => {
-      Object.keys(lead.entity_result || {}).forEach(key => allKeys.add(key));
-    });
-
-    const entityHeaders = Array.from(allKeys);
-
-    const entityRows = leadsWithEntityData.map(lead => {
-      return entityHeaders.map(key => lead.entity_result?.[key] ?? ""); // empty if missing
-    });
-
-    const entitySheet = XLSX.utils.aoa_to_sheet([entityHeaders, ...entityRows]);
-
+    // ------------------ CREATE SHEET ------------------
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
 
     // ------------------ CREATE WORKBOOK ------------------
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, leadsSheet, "Leads Data");
-    XLSX.utils.book_append_sheet(workbook, entitySheet, "Entity Results");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Leads Data");
 
     // ------------------ EXPORT ------------------
     const fileName = `campaign_entities_${campaignId}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -306,6 +301,7 @@ const downloadEntityExcel = () => {
     toast.error("Failed to download data");
   }
 };
+
 
 
 
