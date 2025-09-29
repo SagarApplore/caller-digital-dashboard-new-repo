@@ -99,6 +99,16 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     console.log("ChannelsAndPhoneMapping mode:", mode);
     const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const filteredPhoneNumbers = React.useMemo(() => {
+      if (mode !== "edit") {
+        return phoneNumbers;
+      }
+      const type = (agentPhoneNumber?.numberType || "").toLowerCase();
+      if (type !== "inbound" && type !== "outbound") {
+        return phoneNumbers;
+      }
+      return phoneNumbers.filter((pn) => (pn.numberType || "").toLowerCase() === type);
+    }, [mode, phoneNumbers, agentPhoneNumber?.numberType]);
 
     // Debug logging for agent phone number
     console.log("ChannelsAndPhoneMapping - agentPhoneNumber:", agentPhoneNumber);
@@ -482,12 +492,12 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                   <option value="">Select a phone number...</option>
                   {/* Add the current agent's phone number if it's not in the list */}
                   {agentPhoneNumber.phoneNumber && 
-                   !phoneNumbers.find(pn => pn.phone_number === agentPhoneNumber.phoneNumber) && (
+                   !filteredPhoneNumbers.find(pn => pn.phone_number === agentPhoneNumber.phoneNumber) && (
                     <option value={agentPhoneNumber.phoneNumber}>
                       {agentPhoneNumber.phoneNumber} (Current)
                     </option>
                   )}
-                  {phoneNumbers.map((phoneNumber) => (
+                  {filteredPhoneNumbers.map((phoneNumber) => (
                     <option
                       key={phoneNumber._id}
                       value={phoneNumber.phone_number}

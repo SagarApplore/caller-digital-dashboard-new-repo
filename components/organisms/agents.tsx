@@ -34,7 +34,7 @@ import { toast } from "react-toastify";
 export interface AssistantStats {
   conversations: number;
   csatScore: number;
-  resolutionRate: number;
+  sentimentScore: number;
   lastActive: string;
 }
 
@@ -106,8 +106,8 @@ const formatNumber = (num: number) => {
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 95) return "text-green-600";
-  if (score >= 90) return "text-yellow-600";
+  if (score >= 9.5) return "text-green-600";
+  if (score >= 9) return "text-yellow-600";
   return "text-red-600";
 };
 
@@ -128,12 +128,12 @@ export default function Agents({ assistants }: { assistants: any[] }) {
   });
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [agentMetrics, setAgentMetrics] = useState<{[key: string]: {totalMinutes: number, totalHandoffs: number}}>({});
+  const [agentMetrics, setAgentMetrics] = useState<{[key: string]: {totalMinutes: number, totalHandoffs: number, sentimentScore:number}}>({});
 
   // Fetch agent metrics for all agents
   useEffect(() => {
     const fetchAgentMetrics = async () => {
-      const metrics: {[key: string]: {totalMinutes: number, totalHandoffs: number}} = {};
+      const metrics: {[key: string]: {totalMinutes: number, totalHandoffs: number, sentimentScore: number}} = {};
       
       for (const assistant of assistants) {
         try {
@@ -141,12 +141,14 @@ export default function Agents({ assistants }: { assistants: any[] }) {
           metrics[assistant._id] = {
             totalMinutes: response.data.totalMinutes || 0,
             totalHandoffs: response.data.totalHandoffs || 0,
+            sentimentScore:response.data.sentimentScore || 0
           };
         } catch (error) {
           console.error(`Error fetching metrics for agent ${assistant._id}:`, error);
           metrics[assistant._id] = {
             totalMinutes: 0,
             totalHandoffs: 0,
+            sentimentScore:0
           };
         }
       }
@@ -547,11 +549,10 @@ export default function Agents({ assistants }: { assistants: any[] }) {
                     </div>
                     <div
                       className={`text-2xl font-bold ${getScoreColor(
-                        assistant?.stats?.resolutionRate ?? 0
+                        agentMetrics[assistant._id]?.sentimentScore
                       )}`}
                     >
-                      {/* {assistant?.stats?.resolutionRate ?? 0}% */}
-                      N/A
+                      {agentMetrics[assistant._id]?.sentimentScore*10 || 0}%
                     </div>
                   </div>
                   <div>
