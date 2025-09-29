@@ -701,7 +701,7 @@ const CallLogs = () => {
           "Customer Number": log.customer_phone_number || "",
           "Customer Name": log.clientId?.name || "",
           "Agent Name": log.agentId?.agentName || "",
-          "Duration (ms)": log.call_duration || "",
+          "Duration (mins)": log.call_duration || "",
           "Transcript Content":transcriptContent || "",
           "Summary Content": summaryContent || "",
           "Transcript URL":log.transcript_uri ||"",
