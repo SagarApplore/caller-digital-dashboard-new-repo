@@ -245,10 +245,12 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      // Use current page from URL or state instead of resetting to 1
-      const currentPageToUse = currentPage;
-      console.log("fetch 2 with page:", currentPageToUse)
-      await fetchCallLogs(assistantId, dateInputs.startDate, dateInputs.endDate, currentPageToUse, pageSize, filters.status, filters.searchQuery);
+      // Reset to page 1 when filtering by assistant
+      setCurrentPage(1);
+      // Update URL to reflect page reset
+      router.push(`/call-logs?page=1`, { scroll: false });
+      console.log("fetch 2 with page: 1 (reset for assistant filter)")
+      await fetchCallLogs(assistantId, dateInputs.startDate, dateInputs.endDate, 1, pageSize, filters.status, filters.searchQuery);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
