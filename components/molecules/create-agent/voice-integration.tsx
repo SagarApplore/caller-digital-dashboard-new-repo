@@ -1557,6 +1557,324 @@ const VoiceIntegration = ({
   </CardContent>
 </Card>
 
+{/* 4th toggle card - Session Configuration */}
+<Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="text-base font-medium text-gray-900">Session Configuration</h3>
+      </div>
+      <Switch
+        checked={voiceIntegration.sessionConfigurationEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            sessionConfigurationEnabled: checked,
+            sessionConfiguration: checked
+              ? prev.sessionConfiguration || {
+                  allow_interruptions: true,
+                  min_interruption_duration: 0.5,
+                  min_interruption_words: 0,
+                  min_endpointing_delay: 0.5,
+                  max_endpointing_delay: 6.0,
+                  false_interruption_timeout: 2.0,
+                  resume_false_interruption: true,
+                }
+              : prev.sessionConfiguration,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.sessionConfigurationEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Allow Interruptions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Allow Interruptions
+            </label>
+            <p className="text-xs text-gray-500">
+              Allow users to interrupt the agent during speech.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.sessionConfiguration.allow_interruptions}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: {
+                  ...prev.sessionConfiguration,
+                  allow_interruptions: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+
+        {/* Minimum Interruption Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Interruption Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum duration of speech to be considered an interruption.
+          </p>
+        </div>
+
+        {/* Minimum Interruption Words */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Interruption Words
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={10}
+              step={1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_words}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_words: parseInt(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0}
+              max={10}
+              step={1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_words}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_words: parseInt(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum number of words to be considered an interruption.
+          </p>
+        </div>
+
+        {/* Minimum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum delay before considering the turn complete.
+          </p>
+        </div>
+
+        {/* Maximum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Maximum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum wait time if user is likely to continue speaking.
+          </p>
+        </div>
+
+        {/* False Interruption Timeout */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            False Interruption Timeout (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.5}
+              max={5.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.false_interruption_timeout}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    false_interruption_timeout: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.5}
+              max={5.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.false_interruption_timeout}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    false_interruption_timeout: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Timeout for false interruption detection.
+          </p>
+        </div>
+
+        {/* Resume False Interruption */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Resume False Interruption
+            </label>
+            <p className="text-xs text-gray-500">
+              Resume agent speech after false interruption detection.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.sessionConfiguration.resume_false_interruption}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: {
+                  ...prev.sessionConfiguration,
+                  resume_false_interruption: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
   </div>
   </CardContent>
   </Card>

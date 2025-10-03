@@ -28,6 +28,15 @@ export interface IAgent {
     agentPrompt: string;
     temperature: string;
     maxTokens: number;
+    sessionConfiguration?: {
+      allow_interruptions: boolean;
+      min_interruption_duration: number;
+      min_interruption_words: number;
+      min_endpointing_delay: number;
+      max_endpointing_delay: number;
+      false_interruption_timeout: number;
+      resume_false_interruption: boolean;
+    };
   };
   email?: {
     llmProvider: IAIProvider;

@@ -246,7 +246,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             initialData?.voice?.voiceMailDetection?.voicemail_action ?? "End Call",
       
      
-        }
+        },
+      sessionConfigurationEnabled: !!initialData?.voice?.sessionConfiguration,
+      sessionConfiguration: {
+        allow_interruptions: initialData?.voice?.sessionConfiguration?.allow_interruptions ?? true,
+        min_interruption_duration: initialData?.voice?.sessionConfiguration?.min_interruption_duration ?? 0.5,
+        min_interruption_words: initialData?.voice?.sessionConfiguration?.min_interruption_words ?? 0,
+        min_endpointing_delay: initialData?.voice?.sessionConfiguration?.min_endpointing_delay ?? 0.5,
+        max_endpointing_delay: initialData?.voice?.sessionConfiguration?.max_endpointing_delay ?? 6.0,
+        false_interruption_timeout: initialData?.voice?.sessionConfiguration?.false_interruption_timeout ?? 2.0,
+        resume_false_interruption: initialData?.voice?.sessionConfiguration?.resume_false_interruption ?? true,
+      }
       
     };
 
@@ -890,6 +900,16 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
          voicemail_action:
             agentData?.voice?.voiceMailDetection?.voicemail_action ?? "End Call",
      
+        },
+        sessionConfigurationEnabled: !!agentData?.voice?.sessionConfiguration,
+        sessionConfiguration: {
+          allow_interruptions: agentData?.voice?.sessionConfiguration?.allow_interruptions ?? true,
+          min_interruption_duration: agentData?.voice?.sessionConfiguration?.min_interruption_duration ?? 0.5,
+          min_interruption_words: agentData?.voice?.sessionConfiguration?.min_interruption_words ?? 0,
+          min_endpointing_delay: agentData?.voice?.sessionConfiguration?.min_endpointing_delay ?? 0.5,
+          max_endpointing_delay: agentData?.voice?.sessionConfiguration?.max_endpointing_delay ?? 6.0,
+          false_interruption_timeout: agentData?.voice?.sessionConfiguration?.false_interruption_timeout ?? 2.0,
+          resume_false_interruption: agentData?.voice?.sessionConfiguration?.resume_false_interruption ?? true,
         }
 
           });
@@ -1317,6 +1337,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           vad: voiceIntegration.voiceActivityDetectionEnabled ? voiceIntegration.vad : undefined,
           turnDetectors: voiceIntegration.turnDetectorsEnabled ? voiceIntegration.turnDetectors : undefined,
           voiceMailDetection: voiceIntegration.voiceMailDetectionEnabled ? voiceIntegration.voiceMailDetection : undefined,
+          sessionConfiguration: voiceIntegration.sessionConfigurationEnabled ? voiceIntegration.sessionConfiguration : undefined,
         };
 
         console.log("🔍 Voice Object Debug:", agentData.voice);
