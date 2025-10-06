@@ -58,7 +58,7 @@ export interface Conversation {
   timestampDate: Date;
   duration: string;
   durationSeconds: number;
-  status: "resolved" | "escalated" | "pending";
+  status: "resolved" | "escalated" | "answered" | "unanswered";
   csat: number;
   confidence: number;
   language: string;
@@ -177,7 +177,13 @@ const CallLogs = () => {
         params.createdAtLe = endDate;
       }
       if (status && status !== "all-status") {
-        params.hand_off = status === "escalated";
+        if( status==="escalated" || status==="resolved"){
+          params.hand_off = status === "escalated";
+        }
+        else{
+          params.status =status
+        }
+        
       }
       if (searchQuery && searchQuery.trim() !== "") {
         params.search = searchQuery.trim();
@@ -414,7 +420,7 @@ const CallLogs = () => {
         timestampDate: callStartTime,
         duration: `${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
-        status: item.hand_off ? "escalated" : "resolved", // Use hand_off to determine status
+        status: item.call_type === "inbound" ? (item.hand_off ? "escalated" : "resolved") : (item.status === "answered" ?"answered":"unanswered" ), // Use hand_off to determine status
         csat: Number((4.2 + Math.random() * 0.8).toFixed(2)), // Hardcoded CSAT score
         confidence: Number((75 + Math.random() * 20).toFixed(2)), // Hardcoded confidence score
         language: "english", // Hardcoded language
@@ -901,10 +907,16 @@ const CallLogs = () => {
             Escalated
           </div>
         );
-      case "pending":
+      case "answered":
         return (
-          <div className="bg-blue-100 text-blue-800 border-blue-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
-            Pending
+          <div className="bg-green-100 text-green-800 border-green-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
+            Answered
+          </div>
+        );
+         case "unanswered":
+        return (
+          <div className="bg-red-100 text-red-800 border-red-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
+            UnAnswered
           </div>
         );
       default:
@@ -1136,6 +1148,8 @@ const CallLogs = () => {
               <SelectItem value="all-status">All Status</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
               <SelectItem value="escalated">Escalated</SelectItem>
+              <SelectItem value="answered">Answered</SelectItem>
+              <SelectItem value="unanswered">Unanswered</SelectItem>
             </SelectContent>
           </Select>
 
