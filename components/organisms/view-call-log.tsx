@@ -73,7 +73,8 @@ const Transcript = ({
           {utils.string
             .getInitials(
               transcript.role?.toLowerCase() === "user"
-                ? (callLog?.clientId?.name || "User")
+                ? (`Customer`)
+                // (callLog?.clientId?.name || "User")
                 : (callLog?.agentId?.agentName || "Agent")
             )
             .toUpperCase()}
@@ -83,7 +84,8 @@ const Transcript = ({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-gray-700">
             {transcript.role?.toLowerCase() === "user"
-              ? callLog?.clientId?.name
+            ? `Customer-(${callLog?.customer_phone_number})`
+              // ? callLog?.clientId?.name
               : callLog?.agentId?.agentName}
           </span>
           {/* <span className="text-xs text-gray-500">

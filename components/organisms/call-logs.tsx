@@ -405,7 +405,7 @@ const CallLogs = () => {
       return {
         id: item._id || `temp-${index}`,
         contact: {
-          name: item.clientId?.name || `Customer ${index + 1}`,
+          name: `Customer\t\t(${item?.customer_phone_number})` || `Customer ${index + 1}`,
           identifier:
             item.customer_phone_number ||
             `+1 555-${String(index + 1).padStart(4, "0")}`,
