@@ -418,7 +418,7 @@ const CallLogs = () => {
         },
         timestamp: getTimeAgo(callStartTime),
         timestampDate: callStartTime,
-        duration: `${durationMinutes}m ${durationSeconds}s`,
+        duration: item.status !== "unanswered" ? `${durationMinutes}m ${durationSeconds}s`: "NA",
         durationSeconds: durationInSeconds,
         status: item.call_type === "inbound" ? (item.hand_off ? "escalated" : "resolved") : (item.status === "answered" ?"answered":"unanswered" ), // Use hand_off to determine status
         csat: Number((4.2 + Math.random() * 0.8).toFixed(2)), // Hardcoded CSAT score
