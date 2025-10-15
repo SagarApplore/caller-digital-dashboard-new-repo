@@ -178,6 +178,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     summaryPrompt: initialData?.summaryPrompt || "",
     successEvaluationPrompt: initialData?.successEvaluationPrompt || "",
     failureEvaluationPrompt: initialData?.failureEvaluationPrompt || "",
+    inactivity_configuration: initialData?.voice?.inactivity_configuration || initialData?.inactivity_configuration || [],
   });
 
   const [channels, setChannels] = useState<Channel[]>(initializeChannels());
@@ -816,6 +817,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             summaryPrompt: agentData.summaryPrompt || "",
             successEvaluationPrompt: agentData.successEvaluationPrompt || "",
             failureEvaluationPrompt: agentData.failureEvaluationPrompt || "",
+            inactivity_configuration: agentData.voice?.inactivity_configuration || agentData.inactivity_configuration || [],
           });
 
           // Update channels
@@ -1114,11 +1116,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         summaryPrompt: initialData.summaryPrompt,
         successEvaluationPrompt: initialData.successEvaluationPrompt,
         failureEvaluationPrompt: initialData.failureEvaluationPrompt,
+        inactivity_configuration: initialData.voice?.inactivity_configuration,
+        voice: initialData.voice,
       });
       setExtraPrompts({
         summaryPrompt: initialData.summaryPrompt || "",
         successEvaluationPrompt: initialData.successEvaluationPrompt || "",
         failureEvaluationPrompt: initialData.failureEvaluationPrompt || "",
+        inactivity_configuration: initialData.voice?.inactivity_configuration || [],
       });
     }
   }, [mode, initialData]);
@@ -1296,7 +1301,22 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           )?.prompt?.value,
           temperature: 0.5,
           maxTokens: 100,
+          inactivity_configuration: extraPrompts.inactivity_configuration?.filter((config: any) => 
+            config && 
+            typeof config.duration === 'number' && 
+            typeof config.inactivity_prompt === 'string' && 
+            config.inactivity_prompt.trim() !== ''
+          ) || [],
         },
+      }),
+      // Debug inactivity configuration for non-DIY users
+      ...(!hasDIYPermission() && {
+        debug_inactivity: {
+          inactivity_configuration: extraPrompts.inactivity_configuration,
+          type: typeof extraPrompts.inactivity_configuration,
+          isArray: Array.isArray(extraPrompts.inactivity_configuration),
+          length: extraPrompts.inactivity_configuration?.length
+        }
       }),
     };
 
@@ -1338,9 +1358,21 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           turnDetectors: voiceIntegration.turnDetectorsEnabled ? voiceIntegration.turnDetectors : undefined,
           voiceMailDetection: voiceIntegration.voiceMailDetectionEnabled ? voiceIntegration.voiceMailDetection : undefined,
           sessionConfiguration: voiceIntegration.sessionConfigurationEnabled ? voiceIntegration.sessionConfiguration : undefined,
+          inactivity_configuration: extraPrompts.inactivity_configuration?.filter((config: any) => 
+            config && 
+            typeof config.duration === 'number' && 
+            typeof config.inactivity_prompt === 'string' && 
+            config.inactivity_prompt.trim() !== ''
+          ) || [],
         };
 
         console.log("🔍 Voice Object Debug:", agentData.voice);
+        console.log("🔍 Inactivity Configuration Debug:", {
+          inactivity_configuration: extraPrompts.inactivity_configuration,
+          type: typeof extraPrompts.inactivity_configuration,
+          isArray: Array.isArray(extraPrompts.inactivity_configuration),
+          length: extraPrompts.inactivity_configuration?.length
+        });
       }
 
       // Add chat integration data

@@ -57,10 +57,16 @@ export interface HandoffConfig {
   error?: string;
 }
 
+export interface InactivityConfiguration {
+  duration: number;
+  inactivity_prompt: string;
+}
+
 export interface ExtraPrompts {
   summaryPrompt: string;
   successEvaluationPrompt: string;
   failureEvaluationPrompt: string;
+  inactivity_configuration: InactivityConfiguration[];
 }
 
 export interface ChannelsAndPhoneMappingRef {
@@ -382,8 +388,140 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                 readOnly={false}
               />
             </div>
-          </div>
+            </div>
         </div>
+
+            {/* Inactivity Prompts Section */}
+            {/* <div className="flex flex-col gap-4">
+             */}
+             <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">Inactivity Messages</h4>
+                  <p className="text-gray-600 text-sm">
+                    Messages to play when the user is inactive for a specified duration.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    const newInactivityConfig: InactivityConfiguration = {
+                      duration: 7,
+                      inactivity_prompt: "Are you still there? Please let me know if you need assistance."
+                    };
+                    const updatedPrompts: ExtraPrompts = {
+                      ...extraPrompts,
+                      inactivity_configuration: [...(extraPrompts.inactivity_configuration || []), newInactivityConfig]
+                    };
+                    updateExtraPrompts(updatedPrompts);
+                  }}
+                  className="bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200"
+                  size="sm"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Message
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {(extraPrompts.inactivity_configuration || []).map((config, index) => (
+                  <Card key={index} className="bg-gray-50 border border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h5 className="font-semibold text-gray-900">Message {index + 1}</h5>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const updatedConfigs = (extraPrompts.inactivity_configuration || []).filter((_, i) => i !== index);
+                            const updatedPrompts: ExtraPrompts = {
+                              ...extraPrompts,
+                              inactivity_configuration: updatedConfigs
+                            };
+                            updateExtraPrompts(updatedPrompts);
+                          }}
+                          variant="destructive"
+                          size="sm"
+                          className="text-red-600 bg-red-50 border border-red-200 hover:bg-red-100"
+                        >
+                          
+                          Remove
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            Duration (s)
+                          </Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={config.duration}
+                            onChange={(e) => {
+                              const updatedConfigs = [...(extraPrompts.inactivity_configuration || [])];
+                              updatedConfigs[index] = {
+                                ...config,
+                                duration: parseInt(e.target.value) || 1
+                              };
+                              const updatedPrompts: ExtraPrompts = {
+                                ...extraPrompts,
+                                inactivity_configuration: updatedConfigs
+                              };
+                              updateExtraPrompts(updatedPrompts);
+                            }}
+                            className="border-gray-300 focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <Label className="text-sm font-medium text-gray-700">
+                            End Behavior
+                          </Label>
+                          <select
+                            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value="unspecified"
+                            disabled
+                          >
+                            <option value="unspecified">Unspecified</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-2">
+                        <Label className="text-sm font-medium text-gray-700">
+                          Message
+                        </Label>
+                        <Textarea
+                          value={config.inactivity_prompt}
+                          onChange={(e) => {
+                            const updatedConfigs = [...(extraPrompts.inactivity_configuration || [])];
+                            updatedConfigs[index] = {
+                              ...config,
+                              inactivity_prompt: e.target.value
+                            };
+                            const updatedPrompts: ExtraPrompts = {
+                              ...extraPrompts,
+                              inactivity_configuration: updatedConfigs
+                            };
+                            updateExtraPrompts(updatedPrompts);
+                          }}
+                          placeholder="Enter inactivity message..."
+                          className="min-h-[80px] border-gray-300 focus:border-blue-500 resize-y"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {(!extraPrompts.inactivity_configuration || extraPrompts.inactivity_configuration.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No inactivity messages configured.</p>
+                    <p className="text-sm">Click "Add Message" to create your first inactivity prompt.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          
 
         {/* Handoff Configuration Section */}
         <div className="p-4 bg-white rounded-lg w-full flex flex-col gap-4 shadow-lg shadow-gray-200">
