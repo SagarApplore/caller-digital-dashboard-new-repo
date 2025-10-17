@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip";
 import { toast } from "react-toastify";
 import { debounce } from "lodash";
+import { useAuth } from "../providers/auth-provider";
 
 export interface Conversation {
   id: string;
@@ -94,6 +95,7 @@ const CallLogs = () => {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const [dateInputs, setDateInputs] = useState({
     startDate: "",
     endDate: "",
@@ -665,6 +667,26 @@ const CallLogs = () => {
     }
   };
 
+  // Utility function to convert UTC to IST
+  const convertToIST = (utcTime: string) => {
+    if (!utcTime) return "";
+    try {
+      const date = new Date(utcTime);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date format:", utcTime);
+        return utcTime;
+      }
+      // IST is UTC + 5:30 (5.5 hours = 5.5 * 60 * 60 * 1000 milliseconds)
+      const istTime = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+      // Format as YYYY-MM-DD HH:mm:ss IST
+      return istTime.toISOString().replace('T', ' ').replace('Z', ' IST');
+    } catch (error) {
+      console.error("Error converting time to IST:", error);
+      return utcTime; // Return original if conversion fails
+    }
+  };
+
   const handleExportCallLogs = async (callLogs: any, format: 'csv' | 'xlsx') => {
     if (!callLogs || !Array.isArray(callLogs) || callLogs.length === 0) {
       console.warn("No call log data available to export");
@@ -706,7 +728,10 @@ const CallLogs = () => {
           }
         }
         
-        return {
+        // Get user ID from auth context
+        const userId = user?.id;
+        
+        const baseData = {
           "Customer Number": log.customer_phone_number || "",
           "Customer Name": log.clientId?.name || "",
           "Agent Name": log.agentId?.agentName || "",
@@ -722,8 +747,19 @@ const CallLogs = () => {
           "Sentiment": log.sentiment || "",
           "AI Analysis": log.ai_analysis || "",
           "Language": log.agentId?.languages?.join(",") || "",
-          "Entity Result": entityResultData || ""
+          "Entity Result": entityResultData || "",
         };
+
+        // Add start time and end time for specific user ID
+        if (userId === "68876c2876bc0fce0d9ea2a4") {
+          return {
+            ...baseData,
+            "Call Start Time": convertToIST(log.call_start_time),
+            "Call End Time": convertToIST(log.call_end_time)
+          };
+        }
+
+        return baseData;
       });
 
       const exportData = await Promise.all(exportDataPromises);
@@ -756,13 +792,25 @@ const CallLogs = () => {
         
         // Create separate sheet for entity results if any exist
         const entityResultsData: any[] = [];
+        const userId = user?.id;
+        
         callLogs.forEach((log, index) => {
           if (log.entity_result) {
+            const baseEntityData: any = {
+              "Call Log ID": log._id || `Call ${index + 1}`,
+              "Customer Number": log.customer_phone_number || "",
+              "Customer Name": log.clientId?.name || "",
+            };
+
+            // Add start time and end time for specific user ID
+            if (userId === "68876c2876bc0fce0d9ea2a4") {
+              baseEntityData["Call Start Time"] = convertToIST(log.call_start_time);
+              baseEntityData["Call End Time"] = convertToIST(log.call_end_time);
+            }
+
             if (typeof log.entity_result === 'object' && log.entity_result !== null) {
               entityResultsData.push({
-                "Call Log ID": log._id || `Call ${index + 1}`,
-                "Customer Number": log.customer_phone_number || "",
-                "Customer Name": log.clientId?.name || "",
+                ...baseEntityData,
                 ...Object.fromEntries(
                   Object.entries(log.entity_result).map(([key, value]) => [
                     key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
@@ -774,9 +822,7 @@ const CallLogs = () => {
               log.entity_result.forEach((item: any, itemIndex: number) => {
                 if (typeof item === 'object' && item !== null) {
                   entityResultsData.push({
-                    "Call Log ID": log._id || `Call ${index + 1}`,
-                    "Customer Number": log.customer_phone_number || "",
-                    "Customer Name": log.clientId?.name || "",
+                    ...baseEntityData,
                     "Entity Index": itemIndex + 1,
                     ...Object.fromEntries(
                       Object.entries(item).map(([key, value]) => [
