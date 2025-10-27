@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Play, Volume2 } from "lucide-react";
+import { Loader2, Play, Volume2, RotateCcw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
@@ -92,6 +92,41 @@ const VoiceIntegration = ({
       (p: any) => p._id === providerId
     );
     return provider?.voiceIds || provider?.voices || [];
+  };
+
+  // Default values for voice settings
+  const defaultVAD = {
+    min_speech_duration: 0.05,
+    min_silence_duration: 0.55,
+    prefix_padding_duration: 0.5,
+    max_buffered_speech: 60.0,
+    activation_threshold: 0.5,
+    sample_rate: "16000",
+    force_cpu: true,
+  };
+
+  const defaultTurnDetectors = {
+    min_endpointing_delay: 0.5,
+    max_endpointing_delay: 6.0,
+  };
+
+  const defaultVoiceMailDetection = {
+    enable_voicemail: false,
+    voicemail_action: "End Call",
+  };
+
+  const defaultSessionConfiguration = {
+    allow_interruptions: true,
+    min_interruption_duration: 0.5,
+    min_interruption_words: 0,
+    min_endpointing_delay: 0.5,
+    max_endpointing_delay: 6.0,
+    false_interruption_timeout: 2.0,
+    resume_false_interruption: true,
+  };
+
+  const defaultBackgroundNoise = {
+    reduce_latency: false,
   };
 
   // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
@@ -1031,13 +1066,27 @@ const VoiceIntegration = ({
   <CardContent className="p-4 space-y-4">
     {/* Header + Toggle */}
     <div className="flex items-center justify-between">
-      <div>
+      <div className="flex items-center gap-3">
         <h3 className="text-base font-medium text-gray-900">
           Voice Activity Detection
         </h3>
-        {/* <p className="text-sm text-gray-600">
-          Automatically detect when a speaker is talking
-        </p> */}
+        {voiceIntegration.voiceActivityDetectionEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: { ...defaultVAD },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
       </div>
       <Switch
         checked={voiceIntegration.voiceActivityDetectionEnabled}
@@ -1347,8 +1396,25 @@ const VoiceIntegration = ({
   <CardContent className="p-4 space-y-4">
     {/* Header + Toggle */}
     <div className="flex items-center justify-between">
-      <div>
+      <div className="flex items-center gap-3">
         <h3 className="text-base font-medium text-gray-900">Turn Detectors</h3>
+        {voiceIntegration.turnDetectorsEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                turnDetectors: { ...defaultTurnDetectors },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
       </div>
       <Switch
         checked={voiceIntegration.turnDetectorsEnabled}
@@ -1472,8 +1538,25 @@ const VoiceIntegration = ({
   <CardContent className="p-4 space-y-4">
     {/* Header + Toggle */}
     <div className="flex items-center justify-between">
-      <div>
+      <div className="flex items-center gap-3">
         <h3 className="text-base font-medium text-gray-900">Voicemail Detection</h3>
+        {voiceIntegration.voiceMailDetectionEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: { ...defaultVoiceMailDetection },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
       </div>
       <Switch
         checked={voiceIntegration.voiceMailDetectionEnabled}
@@ -1562,8 +1645,25 @@ const VoiceIntegration = ({
   <CardContent className="p-4 space-y-4">
     {/* Header + Toggle */}
     <div className="flex items-center justify-between">
-      <div>
+      <div className="flex items-center gap-3">
         <h3 className="text-base font-medium text-gray-900">Session Configuration</h3>
+        {voiceIntegration.sessionConfigurationEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: { ...defaultSessionConfiguration },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
       </div>
       <Switch
         checked={voiceIntegration.sessionConfigurationEnabled}
@@ -1882,7 +1982,26 @@ const VoiceIntegration = ({
         <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Background Noise</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold">Background Noise</h2>
+                {voiceIntegration.backgroundNoiseEnabled && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setVoiceIntegration((prev: any) => ({
+                        ...prev,
+                        background_noise: { ...defaultBackgroundNoise },
+                      }));
+                    }}
+                    className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+                    title="Reset to default values"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Reset
+                  </Button>
+                )}
+              </div>
               <span className="text-gray-600 text-sm">
                 Enable background noise addition
               </span>
