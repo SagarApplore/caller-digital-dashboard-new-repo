@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/organisms/card";
 import { Loader2, ChevronLeft, ChevronRight, Download, RefreshCw } from "lucide-react";
 import utils from "@/utils/index.util";
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -39,6 +40,15 @@ export function CampaignsPage() {
     hasPrevPage: false,
   });
 
+  const [campaignMetrics, setCampaignMetrics] = useState({
+    totalCallsPlaced: 0,
+    totalCallsAnswered: 0,
+    totalCallsUnanswered: 0,
+    totalInterestedCount: 0,
+    totalConnectRate: 0,
+    totalCount: 0,
+  });
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -58,6 +68,18 @@ export function CampaignsPage() {
       if (response.data?.success === true) {
         setCampaigns(response.data?.data);
         setPagination(response.data?.pagination || pagination);
+        
+        // Set campaign metrics from totalData
+        if (response.data?.totalData) {
+          setCampaignMetrics({
+            totalCallsPlaced: response.data.totalData.totalCallsPlaced || 0,
+            totalCallsAnswered: response.data.totalData.totalCallsAnswered || 0,
+            totalCallsUnanswered: response.data.totalData.totalCallsUnanswered || 0,
+            totalInterestedCount: response.data.totalData.totalInterestedCount || 0,
+            totalConnectRate: response.data.totalData.totalConnectRate || 0,
+            totalCount: response.data.totalData.totalCount || 0,
+          });
+        }
       } else {
         toast.error(response.data?.message || "Error fetching campaigns");
         setCampaigns([]);
@@ -130,12 +152,52 @@ export function CampaignsPage() {
 
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
+      {/* Campaign Metrics Boxes */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Campaigns</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{campaignMetrics.totalCount}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Calls Placed</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{utils.string.formatNumber(campaignMetrics.totalCallsPlaced)}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Calls Answered</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{utils.string.formatNumber(campaignMetrics.totalCallsAnswered)}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Calls Unanswered</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{utils.string.formatNumber(campaignMetrics.totalCallsUnanswered)}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Connect Rate</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{campaignMetrics.totalConnectRate.toFixed(2)}%</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Interested</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{utils.string.formatNumber(campaignMetrics.totalInterestedCount)}</div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Campaign Table */}
       <div className="bg-white rounded-lg shadow-lg shadow-gray-200">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 m-4">
+          {/* <h2 className="text-lg font-semibold text-gray-900 m-4">
             Campaigns ({pagination.totalCount})
-          </h2>
+          </h2> */}
 
           <div className="overflow-x-auto">
             {isLoading ? (
