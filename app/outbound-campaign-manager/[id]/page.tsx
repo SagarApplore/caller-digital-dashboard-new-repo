@@ -548,7 +548,7 @@ const downloadEntityExcel = () => {
                         {lead?.callLogId ? ((lead.callLogId.call_duration)/60).toFixed(2) : "-"}
                       </TableCell> */}
                       <TableCell className="text-gray-700">
-  {lead?.callLogId ? formatDuration(lead.callLogId.call_duration) : "-"}
+  {lead?.callLogId ? (lead.status === "answered" ? formatDuration(lead.callLogId.call_duration): "-") : "-"}
 </TableCell>
 
                       <TableCell>
