@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { useAuth } from "@/components/providers/auth-provider";
+import * as XLSX from 'xlsx';
 import {
   Table,
   TableBody,
@@ -150,8 +151,59 @@ export function CampaignsPage() {
     return "bg-red-500";
   }, []);
 
+  // Handle export all campaigns data
+  const handleExportAllCampaigns = async () => {
+    try {
+      toast.info("Preparing export... This may take a moment.");
+      
+      const response = await apiRequest(
+        endpoints.outboundCampaign.exportAll,
+        "GET"
+      );
+
+      if (response.data?.success) {
+        const exportData = response.data.data;
+        const entityFields = response.data.entityFields || [];
+        console.log("extract data ",exportData)
+
+        // console.log("Export data received:", exportData.length, "rows");
+        // console.log("Entity fields:", entityFields);
+        // console.log("Sample row structure:", exportData[0] ? Object.keys(exportData[0]) : []);
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Create worksheet from data
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        XLSX.utils.book_append_sheet(wb, ws, "All Campaigns Data");
+
+        // Download the file
+        const fileName = `all_campaigns_data_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName,{ compression: true });
+
+        toast.success(`Exported ${exportData.length} records successfully!`);
+      } else {
+        toast.error(response.data?.message || "Failed to export data");
+      }
+    } catch (error) {
+      console.error("Error exporting campaigns:", error);
+      toast.error("Failed to export campaigns data");
+    }
+  };
+
   return (
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
+      {/* Export Button */}
+      {/* <div className="flex justify-end mb-2">
+        <Button
+          onClick={handleExportAllCampaigns}
+          className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export All Campaigns Data
+        </Button>
+      </div> */}
+
       {/* Campaign Metrics Boxes */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="bg-white border-none shadow-lg shadow-gray-200">

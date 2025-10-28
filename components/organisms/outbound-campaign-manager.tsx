@@ -27,14 +27,15 @@ export default function OutboundCampaignManager() {
 
   return (
     <div>
-      <OutboundCampaignManagerHeader
+       <Campaigns />
+      {/* <OutboundCampaignManagerHeader
         currentTab={currentTab}
         tabs={tabs}
         onPageChange={handleTabChange}
       />
       <div className="h-[calc(100vh-120px)] overflow-y-auto">
         {tabs[currentTab].component}
-      </div>
+      </div> */}
     </div>
   );
 }
