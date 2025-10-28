@@ -746,6 +746,31 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           name: "Hindi",
           key: "hi",
         },
+          {
+          id: 3,
+          name: "Tamil",
+          key: "ta",
+        },
+          {
+          id: 4,
+          name: "Telugu",
+          key: "te",
+        },
+          {
+          id: 5,
+          name: "Malayalam",
+          key: "mi",
+        },
+        {
+          id: 6,
+          name: "Marathi",
+          key: "mr",
+        },
+        {
+          id: 7,
+          name: "Kannada",
+          key: "kn",
+        },
       ];
 
       setPersonaAndBehavior((prev) => ({
