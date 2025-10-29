@@ -15,6 +15,8 @@ export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number })
   const [resolutionRate, setResolutionRate] = useState<number>(0);
   const [totalCalls, setTotalCalls] = useState<number>(0);
   const [resolutionLoading, setResolutionLoading] = useState(true);
+  const [totalMinutes,setTotalMinutes] = useState<number>(0);
+  const [avgCallDuration,setAvgCallDuration]=useState<number>(0);
 
   // Fetch resolution rate data
   useEffect(() => {
@@ -24,10 +26,13 @@ export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number })
         console.log("VoiceAnalytics - Fetching resolution rate for days:", days);
         const response = await fetchSentimentSummary(days);
         if (response.success && response.data) {
-          const { sentimentScore, total } = response.data;
+          const { sentimentScore, total ,avgCallDuration,totalMinutes} = response.data;
+          console.log("Hello",sentimentScore, total)
           // Use the sentiment score from the backend
           setResolutionRate(sentimentScore);
           setTotalCalls(total);
+          setAvgCallDuration(avgCallDuration)
+          setTotalMinutes(totalMinutes)
           console.log("VoiceAnalytics - Resolution rate updated:", {
             days,
             sentimentScore,
@@ -85,10 +90,10 @@ export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number })
       ? data.humanVsAgentSplit.humanPercentageDrop
       : 0;
 
-  const totalMinutes =
-    typeof data?.totalDuration === "number" && !isNaN(data.totalDuration)
-      ? data.totalDuration
-      : 0;
+  // const totalMinutes =
+  //   typeof data?.totalDuration === "number" && !isNaN(data.totalDuration)
+  //     ? data.totalDuration
+  //     : 0;
 
   return (
     <Card className="h-fit border-none p-4 shadow-lg shadow-gray-200">
@@ -118,7 +123,9 @@ export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number })
               </span> */}
             </div>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {utils.string.formatNumber(totalCallsVoice)}
+              {/* {utils.string.formatNumber(totalCallsVoice)}
+               */}
+               {totalCalls}
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
@@ -167,7 +174,11 @@ export function VoiceAnalytics({ data, days = 7 }: { data: any; days?: number })
               Avg. Call Duration
             </span>
             <div className="text-3xl font-bold text-gray-900 mb-2">
-              {utils.string.formatDuration(avgDuration)}
+              {/* {utils.string.formatDuration(avgDuration)}
+               */}
+               {
+                utils.string.formatDuration(avgCallDuration)
+               }
             </div>
             <div className="flex items-center">
               <div className="w-full bg-gray-200 rounded-full h-2 mr-2">
