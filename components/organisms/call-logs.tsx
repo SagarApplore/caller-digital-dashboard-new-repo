@@ -58,6 +58,7 @@ export interface Conversation {
   timestamp: string;
   timestampDate: Date;
   duration: string;
+  callEndedBy:string;
   durationSeconds: number;
   status: "resolved" | "escalated" | "answered" | "unanswered";
   csat: number;
@@ -511,6 +512,7 @@ const CallLogs = () => {
         callEndTime: item.call_end_time,
         handOff: item.hand_off,
         cost: item.cost || undefined,
+        callEndedBy:item.callEndedBy ? item.callEndedBy : "N/A"
       };
     });
   };
@@ -1475,6 +1477,9 @@ const CallLogs = () => {
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Duration
                   </TableHead>
+                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
+                    Call Ended By
+                  </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Status
                   </TableHead>
@@ -1560,6 +1565,9 @@ const CallLogs = () => {
                       </TableCell>
                       <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
                         {conversation.duration}
+                      </TableCell>
+                         <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
+                        {conversation.callEndedBy}
                       </TableCell>
                       <TableCell className="p-2 sm:p-4">
                         {getStatusBadge(conversation.status)}
@@ -1665,6 +1673,9 @@ const CallLogs = () => {
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Duration
+                  </TableHead>
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                    Call Ended By
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
