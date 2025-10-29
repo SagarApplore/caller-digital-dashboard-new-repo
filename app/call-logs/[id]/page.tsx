@@ -23,7 +23,20 @@ const CallLogsPage = ({ params }: { params: { id: string } }) => {
     }
     // Get the page number from query params to preserve pagination state
     const page = searchParams?.get('page') || '';
-    return page ? `/call-logs?page=${page}` : "/call-logs";
+const limit = searchParams?.get('limit') || '';
+console.log("Got the page",page)
+console.log("Got the limit",limit)
+
+let url = '/call-logs';
+
+if (page || limit) {
+  const params = [];
+  if (page) params.push(`page=${page}`);
+  if (limit) params.push(`limit=${limit}`);
+  url += `?${params.join('&')}`;
+}
+
+return url;
   };
 
   return (

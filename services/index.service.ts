@@ -18,6 +18,8 @@ export const fetchSentimentSummary = async (days: number = 7) => {
     if (response.data && response.data.sentimentMetrics) {
       const { sentimentMetrics } = response.data;
       const total = sentimentMetrics.totalCalls;
+      const totalMinutes = response.data.totalMinutes
+      const avgCallDuration = (totalMinutes)/total
       
       // Calculate percentages
       const positive = total > 0 ? Math.round((sentimentMetrics.positiveSentiments / total) * 100) : 0;
@@ -31,6 +33,8 @@ export const fetchSentimentSummary = async (days: number = 7) => {
           neutral,
           negative,
           total,
+          totalMinutes,
+          avgCallDuration,
           sentimentScore: sentimentMetrics.sentimentScore
         }
       };
@@ -43,6 +47,8 @@ export const fetchSentimentSummary = async (days: number = 7) => {
         neutral: 0,
         negative: 0,
         total: 0,
+        totalMinutes:0,
+        avgCallDuration:0,
         sentimentScore: 0
       }
     };

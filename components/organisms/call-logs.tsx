@@ -150,6 +150,7 @@ const CallLogs = () => {
   // Pagination state
   const searchParams = useSearchParams();
   const pageParam = searchParams?.get('page');
+  const limitParam = searchParams?.get('limit');
   const [currentPage, setCurrentPage] = useState<number>(pageParam ? parseInt(pageParam) : 1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
@@ -211,10 +212,12 @@ const CallLogs = () => {
         escalationRate: 0,
         aiResolutionPercentage: 100,
       });
-      setSentimentMetrics(response.data?.sentimentMetrics)
+      setSentimentMetrics(response.data?.sentimentMetrics);
+      return response; // Return the response to allow proper promise chaining
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
+      throw err; // Re-throw to allow proper promise chaining
     }
   };
 
@@ -223,9 +226,11 @@ const CallLogs = () => {
     try {
       const response = await apiRequest("/agents", "GET");
       setAgentsData(response.data.data || []);
+      return response; // Return the response to allow proper promise chaining
     } catch (err: any) {
       console.error("Error fetching agents:", err);
       // Don't set error for agents as it's not critical for main functionality
+      throw err; // Re-throw to allow proper promise chaining
     }
   };
 
@@ -272,6 +277,8 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+      // Update URL to reset page to 1 while preserving limit
+      router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
        console.log("fetch 3")
       await fetchCallLogs(
         filters.assistant,
@@ -306,6 +313,8 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when filter changes
+    // Update URL to reset page to 1 while preserving limit
+    router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
     // Refetch data without date filter
      console.log("fetch 4")
     fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
@@ -330,6 +339,8 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+      // Update URL to reset page to 1 while preserving limit
+      router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
        console.log("fetch 5")
       await fetchCallLogs(
         filters.assistant,
@@ -347,20 +358,85 @@ const CallLogs = () => {
     }
   };
 
+  // Single useEffect to handle all data fetching
+  const initialLoadRef = React.useRef(true);
+  const assistantChangeRef = React.useRef(false);
+  
   useEffect(() => {
-    // Use the page from URL parameters when component mounts
-    const initialPage = pageParam ? parseInt(pageParam) : 1;
-    // Set current page from URL parameter
-    setCurrentPage(initialPage);
-    // Fetch data with the correct page
-     console.log("fetch 6")
-    fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, initialPage, pageSize, filters.status, filters.searchQuery);
-    fetchAgents();
-  }, []);
-
-  // Refetch call logs when assistant filter changes
+    // Only fetch data once on initial load
+    if (initialLoadRef.current) {
+      setLoading(true);
+      // Use the page and limit from URL parameters when component mounts
+      const initialPage = pageParam ? parseInt(pageParam) : 1;
+      const initialLimit = limitParam ? parseInt(limitParam) : 10;
+      // Set current page and page size from URL parameters
+      setCurrentPage(initialPage);
+      setPageSize(initialLimit);
+      // Fetch data with the correct page and limit
+      console.log("Initial fetch with page:", initialPage, "limit:", initialLimit);
+      
+      Promise.all([
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, initialPage, initialLimit, filters.status, filters.searchQuery),
+        fetchAgents()
+      ])
+      .catch(err => {
+        console.error("Error during initial data fetch:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+        initialLoadRef.current = false;
+      });
+      
+      return;
+    }
+    
+    // Handle URL parameter changes (when returning from call details)
+    if (!initialLoadRef.current && (pageParam || limitParam)) {
+      const newPage = pageParam ? parseInt(pageParam) : 1;
+      const newLimit = limitParam ? parseInt(limitParam) : 10;
+      
+      // Only refetch if page or limit has changed
+      if (newPage !== currentPage || newLimit !== pageSize) {
+        setLoading(true);
+        setCurrentPage(newPage);
+        setPageSize(newLimit);
+        console.log("URL params changed, fetching with page:", newPage, "limit:", newLimit);
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, newPage, newLimit, filters.status, filters.searchQuery)
+          .catch(err => {
+            console.error("Error fetching with new URL params:", err);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
+    }
+    
+    // Handle assistant filter changes separately
+    if (!initialLoadRef.current && assistantChangeRef.current && filters.assistant) {
+      console.log("Assistant filter changed, fetching with assistant:", filters.assistant);
+      fetchCallLogsWithFilter(filters.assistant);
+      assistantChangeRef.current = false;
+    }
+  }, [pageParam, limitParam, assistantChangeRef.current]);
+  
+  // Track assistant filter changes and trigger API calls immediately
+  // Store the current assistant filter value to compare with future values
+  const prevAssistantRef = React.useRef(filters.assistant);
+  
   useEffect(() => {
-    if (filters.assistant) {
+    // Skip the initial render
+    if (initialLoadRef.current) {
+      return;
+    }
+    
+    // Only trigger if the value actually changed
+    if (filters.assistant !== prevAssistantRef.current) {
+      console.log("Assistant filter actually changed from", prevAssistantRef.current, "to", filters.assistant);
+      // Update the previous value reference
+      prevAssistantRef.current = filters.assistant;
+      
+      // Directly call fetchCallLogsWithFilter instead of setting a ref flag
+      console.log("Immediately fetching with new assistant filter:", filters.assistant);
       fetchCallLogsWithFilter(filters.assistant);
     }
   }, [filters.assistant]);
@@ -423,7 +499,7 @@ const CallLogs = () => {
         // duration: item.status !== "unanswered" ? `${durationMinutes}m ${durationSeconds}s`: "NA",
         duration:`${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
-        status: item.call_type === "inbound" ? (item.hand_off ? "escalated" : "resolved") : (item.status === "answered" ?"answered":"unanswered" ), // Use hand_off to determine status
+        status: item.call_type === "inbound" ? (item.hand_off ? "escalated" : "resolved") : (item.status === "answered" ?(item.hand_off ? "escalated" : "resolved") :"unanswered" ), // Use hand_off to determine status
         csat: Number((4.2 + Math.random() * 0.8).toFixed(2)), // Hardcoded CSAT score
         confidence: Number((75 + Math.random() * 20).toFixed(2)), // Hardcoded confidence score
         language: "english", // Hardcoded language
@@ -510,11 +586,12 @@ const CallLogs = () => {
       (c) => c.status === "escalated"
     ).length;
     const avgDuration =
-      filteredConversations.reduce((sum, c) => sum + c.durationSeconds, 0) /
-        filteredConversations.length || 0;
-    const avgCSAT =
-      filteredConversations.reduce((sum, c) => sum + c.csat, 0) /
-        filteredConversations.length || 0;
+    //   filteredConversations.reduce((sum, c) => sum + c.durationSeconds, 0) /
+    //     filteredConversations.length || 0;
+    // const avgCSAT =
+    //   filteredConversations.reduce((sum, c) => sum + c.csat, 0) /
+    //     filteredConversations.length || 0;
+    totalMinutes/totalCount;
 
     return [
       {
@@ -525,9 +602,11 @@ const CallLogs = () => {
       },
       {
         label: "Avg. Duration",
-        value: `${Math.floor(avgDuration / 60)}m ${Math.floor(
-          avgDuration % 60
-        )}s`,
+        // value: `${Math.floor(avgDuration / 60)}m ${Math.floor(
+        //   avgDuration % 60
+        // )}s`,
+        value:`${Math.floor(avgDuration)}m ${Math.round((avgDuration - Math.floor(avgDuration)) * 60)}s`,
+        
         change: "+2.1%",
         trend: "up" as const,
       },
@@ -576,6 +655,8 @@ const CallLogs = () => {
         setError(null);
         // For search, we still want to reset to page 1 as this is expected behavior
         setCurrentPage(1); 
+        // Update URL to reset page to 1 while preserving limit
+        router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
         console.log("fetch 7")
         await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, 1, pageSize, filters.status, searchQuery);
       } catch (err: any) {
@@ -880,6 +961,8 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when clearing filters
+    // Update URL to reset page to 1 while preserving limit
+    router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
      console.log("fetch 8")
     fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
@@ -890,8 +973,8 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(page);
-      // Update URL with the new page parameter
-      router.push(`/call-logs?page=${page}`, { scroll: false });
+      // Update URL with the new page parameter while preserving limit
+      router.push(`/call-logs?page=${page}&limit=${pageSize}`, { scroll: false });
        console.log("fetch 9")
       await fetchCallLogs(
         filters.assistant,
@@ -915,6 +998,8 @@ const CallLogs = () => {
       setError(null);
       setPageSize(newPageSize);
       setCurrentPage(1); // Reset to first page when changing page size
+      // Update URL with the new limit parameter
+      router.push(`/call-logs?page=1&limit=${newPageSize}`, { scroll: false });
        console.log("fetch 10")
       await fetchCallLogs(
         filters.assistant,
@@ -1195,7 +1280,7 @@ const CallLogs = () => {
               <SelectItem value="all-status">All Status</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
               <SelectItem value="escalated">Escalated</SelectItem>
-              <SelectItem value="answered">Answered</SelectItem>
+              {/* <SelectItem value="answered">Answered</SelectItem> */}
               <SelectItem value="unanswered">Unanswered</SelectItem>
             </SelectContent>
           </Select>
@@ -1542,7 +1627,7 @@ const CallLogs = () => {
                           size="sm"
                           className="text-blue-600 hover:text-blue-800 p-0"
                           onClick={() =>
-                            router.push(`/call-logs/${conversation.id}?page=${currentPage}`)
+                            router.push(`/call-logs/${conversation.id}?page=${currentPage}&limit=${pageSize}`)
                           }
                         >
                           <Play className="w-4 h-4 mr-1" />
