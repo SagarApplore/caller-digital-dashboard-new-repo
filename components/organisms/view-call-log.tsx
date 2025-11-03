@@ -494,6 +494,12 @@ const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
                 <span className="text-sm  text-gray-500">Language</span>
                 <span className="text-sm font-bold">English</span>
               </div>
+               <div className="flex flex-col">
+                <span className="text-sm  text-gray-500">Call Ended By</span>
+                <span className="text-sm font-bold">
+                  {apiData?.callEndedBy || "N/A"}
+                </span>
+              </div>
             </div>
 
             <div className="bg-white p-4 rounded-lg shadow-lg shadow-gray-200 flex flex-col gap-4">

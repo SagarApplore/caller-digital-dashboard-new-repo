@@ -45,10 +45,12 @@ const string = {
   formatDuration: (duration: number) => {
     
 
-const minutes = Math.floor(duration);
-const seconds = Math.round((duration - minutes) * 60);
+// const minutes = Math.floor(duration/60);
+// const seconds = Math.round((duration - minutes) * 60);
+const durationMinutes = Math.floor(duration / 60);
+      const durationSeconds = duration % 60;
 
-return (`${minutes}m ${seconds}s`);
+return (`${durationMinutes}m ${durationSeconds}s`);
 
    
   },
