@@ -204,6 +204,8 @@ const EntityResult = ({
   );
 };
 
+ 
+
 const ViewCallLog = ({ id }: { id: string }) => {
   const [play, setPlay] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -215,6 +217,13 @@ const ViewCallLog = ({ id }: { id: string }) => {
   const [summary, setSummary] = useState<string>("");
   const [showAllTags, setShowAllTags] = useState(false);
 
+
+ const formatTiming = (call_duration)=> {
+     const durationInSeconds = call_duration || 0;
+      const durationMinutes = Math.floor(durationInSeconds / 60);
+      const durationSeconds = durationInSeconds % 60;
+      return `${durationMinutes}m ${durationSeconds}s`
+  }
   const fetchCallLog = async () => {
     try {
       const response = await apiRequest(`/vapi/call-logs/${id}`, "GET");
@@ -507,7 +516,7 @@ const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
               <div className="flex items-center justify-between">
                 <span className="text-sm  text-gray-500">Duration</span>
                 <span className="text-sm font-bold">
-                  {utils.string.formatDuration(apiData?.call_duration)}
+                  {formatTiming(apiData?.call_duration)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
