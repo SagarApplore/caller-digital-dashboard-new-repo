@@ -296,6 +296,73 @@ const CallLogs = () => {
       setLoading(false);
     }
   };
+  
+  // Download call logs as Excel file
+  
+  const handleDownloadCallLogs = async () => {
+  try {
+    // Construct query parameters
+    const queryParams = new URLSearchParams();
+
+    if (dateInputs.startDate) queryParams.append('createdAtGe', dateInputs.startDate);
+    if (dateInputs.endDate) queryParams.append('createdAtLe', dateInputs.endDate);
+    if (filters.assistant && filters.assistant !== 'all-assistants')
+      queryParams.append('assistantId', filters.assistant);
+    if (filters.searchQuery) queryParams.append('search', filters.searchQuery);
+
+    if (filters.status && filters.status !== 'all-status') {
+      if (filters.status === 'escalated' || filters.status === 'resolved') {
+        queryParams.append('hand_off', filters.status === 'escalated' ? 'true' : 'false');
+      } else {
+        queryParams.append('status', filters.status);
+      }
+    }
+
+    const url = `/vapi/call-logs/download`;
+
+    // ✅ Correct: ensure responseType is passed properly
+    const response = await apiRequest(
+      url,
+      'GET',
+      {},
+      Object.fromEntries(queryParams),
+      {},
+      { responseType: 'blob' } // handled via your fix #2 in apiRequest
+    );
+console.log(response.data instanceof Blob); // should be true
+
+    // ✅ Wrap response.data into a Blob explicitly
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    // Create download link
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+
+    const date = new Date();
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}-${String(date.getDate()).padStart(2, '0')}`;
+    link.setAttribute('download', `call-logs-${formattedDate}.xlsx`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Call logs downloaded successfully');
+  } catch (error: any) {
+    console.error('Error downloading call logs:', error);
+    if (error.response?.data?.message === 'Date range exceeds 3 months') {
+      toast.error('Date range cannot exceed 3 months for downloads');
+    } else {
+      toast.error('Failed to download call logs');
+    }
+  }
+};
+
 
   // Format date for chip display
   const formatDateForChip = (dateString: string) => {
@@ -1313,7 +1380,7 @@ const CallLogs = () => {
               className="pl-10 w-full sm:w-64"
             />
           </div>
-          <button onClick={() => handleExportCallLogs(apiData, 'xlsx')} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
+          <button onClick={handleDownloadCallLogs} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
 
           {/* <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
