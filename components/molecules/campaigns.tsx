@@ -10,7 +10,9 @@ import { toast } from "react-toastify";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import { useAuth } from "@/components/providers/auth-provider";
+import { useSearchParams } from "next/navigation";
 import * as XLSX from 'xlsx';
+import { CheckCircle2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -52,6 +54,12 @@ export function CampaignsPage() {
 
   const router = useRouter();
   const { user } = useAuth();
+
+  const searchParams = useSearchParams();
+const isRetryMode = searchParams.get("retry") === "true"; // detect retry mode
+
+const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
+
 
   // Check if user is super admin
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
@@ -128,6 +136,89 @@ export function CampaignsPage() {
     fetchCampaigns(page);
   };
 
+
+  // Checkbox change handler
+const handleCheckboxChange = (id: string, checked: boolean) => {
+  setSelectedCampaigns(prev => {
+    const updated = new Set(prev);
+    if (checked) updated.add(id);
+    else updated.delete(id);
+    return updated;
+  });
+};
+
+// Retry done handler
+// const handleRetryDone = async () => {
+//   if (selectedCampaigns.size === 0) {
+//     toast.warning("Please select at least one campaign.");
+//     return;
+//   }
+
+//   try {
+//     toast.info("Generating retry CSV...");
+
+//     // 🔥 Fetch CSV as Blob
+//     const response = await apiRequest(
+//       endpoints.outboundCampaign.retryUnanswered,
+//       "POST",
+//       { campaignIds: Array.from(selectedCampaigns) },
+//       { responseType: "blob" } // important
+//     );
+
+//     // ✅ Create File object from Blob
+//     const blob = new Blob([response.data], { type: "text/csv" });
+//     const file = new File([blob], "retry_unanswered.csv", { type: "text/csv" });
+
+//     // 🔒 Store temporarily in sessionStorage
+//     sessionStorage.setItem("retryCsv", await blob.text());
+
+//     toast.success("Retry CSV ready! Redirecting...");
+
+//     // 🚀 Navigate to upload page with retry=true flag
+//     router.push("/outbound-campaign-manager/new?retry=true");
+
+//   } catch (error) {
+//     console.error(error);
+//     toast.error("An error occurred while retrying unanswered numbers.");
+//   }
+// };
+
+const handleRetryDone = async () => {
+  if (selectedCampaigns.size === 0) {
+    toast.warning("Please select at least one campaign.");
+    return;
+  }
+
+  try {
+    toast.info("Generating retry CSV...");
+
+    const response = await apiRequest(
+      endpoints.outboundCampaign.retryUnanswered,
+      "POST",
+      { campaignIds: Array.from(selectedCampaigns) },
+      { responseType: "blob" }
+    );
+
+    const blob = new Blob([response.data], { type: "text/csv" });
+
+    // ✅ Convert to Base64 (binary-safe)
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      sessionStorage.setItem("retryCsvBase64", reader.result);
+      sessionStorage.setItem("isRetryMode", "true"); // 👈 Set flag
+      toast.success("Retry CSV ready! Redirecting...");
+      router.push("/outbound-campaign-manager/new"); // no query param needed
+    };
+    reader.readAsDataURL(blob);
+  } catch (error) {
+    console.error(error);
+    toast.error("An error occurred while retrying unanswered numbers.");
+  }
+};
+
+
+
+
   // Keyboard pagination shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -191,7 +282,19 @@ export function CampaignsPage() {
     }
   };
 
-  return (
+  return (<>
+    {isRetryMode && (
+  <div className="flex justify-end mb-2">
+   <Button
+  onClick={handleRetryDone}
+  className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
+>
+  <CheckCircle2 className="h-4 w-4" />
+  Done (Retry Selected)
+</Button>
+  </div>
+)}
+
     <div className="flex-1 overflow-auto p-4 flex flex-col gap-4">
       {/* Export Button */}
       {/* <div className="flex justify-end mb-2">
@@ -205,6 +308,7 @@ export function CampaignsPage() {
       </div> */}
 
       {/* Campaign Metrics Boxes */}
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="bg-white border-none shadow-lg shadow-gray-200">
           <CardContent className="p-4">
@@ -262,7 +366,14 @@ export function CampaignsPage() {
             ) : (
               <Table className="w-full">
                 <TableHeader>
-                  <TableRow className="bg-gray-100">
+    <TableRow className="bg-gray-100">
+      {/* 🔧 Added checkbox header inside the row (previously misplaced) */}
+      {isRetryMode && (
+        <TableHead className="py-3 px-4 text-gray-500 text-sm font-medium">
+          Select
+        </TableHead>
+      )}
+
                     <TableHead className="py-3 px-4 text-gray-500 text-sm font-medium">
                       Campaign Name
                     </TableHead>
@@ -305,6 +416,22 @@ export function CampaignsPage() {
                           router.push(`/outbound-campaign-manager/${campaign._id}`)
                         }
                       >
+
+                         {/*  Added checkbox for each campaign row */}
+
+                         {isRetryMode && (
+          <TableCell className="py-4 px-4">
+            <input
+              type="checkbox"
+              checked={selectedCampaigns.has(campaign._id)}
+              onChange={(e) =>
+                handleCheckboxChange(campaign._id, e.target.checked)
+              }
+              onClick={(e) => e.stopPropagation()} // prevent navigation
+              className="h-4 w-4 cursor-pointer"
+            />
+          </TableCell>
+        )}
                         <TableCell className="py-4 px-4 font-medium text-gray-900">
                           {campaign.campaignName}
                         </TableCell>
@@ -597,6 +724,7 @@ export function CampaignsPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

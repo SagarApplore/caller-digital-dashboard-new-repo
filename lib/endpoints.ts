@@ -9,6 +9,8 @@ const endpoints = {
     getById: "/outbound-campaigns/:id",
     create: "/outbound-campaigns",
     exportAll: "/outbound-campaigns/export/all",
+    retryUnanswered: "/outbound-campaigns/retry-unanswered",
+
   },
   assistants: {
     list: "/agents",

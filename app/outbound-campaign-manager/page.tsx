@@ -10,7 +10,7 @@ import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 import { apiRequest } from "../../utils/api";
 import endpoints from "@/lib/endpoints";
-
+import { RotateCcw } from "lucide-react";
 export default function OutboundCampaignManagerPage() {
   const router = useRouter();
 
@@ -77,6 +77,14 @@ export default function OutboundCampaignManagerPage() {
                 <PlusIcon className="w-4 h-4" />
                 Create New Campaign
               </Button>
+<Button
+  onClick={() => router.push("/outbound-campaign-manager?retry=true")}
+  className="bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-2"
+>
+  <RotateCcw className="h-4 w-2" />
+  Retry Unanswered Numbers
+</Button>
+
             </div>
           ),
         }}

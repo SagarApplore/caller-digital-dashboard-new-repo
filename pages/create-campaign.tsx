@@ -107,6 +107,29 @@ export function CreateCampaignPage() {
   const [manualPhone, setManualPhone] = useState("");
   const [manualError, setManualError] = useState<string>("");
 
+useEffect(() => {
+    const isRetryMode = sessionStorage.getItem("isRetryMode") === "true";
+    if (!isRetryMode) return;
+
+    const base64Data = sessionStorage.getItem("retryCsvBase64");
+    if (!base64Data) return;
+
+    // Decode and upload
+    fetch(base64Data)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "retry_unanswered.csv", { type: "text/csv" });
+        
+        handleFileUpload(file);
+        setSelectedSource("csv")
+        toast.success("Retry CSV loaded automatically!");
+        sessionStorage.removeItem("retryCsvBase64");
+        sessionStorage.removeItem("isRetryMode"); // cleanup
+      })
+      .catch((err) => console.error("Error auto-uploading retry CSV:", err));
+  }, []);
+
+
   const generateCsvFromManualLead = () => {
     setManualError("");
     // Basic validation
