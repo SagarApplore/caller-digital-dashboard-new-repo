@@ -9,6 +9,8 @@ import {
   PhoneCall,
   CodeXml,
   Users,
+  Mic,
+  Link
 } from "lucide-react";
 
 export interface SidebarRouteItem {
@@ -107,6 +109,20 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     path: "/llm-provider-config",
     icon: Users,
     roles: ["SUPER_ADMIN"],
+  },
+  {
+    id: "voices",
+    name: "Voices",
+    path: "/voices",
+    icon: Mic,
+    roles:["SUPER_ADMIN"]
+  },
+  {
+    id: "integrations",
+    name: "Integrations",
+    path: "/integrations",
+    icon: Link,
+    // roles:["SUPER_ADMIN"]
   },
 ];
 
