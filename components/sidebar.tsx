@@ -8,6 +8,7 @@ import {
   Key,
   SquareUser,
   BriefcaseBusiness,
+  Settings
 } from "lucide-react";
 import { useAuth } from "./providers/auth-provider";
 import { updateActiveRoute } from "@/lib/sidebar-routes";
@@ -15,6 +16,7 @@ import { CreditDisplay } from "./credit-display";
 import { useState, useEffect } from "react";
 import { ResetPasswordModal } from "./reset-password-modal";
 import { LogoutConfirmation } from "@/components/logout-confirmation";
+import { AddConfigurationModal } from "@/components/add-configuration-modal"; 
 import apiRequest from "@/utils/api";
 
 export function Sidebar() {
@@ -23,6 +25,7 @@ export function Sidebar() {
   const { logout, user } = useAuth();
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+    const [showAddConfiguration, setShowAddConfiguration] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   // Update routes with active state based on current path
@@ -175,6 +178,15 @@ export function Sidebar() {
                     <span>Reset Password</span>
                   </button>
 
+                    {/* ➕ Add Configuration */}
+                  <button
+                    onClick={() => setShowAddConfiguration(true)}
+                    className="flex items-center space-x-2 text-sm text-gray-700 hover:text-green-600"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Add Configuration</span>
+                  </button>
+
                   <button
                     onClick={() => setShowLogoutConfirmation(true)}
                     className="flex items-center space-x-2 text-sm text-gray-700 hover:text-red-600 transition-colors"
@@ -196,6 +208,17 @@ export function Sidebar() {
           onClose={() => setShowResetPassword(false)}
         />
       )}
+
+     
+      {showAddConfiguration && (
+        <AddConfigurationModal
+          isOpen={showAddConfiguration}
+          onClose={() => setShowAddConfiguration(false)}
+          clientId={user?.id || user?.clientId}  
+        />
+      )}
+
+
 
       {/* Logout Confirmation */}
       <LogoutConfirmation
