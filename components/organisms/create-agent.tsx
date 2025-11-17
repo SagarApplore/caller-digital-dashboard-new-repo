@@ -134,6 +134,13 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
   const availableSteps = getAvailableSteps();
 
+  const normalizeMode = (mode) => {
+  if (!mode) return "AI_SPEAKS_FIRST";
+  if (mode === "AI_SPEAKS_FIRST" || mode === "HUMAN_SPEAKS_FIRST") return mode;
+  return "AI_SPEAKS_FIRST";
+};
+
+
   // Initialize channels with existing data
   const initializeChannels = (): Channel[] => {
     return initialChannels.map((channel) => {
@@ -157,6 +164,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           value: existingChannel?.agentPrompt || channel.prompt.value,
         },
         firstMessage: existingChannel?.firstMessage || channel.firstMessage,
+    firstMessageMode:
+      existingChannel?.firstMessageMode ?? channel.firstMessageMode ?? "AI_SPEAKS_FIRST",
+  
+
+        
       };
     });
   };
@@ -220,6 +232,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       voiceActivityDetectionEnabled: !!initialData?.voice?.vad,
       turnDetectorsEnabled: !!initialData?.voice?.turnDetectors,
       voiceMailDetectionEnabled: !!initialData?.voice?.voiceMailDetection,
+      firstMessageMode: initialData?.voice?.firstMessageMode || "AI_SPEAKS_FIRST",
 
       vad: {
         min_speech_duration:
@@ -869,6 +882,11 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
                 },
                 firstMessage:
                   existingChannel?.firstMessage || channel.firstMessage,
+
+               firstMessageMode:
+        existingChannel?.firstMessageMode ?? channel.firstMessageMode ?? "AI_SPEAKS_FIRST",
+    
+
               };
             })
           );
@@ -902,6 +920,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             voiceActivityDetectionEnabled: !!agentData?.voice?.vad,
             turnDetectorsEnabled: !!agentData?.voice?.turnDetectors,
             voiceMailDetectionEnabled: !!agentData?.voice?.voiceMailDetection,
+            firstMessageMode: agentData.voice?.firstMessageMode,
+
             vad: {
               min_speech_duration:
                 agentData?.voice?.vad?.min_speech_duration ?? 0.05,
@@ -1111,6 +1131,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               },
               firstMessage:
                 existingChannel?.firstMessage || channel.firstMessage,
+                 firstMessageMode: normalizeMode(
+        existingChannel?.firstMessageMode || channel.firstMessageMode
+      ),
             };
           })
         );
@@ -1317,7 +1340,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         })), // Array of entity data key-value pairs
       ...(!hasDIYPermission() && {
         voice: {
-          firstMessageMode: "AI_SPEAKS_FIRST",
+     firstMessageMode: channels.find(c => c.id.toLowerCase() === "voice")?.firstMessageMode,
+
+
           firstMessage: channels.find(
             (channel) => channel.id.toLowerCase() === "voice"
           )?.firstMessage,
@@ -1369,7 +1394,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             model: voiceIntegration.selectedSTTModelName,
             providerName: voiceIntegration.selectedSTTProviderName,
           },
-          firstMessageMode: "AI_SPEAKS_FIRST",
+      firstMessageMode: channels.find(c => c.id.toLowerCase() === "voice")?.firstMessageMode,
+
           firstMessage: channels.filter(
             (channel) => channel.id.toLowerCase() === "voice"
           )?.[0]?.firstMessage,
@@ -1527,6 +1553,17 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     );
   };
 
+
+ const updateFirstMessageMode = (channelId, mode) => {
+  console.log("updateFirstMessageMode called:", { channelId, mode });
+  setChannels(prev => {
+    const result = prev.map(ch => ch.id === channelId ? { ...ch, firstMessageMode: mode } : ch);
+    console.log("channels after updateFirstMessageMode:", result);
+    return result;
+  })
+};
+
+
   // Calculate actual total steps based on channel activation
   const getTotalSteps = () => {
     // If user doesn't have DIY permissions, only show basic steps
@@ -1667,6 +1704,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
               updateHandoffConfig={setHandoffConfig}
               extraPrompts={extraPrompts}
               updateExtraPrompts={setExtraPrompts}
+              updateFirstMessageMode={updateFirstMessageMode}
               agentPhoneNumber={agentPhoneNumber}
               updateAgentPhoneNumber={(
                 phoneNumber,

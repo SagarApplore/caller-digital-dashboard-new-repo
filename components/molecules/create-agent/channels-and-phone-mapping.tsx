@@ -42,6 +42,8 @@ export interface Channel {
   };
   firstMessage: string;
   firstMessageError?: string;
+  firstMessageMode?: string;
+
 }
 
 export interface PhoneNumber {
@@ -85,6 +87,8 @@ interface ChannelsAndPhoneMappingProps {
   agentPhoneNumber: { phoneNumber: string; phoneNumberId: string; numberType?: string };
   updateAgentPhoneNumber: (phoneNumber: string, phoneNumberId: string, numberType?: string) => void;
   mode?: "create" | "edit";
+  updateFirstMessageMode: (channelId: string, mode: "AI_SPEAKS_FIRST" | "HUMAN_SPEAKS_FIRST") => void;
+
 }
 
 const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsAndPhoneMappingProps>(
@@ -93,10 +97,12 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
     toggleChannel,
     updatePrompt,
     updateFirstMessage,
+    
     handoffConfig,
     updateHandoffConfig,
     extraPrompts,
     updateExtraPrompts,
+    updateFirstMessageMode,
     agentPhoneNumber,
     updateAgentPhoneNumber,
     mode = "create",
@@ -319,6 +325,30 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                           <p className="text-red-500 text-sm">{channel.firstMessageError}</p>
                         )}
                       </div>
+                      {/* First Message Mode */}
+<div className="flex flex-col gap-2 mt-2">
+  <Label className="text-sm font-medium text-gray-700">
+    First Message Mode
+  </Label>
+
+  <select
+    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={channel.firstMessageMode || "AI_SPEAKS_FIRST"}
+    onChange={(e) =>
+      updateFirstMessageMode(
+        channel.id,
+        e.target.value as "AI_SPEAKS_FIRST" | "HUMAN_SPEAKS_FIRST"
+      )
+    }
+  >
+    <option value="AI_SPEAKS_FIRST">AI_SPEAKS_FIRST</option>
+    <option value="HUMAN_SPEAKS_FIRST">HUMAN_SPEAKS_FIRST</option>
+  </select>
+
+  <p className="text-xs text-gray-500">Choose who starts the conversation first.</p>
+</div>
+
+
                     </div>
                   )}
                 </CardContent>
