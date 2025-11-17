@@ -313,11 +313,13 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       return {
         enabled: initialData.handoff || false,
         handoff_number: initialData.handoff_number || "",
+          warmTransfer: initialData?.voice.warmTransfer || false,
       };
     }
     return {
       enabled: false,
       handoff_number: "",
+      warmTransfer:false
     };
   };
 
@@ -1332,6 +1334,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       ), // Array of function tool ObjectIds
       handoff: handoffConfig.enabled,
       handoff_number: handoffConfig.enabled ? handoffConfig.handoff_number : "",
+
+
       entity_data: entityData
         .filter((item) => item.key && item.key.trim() !== "") // Only include items with non-empty keys
         .map((item) => ({
@@ -1394,6 +1398,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             model: voiceIntegration.selectedSTTModelName,
             providerName: voiceIntegration.selectedSTTProviderName,
           },
+                warmTransfer: handoffConfig.warmTransfer,
       firstMessageMode: channels.find(c => c.id.toLowerCase() === "voice")?.firstMessageMode,
 
           firstMessage: channels.filter(

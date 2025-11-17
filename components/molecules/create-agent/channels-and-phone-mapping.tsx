@@ -56,6 +56,7 @@ export interface PhoneNumber {
 export interface HandoffConfig {
   enabled: boolean;
   handoff_number: string;
+    warmTransfer?: boolean; 
   error?: string;
 }
 
@@ -157,6 +158,10 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
        if (enabled && !handoffConfig.handoff_number) {
     error = "Phone number is required when handoff is enabled";
   }
+
+  if (enabled && handoffConfig.warmTransfer && !handoffConfig.handoff_number) {
+  error = "Warm Transfer requires a valid phone number.";
+}
       updateHandoffConfig({
         ...handoffConfig,
         enabled,
@@ -613,6 +618,25 @@ const ChannelsAndPhoneMapping = forwardRef<ChannelsAndPhoneMappingRef, ChannelsA
                       </p>
                     )}
                   </div>
+                  <div className="flex items-center gap-2 mt-2">
+  <Checkbox
+    id="warm-transfer"
+    checked={handoffConfig.warmTransfer || false}
+    onCheckedChange={(checked) => {
+      updateHandoffConfig({
+        ...handoffConfig,
+        warmTransfer: checked,
+      });
+    }}
+    className="data-[state=checked]:bg-purple-600"
+  />
+  <Label
+    htmlFor="warm-transfer"
+    className="text-sm font-medium text-gray-700"
+  >
+    Enable Warm Transfer
+  </Label>
+</div>
                 </div>
               )}
             </CardContent>
