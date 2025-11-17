@@ -50,6 +50,7 @@ export function CampaignsPage() {
     totalInterestedCount: 0,
     totalConnectRate: 0,
     totalCount: 0,
+    totalCallDurationMinutes:0
   });
 
   const router = useRouter();
@@ -87,6 +88,8 @@ const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set(
             totalInterestedCount: response.data.totalData.totalInterestedCount || 0,
             totalConnectRate: response.data.totalData.totalConnectRate || 0,
             totalCount: response.data.totalData.totalCount || 0,
+            totalCallDurationMinutes:response.data.totalData.totalCallDurationMinutes || 0,
+            
           });
         }
       } else {
@@ -344,6 +347,12 @@ const handleRetryDone = async () => {
           <CardContent className="p-4">
             <div className="text-sm text-gray-600">Total Interested</div>
             <div className="text-2xl font-bold text-gray-900 py-2">{utils.string.formatNumber(campaignMetrics.totalInterestedCount)}</div>
+          </CardContent>
+        </Card>
+          <Card className="bg-white border-none shadow-lg shadow-gray-200">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">Total Call Duration</div>
+            <div className="text-2xl font-bold text-gray-900 py-2">{campaignMetrics.totalCallDurationMinutes} mins</div>
           </CardContent>
         </Card>
       </div>

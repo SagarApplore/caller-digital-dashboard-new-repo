@@ -705,7 +705,7 @@ console.log(response.data instanceof Blob); // should be true
       },
       {
         label: "Total Minutes",
-        value: `${totalMinutes.toFixed(2)} min`,
+        value: `${totalMinutes.toFixed(2)} mins`,
         change: "N/A",
         trend: "down" as const,
       },
