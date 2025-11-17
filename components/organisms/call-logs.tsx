@@ -363,6 +363,29 @@ console.log(response.data instanceof Blob); // should be true
   }
 };
 
+function formatToIST(utcDate) {
+  // Create a Date object from UTC input
+  const date = new Date(utcDate);
+
+  // IST offset in minutes (+5:30 hours = 330 minutes)
+  const istOffset = 330;
+
+  // Convert UTC to IST in milliseconds
+  const istTime = new Date(date.getTime() + istOffset * 60 * 1000);
+
+  // Extract components
+  const hours = String(istTime.getHours()).padStart(2, "0");
+  const minutes = String(istTime.getMinutes()).padStart(2, "0");
+  const day = String(istTime.getDate()).padStart(2, "0");
+  const month = String(istTime.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+  const year = String(istTime.getFullYear()).slice(-2); // Last 2 digits of year
+
+  return `${hours}:${minutes}, ${day}-${month}-${year}`;
+}
+
+
+
+
 
   // Format date for chip display
   const formatDateForChip = (dateString: string) => {
@@ -563,7 +586,7 @@ console.log(response.data instanceof Blob); // should be true
           avatar: "/placeholder.svg?height=32&width=32",
         },
         timestamp: getTimeAgo(callStartTime),
-        timestampDate: callStartTime,
+        timestampDate: callEndTime,
         // duration: item.status !== "unanswered" ? `${durationMinutes}m ${durationSeconds}s`: "NA",
         duration:`${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
@@ -1539,7 +1562,7 @@ console.log(response.data instanceof Blob); // should be true
                     Assistant
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
-                    Timestamp
+                   Call End Time
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Duration
@@ -1628,7 +1651,8 @@ console.log(response.data instanceof Blob); // should be true
                         </div>
                       </TableCell>
                       <TableCell className="p-2 sm:p-4 text-xs sm:text-sm text-gray-600">
-                        {conversation.timestamp}
+                        {formatToIST(conversation.callEndTime)}
+                        
                       </TableCell>
                       <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
                         {conversation.duration}
@@ -1736,7 +1760,7 @@ console.log(response.data instanceof Blob); // should be true
                     Assistant
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
-                    Timestamp
+                    Call End Time
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Duration
