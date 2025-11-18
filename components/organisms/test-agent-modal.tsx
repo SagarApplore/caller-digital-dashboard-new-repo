@@ -2,17 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Play, Square, Mic, MicOff } from "lucide-react";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
 import AudioVisualizer from "@/components/molecules/audio-visualizer";
 import LiveKitRoomOfficial from "@/components/molecules/livekit-room-official";
+import LiveTranscriptChat, { LiveTranscriptMessage } from "@/components/molecules/live-transcript-chat";
 import { getLiveKitServerUrl } from "@/lib/livekit-config";
 
 interface TestAgentModalProps {
@@ -35,12 +31,38 @@ export default function TestAgentModal({
   const [serverUrl] = useState<string>(getLiveKitServerUrl());
   const [roomName, setRoomName] = useState<string>('');
   const [participantName, setParticipantName] = useState<string>('');
+  const [chatMessages, setChatMessages] = useState<LiveTranscriptMessage[]>([]);
+  const [agentStatus, setAgentStatus] = useState<'connecting' | 'ready' | 'speaking' | 'idle'>('connecting');
+  const [transcriptionReady, setTranscriptionReady] = useState(false);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setChatMessages([]);
+      setAgentStatus('connecting');
+      setIsConnected(false);
+      setIsConnecting(false);
+      setTranscriptionReady(false);
+      setError(null);
+    } else {
+      // Clear everything when modal closes
+      setChatMessages([]);
+      setIsConnected(false);
+      setIsConnecting(false);
+      setError(null);
+      setLiveKitToken(null);
+      setRoom(null);
+    }
+  }, [isOpen]);
 
   const handleStartTest = async () => {
     if (!agent) return;
 
     setIsConnecting(true);
     setError(null);
+    // Clear previous chat messages for new call
+    setChatMessages([]);
+    setAgentStatus('connecting');
 
     try {
       // Get LiveKit token from Next.js API
@@ -54,7 +76,7 @@ export default function TestAgentModal({
         serverUrl
       });
 
-      // Build query parameters with agent metadata
+      // Prepare agent data for token request
       console.log('Agent data for token request:', {
         agentId: agent._id,
         agentName: agent.agentName,
@@ -72,26 +94,33 @@ export default function TestAgentModal({
       } else if (agent.client && typeof agent.client === 'object') {
         clientIdValue = agent.client._id || agent.client.id || '';
       }
-
-      const params = new URLSearchParams({
+      
+      // Create request body with all agent data
+      const requestBody = {
         room: newRoomName,
         username: newParticipantName,
         agentId: agent._id,
         agentName: agent.agentName || '',
-        agentChannels: JSON.stringify(agent.channels || []),
-        agentLanguages: JSON.stringify(agent.languages || []),
-        agentVoice: JSON.stringify(agent.voice || {}),
-        agentEmail: JSON.stringify(agent.email || {}),
-        agentChats: JSON.stringify(agent.chats || {}),
+        agentChannels: agent.channels || [],
+        agentLanguages: agent.languages || [],
+        agentVoice: agent.voice || {},
+        agentEmail: agent.email || {},
+        agentChats: agent.chats || {},
         clientId: clientIdValue,
-        workspaceId: agent.workspace || ''
-      });
+        workspaceId: agent.workspace || '',
+        agentPrompt: agent.prompt || ''
+      };
 
       console.log('Client ID being sent:', clientIdValue);
-      console.log('Full params:', params.toString());
-
-      // Use the new Next.js token API with metadata
-      const tokenResponse = await fetch(`/api/token?${params.toString()}`);
+      
+      // Use POST request to avoid URL length limitations
+      const tokenResponse = await fetch('/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
       const data = await tokenResponse.json();
 
       console.log('Token response:', data);
@@ -145,13 +174,14 @@ export default function TestAgentModal({
   }, [isOpen]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Agent: {agent?.agentName}</DialogTitle>
-        </DialogHeader>
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-full sm:max-w-md md:max-w-lg lg:max-w-xl p-0">
+        <SheetHeader className="px-4 py-3 border-b">
+          <SheetTitle>Agent: {agent?.agentName}</SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col h-full">
+          <div className="flex-1 min-h-0 flex flex-col">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm">{error}</p>
@@ -159,13 +189,14 @@ export default function TestAgentModal({
           )}
 
           {!isConnected ? (
-            <div className="text-center space-y-4">
-              <p className="text-gray-600">
-                Start a test session with your agent to test voice interactions.
-              </p>
+            <div className="p-4">
+              <div className="text-center space-y-4">
+                <p className="text-gray-600">
+                  Start a test session with your agent to test voice interactions.
+                </p>
               <Button
                 onClick={handleStartTest}
-                disabled={isConnecting}
+                disabled={isConnecting || transcriptionReady}
                 className="w-full"
               >
                 {isConnecting ? (
@@ -180,63 +211,69 @@ export default function TestAgentModal({
                   </div>
                 )}
               </Button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-green-600 font-medium">Connected to Agent</p>
-                <p className="text-sm text-gray-500">
-                  You can now speak with your agent
-                </p>
-              </div>
-
-              {/* LiveKit Room Component using official components */}
+            <div className="flex-1 min-h-0 flex flex-col">
               {liveKitToken && (
-                <div className="h-96 border rounded-lg overflow-hidden">
+                <div className="hidden">
                   <LiveKitRoomOfficial
                     token={liveKitToken}
                     serverUrl={serverUrl}
                     roomName={roomName}
                     participantName={participantName}
-                    onConnect={(connectedRoom) => setRoom(connectedRoom)}
-                    onDisconnect={() => setRoom(null)}
+                    onConnect={(connectedRoom) => {
+                      setRoom(connectedRoom);
+                      setTranscriptionReady(true);
+                    }}
+                    onDisconnect={() => {
+                      setRoom(null);
+                      setTranscriptionReady(false);
+                    }}
+                    muted={isMuted}
+                    showControls={false}
+                    showOverlay={false}
+                    onTranscriptMessage={(msg) => {
+                      setChatMessages((prev) => {
+                        const last = prev[prev.length - 1];
+                        if (last && last.role === msg.role && last.text === msg.text) return prev;
+                        return [...prev, msg].slice(-300);
+                      });
+                    }}
+                    onAgentStatus={(s) => setAgentStatus(s)}
                   />
                 </div>
               )}
 
-              {/* Audio Visualizer */}
-              <div className="h-32 bg-gray-50 rounded-lg flex items-center justify-center">
-                <AudioVisualizer isActive={isConnected} barCount={5} />
-              </div>
+              <LiveTranscriptChat title="Call Transcript" messages={chatMessages} />
+            </div>
+          )}
+          
+          {/* Show transcript even when not connected if we have messages */}
+          {!isConnected && chatMessages.length > 0 && (
+            <LiveTranscriptChat title="Call Transcript" messages={chatMessages} />
+          )}
+        </div>
 
-              <div className="flex items-center justify-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleMute}
-                  className={isMuted ? "text-red-600" : "text-green-600"}
-                >
-                  {isMuted ? (
-                    <MicOff className="w-4 h-4" />
-                  ) : (
-                    <Mic className="w-4 h-4" />
-                  )}
-                  {isMuted ? "Unmute" : "Mute"}
-                </Button>
-
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleStopTest}
-                >
-                  <Square className="w-4 h-4" />
-                  Stop Test
-                </Button>
-              </div>
+          {isConnected && (
+            <div className="border-t p-3 flex items-center justify-center gap-3 sticky bottom-0 bg-white">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleMute}
+                className={isMuted ? "text-red-600" : "text-green-600"}
+              >
+                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isMuted ? "Unmute" : "Mute"}
+              </Button>
+              <Button variant="destructive" size="sm" onClick={handleStopTest}>
+                <Square className="w-4 h-4" />
+                End Call
+              </Button>
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

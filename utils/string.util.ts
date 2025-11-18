@@ -42,10 +42,17 @@ const string = {
     return nameParts.map((part) => part[0]).join("");
   },
 
-  formatDuration: (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return `${mins}m ${secs}s`;
+  formatDuration: (duration: number) => {
+    
+
+const minutes = Math.floor(duration/60);
+const seconds = Math.round((duration - minutes) * 60);
+// const durationMinutes = Math.floor(duration / 60);
+//       const durationSeconds = duration % 60;
+
+return (`${minutes}m ${seconds}s`);
+
+   
   },
   formatDateTime: (date: string) => {
     // Assumes moment is installed and imported elsewhere in the project

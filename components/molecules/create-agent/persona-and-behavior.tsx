@@ -45,7 +45,16 @@ export const PersonaAndBehavior = ({
               placeholder="Enter name"
               value={agentName}
               onChange={(e) => setAgentName(e.target.value)}
+              maxLength={32}
             />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">
+                Maximum 32 characters
+              </span>
+              <span className="text-xs text-gray-500">
+                {agentName.length}/32
+              </span>
+            </div>
           </div>
         </div>
 

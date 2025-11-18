@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/organisms/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -8,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Loader2, Play, Volume2 } from "lucide-react";
+import { Loader2, Play, Volume2, RotateCcw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import apiRequest from "@/utils/api";
 import endpoints from "@/lib/endpoints";
@@ -91,6 +92,41 @@ const VoiceIntegration = ({
       (p: any) => p._id === providerId
     );
     return provider?.voiceIds || provider?.voices || [];
+  };
+
+  // Default values for voice settings
+  const defaultVAD = {
+    min_speech_duration: 0.05,
+    min_silence_duration: 0.55,
+    prefix_padding_duration: 0.5,
+    max_buffered_speech: 60.0,
+    activation_threshold: 0.5,
+    sample_rate: "16000",
+    force_cpu: true,
+  };
+
+  const defaultTurnDetectors = {
+    min_endpointing_delay: 0.5,
+    max_endpointing_delay: 6.0,
+  };
+
+  const defaultVoiceMailDetection = {
+    enable_voicemail: false,
+    voicemail_action: "End Call",
+  };
+
+  const defaultSessionConfiguration = {
+    allow_interruptions: true,
+    min_interruption_duration: 0.5,
+    min_interruption_words: 0,
+    min_endpointing_delay: 0.5,
+    max_endpointing_delay: 6.0,
+    false_interruption_timeout: 2.0,
+    resume_false_interruption: true,
+  };
+
+  const defaultBackgroundNoise = {
+    reduce_latency: false,
   };
 
   // To avoid double-setting model IDs before models are loaded, use refs to track if we've already set them
@@ -1018,11 +1054,954 @@ const VoiceIntegration = ({
           </CardContent>
         </Card>
 
+                 {/* AI Voice Settings */}
+                     <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+          <CardContent className="p-4 space-y-4">
+  <div className="space-y-4">
+    <h2 className="text-lg font-semibold text-gray-900">AI Voice Settings</h2>
+
+    {/* Voice Activity Detection */}
+  
+<Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h3 className="text-base font-medium text-gray-900">
+          Voice Activity Detection
+        </h3>
+        {voiceIntegration.voiceActivityDetectionEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: { ...defaultVAD },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
+      <Switch
+        checked={voiceIntegration.voiceActivityDetectionEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            voiceActivityDetectionEnabled: checked,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.voiceActivityDetectionEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Minimum Speech Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Speech Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.01}
+              max={1.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_speech_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_speech_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.01}
+              max={1.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_speech_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_speech_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum speech required to start a chunk.
+          </p>
+        </div>
+
+        {/* Minimum Silence Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Silence Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.2}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_silence_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_silence_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.2}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.min_silence_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    min_silence_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Silence duration to consider speech ended.
+          </p>
+        </div>
+
+        {/* Prefix Padding Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Prefix Padding Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.0}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.prefix_padding_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    prefix_padding_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.0}
+              max={2.0}
+              step={0.01}
+              value={voiceIntegration.vad.prefix_padding_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    prefix_padding_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Padding added before speech chunk.
+          </p>
+        </div>
+
+        {/* Max Buffered Speech */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Max Buffered Speech (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={10.0}
+              max={300.0}
+              step={1}
+              value={voiceIntegration.vad.max_buffered_speech}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    max_buffered_speech: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={10.0}
+              max={300.0}
+              step={1}
+              value={voiceIntegration.vad.max_buffered_speech}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    max_buffered_speech: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum speech buffer duration.
+          </p>
+        </div>
+
+        {/* Activation Threshold */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Activation Threshold
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={0.9}
+              step={0.01}
+              value={voiceIntegration.vad.activation_threshold}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    activation_threshold: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={0.9}
+              step={0.01}
+              value={voiceIntegration.vad.activation_threshold}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  vad: {
+                    ...prev.vad,
+                    activation_threshold: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Higher = conservative (may miss soft speech). Lower = sensitive (may detect noise).
+          </p>
+        </div>
+
+        {/* Sample Rate */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Sample Rate
+          </label>
+          <Select
+            value={voiceIntegration.vad.sample_rate} 
+            onValueChange={(value) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: {
+                  ...prev.vad,
+                  sample_rate: value,
+                },
+              }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select sample rate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="8000">8 kHz</SelectItem>
+              <SelectItem value="16000">16 kHz</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">Select between 8kHz or 16kHz.</p>
+        </div>
+
+        {/* Force CPU */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Force CPU
+            </label>
+            <p className="text-xs text-gray-500">
+              Whether to force CPU for inference.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.vad.force_cpu}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                vad: {
+                  ...prev.vad,
+                  force_cpu: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+
+    {/* Placeholder for 2nd toggle card (we’ll add logic later) */}
+   <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h3 className="text-base font-medium text-gray-900">Turn Detectors</h3>
+        {voiceIntegration.turnDetectorsEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                turnDetectors: { ...defaultTurnDetectors },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
+      <Switch
+        checked={voiceIntegration.turnDetectorsEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            turnDetectorsEnabled: checked,
+            turnDetectors: checked
+              ? prev.turnDetectors || {
+                  min_endpointing_delay: 0.5,
+                  max_endpointing_delay: 6.0,
+                }
+              : prev.turnDetectors,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.turnDetectorsEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Minimum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Seconds to wait before considering the turn complete.
+          </p>
+        </div>
+
+        {/* Maximum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Maximum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.turnDetectors.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  turnDetectors: {
+                    ...prev.turnDetectors,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum wait time if user is likely to continue speaking.
+          </p>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+{/* 3rd toggle card */}
+  <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h3 className="text-base font-medium text-gray-900">Voicemail Detection</h3>
+        {voiceIntegration.voiceMailDetectionEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: { ...defaultVoiceMailDetection },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
+      <Switch
+        checked={voiceIntegration.voiceMailDetectionEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            voiceMailDetectionEnabled: checked,
+            turnDetectors: checked
+              ? prev.turnDetectors || {
+                  enable_voicemail: false,
+                  voicemail_action: "End Call",
+                }
+              : prev.turnDetectors,
+          }))
+        }
+
+        
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+
+    {voiceIntegration.voiceMailDetectionEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Enable Voicemail Detection */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Enable Voicemail Detection
+            </label>
+            <p className="text-xs text-gray-500">
+            Enables voicemail detection.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.voiceMailDetection.enable_voicemail}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: {
+                  ...prev.voiceMailDetection,
+                  enable_voicemail: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+
+        {/* Voicemail Action*/}
+       <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Voicemail Action
+          </label>
+          <Select
+            value={voiceIntegration.voiceMailDetection.voicemail_action} 
+            onValueChange={(value) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                voiceMailDetection: {
+                  ...prev.voiceMailDetection,
+                  voicemail_action: value,
+                },
+              }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Select sample rate" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="End Call">End Call</SelectItem>
+              <SelectItem value="Play Response">Play Response</SelectItem>
+              <SelectItem value="Route to Workflow">Route to Workflow</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-500">Defines system behavior after voicemail detection.</p>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+{/* 4th toggle card - Session Configuration */}
+<Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
+  <CardContent className="p-4 space-y-4">
+    {/* Header + Toggle */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h3 className="text-base font-medium text-gray-900">Session Configuration</h3>
+        {voiceIntegration.sessionConfigurationEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: { ...defaultSessionConfiguration },
+              }));
+            }}
+            className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+            title="Reset to default values"
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
+      <Switch
+        checked={voiceIntegration.sessionConfigurationEnabled}
+        onCheckedChange={(checked) =>
+          setVoiceIntegration((prev: any) => ({
+            ...prev,
+            sessionConfigurationEnabled: checked,
+            sessionConfiguration: checked
+              ? prev.sessionConfiguration || {
+                  allow_interruptions: true,
+                  min_interruption_duration: 0.5,
+                  min_interruption_words: 0,
+                  min_endpointing_delay: 0.5,
+                  max_endpointing_delay: 6.0,
+                  false_interruption_timeout: 2.0,
+                  resume_false_interruption: true,
+                }
+              : prev.sessionConfiguration,
+          }))
+        }
+        className="data-[state=checked]:bg-purple-600"
+      />
+    </div>
+
+    {/* Settings visible only if toggle is ON */}
+    {voiceIntegration.sessionConfigurationEnabled && (
+      <div className="space-y-6 mt-4">
+        {/* Allow Interruptions */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Allow Interruptions
+            </label>
+            <p className="text-xs text-gray-500">
+              Allow users to interrupt the agent during speech.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.sessionConfiguration.allow_interruptions}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: {
+                  ...prev.sessionConfiguration,
+                  allow_interruptions: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+
+        {/* Minimum Interruption Duration */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Interruption Duration (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_duration}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_duration: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum duration of speech to be considered an interruption.
+          </p>
+        </div>
+
+        {/* Minimum Interruption Words */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Interruption Words
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={10}
+              step={1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_words}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_words: parseInt(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0}
+              max={10}
+              step={1}
+              value={voiceIntegration.sessionConfiguration.min_interruption_words}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_interruption_words: parseInt(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum number of words to be considered an interruption.
+          </p>
+        </div>
+
+        {/* Minimum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Minimum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.1}
+              max={2.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.min_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    min_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Minimum delay before considering the turn complete.
+          </p>
+        </div>
+
+        {/* Maximum Endpointing Delay */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Maximum Endpointing Delay (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={1.0}
+              max={10.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.max_endpointing_delay}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    max_endpointing_delay: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Maximum wait time if user is likely to continue speaking.
+          </p>
+        </div>
+
+        {/* False Interruption Timeout */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            False Interruption Timeout (sec)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0.5}
+              max={5.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.false_interruption_timeout}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    false_interruption_timeout: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="flex-1"
+            />
+            <input
+              type="number"
+              min={0.5}
+              max={5.0}
+              step={0.1}
+              value={voiceIntegration.sessionConfiguration.false_interruption_timeout}
+              onChange={(e) =>
+                setVoiceIntegration((prev: any) => ({
+                  ...prev,
+                  sessionConfiguration: {
+                    ...prev.sessionConfiguration,
+                    false_interruption_timeout: parseFloat(e.target.value),
+                  },
+                }))
+              }
+              className="w-20 border rounded p-1 text-sm"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            Timeout for false interruption detection.
+          </p>
+        </div>
+
+        {/* Resume False Interruption */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Resume False Interruption
+            </label>
+            <p className="text-xs text-gray-500">
+              Resume agent speech after false interruption detection.
+            </p>
+          </div>
+          <Switch
+            checked={voiceIntegration.sessionConfiguration.resume_false_interruption}
+            onCheckedChange={(checked) =>
+              setVoiceIntegration((prev: any) => ({
+                ...prev,
+                sessionConfiguration: {
+                  ...prev.sessionConfiguration,
+                  resume_false_interruption: checked,
+                },
+              }))
+            }
+            className="data-[state=checked]:bg-purple-600"
+          />
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
+  </div>
+  </CardContent>
+  </Card>
         {/* Background Noise Checkbox */}
         <Card className="bg-white shadow-lg shadow-gray-200 rounded-lg border-none">
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Background Noise</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold">Background Noise</h2>
+                {voiceIntegration.backgroundNoiseEnabled && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setVoiceIntegration((prev: any) => ({
+                        ...prev,
+                        background_noise: { ...defaultBackgroundNoise },
+                      }));
+                    }}
+                    className="h-7 px-2 text-xs text-gray-600 hover:text-purple-600"
+                    title="Reset to default values"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Reset
+                  </Button>
+                )}
+              </div>
               <span className="text-gray-600 text-sm">
                 Enable background noise addition
               </span>

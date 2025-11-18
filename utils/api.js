@@ -5,7 +5,8 @@ export const apiRequest = async (
   method,
   data = {},
   params = {},
-  headers = {}
+  headers = {},
+  options = {} 
 ) => {
   try {
     const tokenObj = localStorage.getItem("auth_token");
@@ -29,6 +30,7 @@ export const apiRequest = async (
 
         ...headers,
       },
+      ...options,
     });
 
     return response;

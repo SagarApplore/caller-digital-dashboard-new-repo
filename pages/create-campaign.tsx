@@ -96,6 +96,83 @@ export function CreateCampaignPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string>("");
   const [campaignCreating, setCampaignCreating] = useState(false);
+  
+  // CSV column selection states
+  const [csvColumns, setCsvColumns] = useState<string[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState<{[key: string]: boolean}>({});
+  const [requiredColumns] = useState<string[]>(['phone_number', 'name']);
+
+  // Manual lead entry (fallback when user doesn't have a CSV)
+  const [manualName, setManualName] = useState("");
+  const [manualPhone, setManualPhone] = useState("");
+  const [manualError, setManualError] = useState<string>("");
+
+useEffect(() => {
+    const isRetryMode = sessionStorage.getItem("isRetryMode") === "true";
+    if (!isRetryMode) return;
+
+    const base64Data = sessionStorage.getItem("retryCsvBase64");
+    if (!base64Data) return;
+
+    // Decode and upload
+    fetch(base64Data)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "retry_unanswered.csv", { type: "text/csv" });
+        
+        handleFileUpload(file);
+        setSelectedSource("csv")
+        toast.success("Retry CSV loaded automatically!");
+        sessionStorage.removeItem("retryCsvBase64");
+        sessionStorage.removeItem("isRetryMode"); // cleanup
+      })
+      .catch((err) => console.error("Error auto-uploading retry CSV:", err));
+  }, []);
+
+
+  const generateCsvFromManualLead = () => {
+    setManualError("");
+    // Basic validation
+    const trimmedName = manualName.trim();
+    const trimmedPhone = manualPhone.trim();
+    if (!trimmedName || !trimmedPhone) {
+      setManualError("Please enter both phone number and name.");
+      return;
+    }
+    
+    // Enhanced phone number validation with country code
+    // Check for international format (starts with + followed by country code)
+    const phoneRegex = /^\+[1-9]\d{0,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      setManualError("Please enter a valid phone number with country code (e.g., +1234567890).");
+      return;
+    }
+    
+    // Extract digits for length validation
+    const digits = trimmedPhone.replace(/\D/g, "");
+    if (digits.length < 10 || digits.length > 15) {
+      setManualError("Phone number must have 10 to 15 digits including country code.");
+      return;
+    }
+    
+    // Validate country code (must start with +)
+    if (!trimmedPhone.startsWith('+')) {
+      setManualError("Phone number must include country code starting with + (e.g., +1 for US).");
+      return;
+    }
+     const phoneWithoutPlus = trimmedPhone.startsWith("+")
+    ? trimmedPhone.substring(1)
+    : trimmedPhone;
+
+    console.log("phoneWithoutPlus",phoneWithoutPlus)
+    // Build minimal CSV with required headers exactly as validated elsewhere
+    // Note: wrap values with quotes to be safe
+    const csvContent = `phone_number,name\n"${phoneWithoutPlus}","${trimmedName}"`;
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const file = new File([blob], "manual_leads.csv", { type: "text/csv" });
+    // Reuse existing upload flow (validation + UI state)
+    handleFileUpload(file);
+  };
 
   // Additional fields required by backend API
   const [status, setStatus] = useState("running");
@@ -104,7 +181,7 @@ export function CreateCampaignPage() {
   const [successPrompt, setSuccessPrompt] = useState("");
   const [failurePrompt, setFailurePrompt] = useState("");
   const [scheduleTimestamp, setScheduleTimestamp] = useState("");
-  const [delay_between_calls, setDelayBetweenCalls] = useState(60);
+  const [delay_between_calls, setDelayBetweenCalls] = useState("60");
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -158,14 +235,29 @@ export function CreateCampaignPage() {
         return;
       }
 
-      const headers = lines[0].split(',').map(header => header.trim().toLowerCase());
-      const requiredColumns = ['phone_number', 'name'];
+      // Normalize headers: trim whitespace, remove quotes, and convert to lowercase
+      const headers = lines[0]
+        .split(',')
+        .map(header => header.trim().replace(/['"]*/g, ''));
+      
+      console.log("Found headers:", headers);
+      
       const missingColumns = requiredColumns.filter(col => !headers.includes(col));
 
       if (missingColumns.length > 0) {
-        setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has columns: phone_number, name`);
+        setUploadError(`CSV is missing required columns: ${missingColumns.join(', ')}. Please ensure your CSV has exactly these columns: phone_number, name`);
         return;
       }
+      
+      // Store the CSV columns for selection
+      setCsvColumns(headers);
+      
+      // Initialize selected columns - required columns are selected by default
+      const initialSelectedColumns: {[key: string]: boolean} = {};
+      headers.forEach(column => {
+        initialSelectedColumns[column] = requiredColumns.includes(column);
+      });
+      setSelectedColumns(initialSelectedColumns);
 
       console.log("CSV validation passed. Headers found:", headers);
     } catch (validationError) {
@@ -338,6 +430,12 @@ export function CreateCampaignPage() {
         Object.entries(campaignData).forEach(([key, value]) => {
           formData.append(key, value.toString());
         });
+        
+        // Add selected columns
+        const selectedColumnsList = Object.entries(selectedColumns)
+          .filter(([_, isSelected]) => isSelected)
+          .map(([column]) => column);
+        formData.append("selectedColumns", JSON.stringify(selectedColumnsList));
 
         const response = await apiRequest(
           endpoints.outboundCampaign.create,
@@ -366,7 +464,7 @@ export function CreateCampaignPage() {
         router.push("/outbound-campaign-manager");
         return response.data;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Campaign creation failed:", error);
       
       // Handle specific error messages
@@ -432,7 +530,7 @@ export function CreateCampaignPage() {
                   />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Upload CSV File
+                  Select to Upload CSV File or add a number
                 </h3>
                 <p className="text-gray-600 mb-4">
                   Import leads from a CSV file with phone numbers, names, and
@@ -530,8 +628,27 @@ export function CreateCampaignPage() {
                         Required columns: <strong>phone_number</strong>, <strong>name</strong> (Optional: email, company, custom fields)
                       </p>
                       <p className="text-xs text-red-600 mt-1">
-                        ⚠️ Column names must be exactly: "phone_number" and "name" (with underscores)
+                        ⚠️ Column names must be exactly: "phone_number" and "name" 
                       </p>
+                      <div className="mt-6 text-sm text-gray-500">OR</div>
+                      <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:items-end">
+                        <div className="flex-1">
+                          <Label htmlFor="manual-phone" className="text-sm font-medium">Phone Number with Country Code (no CSV)</Label>
+                          <Input id="manual-phone" placeholder="e.g. +1 (555) 123-4567" value={manualPhone} onChange={(e)=>setManualPhone(e.target.value)} className="mt-1" />
+                        </div>
+                        <div className="flex-1">
+                          <Label htmlFor="manual-name" className="text-sm font-medium">Name</Label>
+                          <Input id="manual-name" placeholder="e.g. John Doe" value={manualName} onChange={(e)=>setManualName(e.target.value)} className="mt-1" />
+                        </div>
+                        <div>
+                          <Button onClick={generateCsvFromManualLead} className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap">
+                            Generate CSV & Use
+                          </Button>
+                        </div>
+                      </div>
+                      {manualError && (
+                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">{manualError}</div>
+                      )}
                       <div className="mt-3">
                         <Button
                           variant="outline"
@@ -570,29 +687,75 @@ export function CreateCampaignPage() {
 
                     {/* Upload Success */}
                     {uploadStatus === "success" && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <CheckCircle2 className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">
+                                {uploadedFile.name}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
+                                • Uploaded successfully
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">
-                              {uploadedFile.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
-                              • Uploaded successfully
-                            </p>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveFile}
+                            className="text-gray-500 hover:text-red-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={handleRemoveFile}
-                          className="text-gray-500 hover:text-red-600"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                        
+                        {/* CSV Column Selection */}
+                        {csvColumns.length > 0 && (
+                          <div className="mt-4 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <h4 className="font-medium text-gray-900 mb-2">Select Columns to Import</h4>
+                            <p className="text-sm text-gray-600 mb-3">
+                              Required columns are selected by default. Choose additional required columns to include in your campaign.
+                            </p>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              {csvColumns.map((column) => (
+                                <div key={column} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`column-${column}`}
+                                    checked={selectedColumns[column] || false}
+                                    onChange={(e) => {
+                                      // Don't allow unchecking required columns
+                                      if (requiredColumns.includes(column) && !e.target.checked) {
+                                        return;
+                                      }
+                                      setSelectedColumns({
+                                        ...selectedColumns,
+                                        [column]: e.target.checked,
+                                      });
+                                    }}
+                                    disabled={requiredColumns.includes(column)}
+                                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                                  />
+                                  <label
+                                    htmlFor={`column-${column}`}
+                                    className={`text-sm ${requiredColumns.includes(column) ? 'font-medium text-purple-700' : 'text-gray-700'}`}
+                                  >
+                                    {column}
+                                    {requiredColumns.includes(column) && (
+                                      <span className="ml-1 text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
+                                        Required
+                                      </span>
+                                    )}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -859,14 +1022,15 @@ export function CreateCampaignPage() {
                   </Label>
                   <Input
                     id="delay-between-calls"
-                    type="number"
+                    type="string"
                     value={delay_between_calls}
-                    readOnly
-                    className="mt-1 bg-gray-50 cursor-not-allowed"
+                    onChange={(e) => setDelayBetweenCalls(e.target.value)}
+                    
+                    className="mt-1 bg-gray-50 cursor"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  {/* <p className="text-xs text-gray-500 mt-1">
                     Fixed at 60 seconds - cannot be modified
-                  </p>
+                  </p> */}
                 </div>
 
                 <div>
@@ -890,7 +1054,7 @@ export function CreateCampaignPage() {
 
           {/* Schedule Settings */}
           
-          {/* <Card className="mb-6">
+          <Card className="mb-6">
             <CardContent className="p-6">
               <div className="flex items-center space-x-2 mb-4">
                 <Clock className="w-5 h-5 text-purple-600" />
@@ -980,19 +1144,19 @@ export function CreateCampaignPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                      {/* <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
                       <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
                       <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem> */}
                       <SelectItem value="Asia/Kolkata">Mumbai (IST)</SelectItem>
-                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                      {/* <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem> */}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </CardContent>
-          </Card> */}
+          </Card>
 
           {/* Navigation Buttons */}
           <div className="flex justify-between items-center pt-6">

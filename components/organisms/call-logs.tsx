@@ -12,7 +12,8 @@ import {
   TrendingDown,
   Play,
 } from "lucide-react";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "./card";
 import * as XLSX from 'xlsx';
 import {
@@ -23,7 +24,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Checkbox } from "../ui/checkbox";
 import { Progress } from "../ui/progress";
 import { Input } from "../atoms/input";
 import { Button } from "../ui/button";
@@ -40,6 +40,8 @@ import apiRequest from "@/utils/api";
 import { useRouter } from "next/navigation";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../ui/tooltip";
 import { toast } from "react-toastify";
+import { debounce } from "lodash";
+import { useAuth } from "../providers/auth-provider";
 
 export interface Conversation {
   id: string;
@@ -56,8 +58,9 @@ export interface Conversation {
   timestamp: string;
   timestampDate: Date;
   duration: string;
+  callEndedBy:string;
   durationSeconds: number;
-  status: "resolved" | "escalated" | "pending";
+  status: "resolved" | "escalated" | "answered" | "unanswered";
   csat: number;
   confidence: number;
   language: string;
@@ -88,14 +91,12 @@ export interface FilterState {
 }
 
 const CallLogs = () => {
-  const [selectedConversations, setSelectedConversations] = useState<string[]>(
-    []
-  );
   const [apiData, setApiData] = useState<any[]>([]);
   const [agentsData, setAgentsData] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const [dateInputs, setDateInputs] = useState({
     startDate: "",
     endDate: "",
@@ -148,7 +149,10 @@ const CallLogs = () => {
   
   
   // Pagination state
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const searchParams = useSearchParams();
+  const pageParam = searchParams?.get('page');
+  const limitParam = searchParams?.get('limit');
+  const [currentPage, setCurrentPage] = useState<number>(pageParam ? parseInt(pageParam) : 1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
@@ -158,7 +162,9 @@ const CallLogs = () => {
     startDate?: string,
     endDate?: string,
     page: number = currentPage,
-    limit: number = pageSize
+    limit: number = pageSize,
+    status?: string,
+    searchQuery?: string
   ) => {
     try {
       const params: any = {
@@ -174,6 +180,20 @@ const CallLogs = () => {
       if (endDate) {
         params.createdAtLe = endDate;
       }
+      if (status && status !== "all-status") {
+        if( status==="escalated" || status==="resolved"){
+          params.hand_off = status === "escalated";
+        }
+        else{
+          params.status =status
+        }
+        
+      }
+      if (searchQuery && searchQuery.trim() !== "") {
+        params.search = searchQuery.trim();
+      }
+
+      console.log('🔍 Frontend API params:', params);
 
       const response = await apiRequest(
         "/vapi/call-logs/getData",
@@ -193,10 +213,12 @@ const CallLogs = () => {
         escalationRate: 0,
         aiResolutionPercentage: 100,
       });
-      setSentimentMetrics(response.data?.sentimentMetrics)
+      setSentimentMetrics(response.data?.sentimentMetrics);
+      return response; // Return the response to allow proper promise chaining
     } catch (err: any) {
       console.error("Error fetching call logs:", err);
       setError(err.message || "Failed to fetch call logs");
+      throw err; // Re-throw to allow proper promise chaining
     }
   };
 
@@ -205,19 +227,24 @@ const CallLogs = () => {
     try {
       const response = await apiRequest("/agents", "GET");
       setAgentsData(response.data.data || []);
+      return response; // Return the response to allow proper promise chaining
     } catch (err: any) {
       console.error("Error fetching agents:", err);
       // Don't set error for agents as it's not critical for main functionality
+      throw err; // Re-throw to allow proper promise chaining
     }
   };
 
-  // Fetch all data on component mount
+  // Fetch all data (used for retry button)
   const fetchAllData = async () => {
     try {
       setLoading(true);
       setError(null);
+      // Use the current page from state
+      const page = currentPage;
+      console.log("fetch 1")
       await Promise.all([
-        fetchCallLogs(filters.assistant, filters.startDate, filters.endDate, currentPage, pageSize),
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, page, pageSize, filters.status, filters.searchQuery),
         fetchAgents(),
       ]);
     } catch (err: any) {
@@ -232,8 +259,12 @@ const CallLogs = () => {
     try {
       setLoading(true);
       setError(null);
-      setCurrentPage(1); // Reset to first page when filter changes
-      await fetchCallLogs(assistantId, filters.startDate, filters.endDate, 1, pageSize);
+      // Reset to page 1 when filtering by assistant
+      setCurrentPage(1);
+      // Update URL to reflect page reset
+      router.push(`/call-logs?page=1`, { scroll: false });
+      console.log("fetch 2 with page: 1 (reset for assistant filter)")
+      await fetchCallLogs(assistantId, dateInputs.startDate, dateInputs.endDate, 1, pageSize, filters.status, filters.searchQuery);
     } catch (err: any) {
       console.error("Error fetching call logs with filter:", err);
     } finally {
@@ -247,12 +278,17 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+      // Update URL to reset page to 1 while preserving limit
+      router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
+       console.log("fetch 3")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
         dateInputs.endDate,
         1,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -260,6 +296,96 @@ const CallLogs = () => {
       setLoading(false);
     }
   };
+  
+  // Download call logs as Excel file
+  
+  const handleDownloadCallLogs = async () => {
+  try {
+    // Construct query parameters
+    const queryParams = new URLSearchParams();
+
+    if (dateInputs.startDate) queryParams.append('createdAtGe', dateInputs.startDate);
+    if (dateInputs.endDate) queryParams.append('createdAtLe', dateInputs.endDate);
+    if (filters.assistant && filters.assistant !== 'all-assistants')
+      queryParams.append('assistantId', filters.assistant);
+    if (filters.searchQuery) queryParams.append('search', filters.searchQuery);
+
+    if (filters.status && filters.status !== 'all-status') {
+      if (filters.status === 'escalated' || filters.status === 'resolved') {
+        queryParams.append('hand_off', filters.status === 'escalated' ? 'true' : 'false');
+      } else {
+        queryParams.append('status', filters.status);
+      }
+    }
+
+    const url = `/vapi/call-logs/download`;
+
+    // ✅ Correct: ensure responseType is passed properly
+    const response = await apiRequest(
+      url,
+      'GET',
+      {},
+      Object.fromEntries(queryParams),
+      {},
+      { responseType: 'blob' } // handled via your fix #2 in apiRequest
+    );
+console.log(response.data instanceof Blob); // should be true
+
+    // ✅ Wrap response.data into a Blob explicitly
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    // Create download link
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+
+    const date = new Date();
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}-${String(date.getDate()).padStart(2, '0')}`;
+    link.setAttribute('download', `call-logs-${formattedDate}.xlsx`);
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Call logs downloaded successfully');
+  } catch (error: any) {
+    console.error('Error downloading call logs:', error);
+    if (error.response?.data?.message === 'Date range exceeds 3 months') {
+      toast.error('Date range cannot exceed 3 months for downloads');
+    } else {
+      toast.error('Failed to download call logs');
+    }
+  }
+};
+
+function formatToIST(utcDate) {
+  // Create a Date object from UTC input
+  const date = new Date(utcDate);
+
+  // IST offset in minutes (+5:30 hours = 330 minutes)
+  const istOffset = 330;
+
+  // Convert UTC to IST in milliseconds
+  const istTime = new Date(date.getTime() + istOffset * 60 * 1000);
+
+  // Extract components
+  const hours = String(istTime.getHours()).padStart(2, "0");
+  const minutes = String(istTime.getMinutes()).padStart(2, "0");
+  const day = String(istTime.getDate()).padStart(2, "0");
+  const month = String(istTime.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+  const year = String(istTime.getFullYear()).slice(-2); // Last 2 digits of year
+
+  return `${hours}:${minutes}, ${day}-${month}-${year}`;
+}
+
+
+
+
 
   // Format date for chip display
   const formatDateForChip = (dateString: string) => {
@@ -278,24 +404,43 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when filter changes
+    // Update URL to reset page to 1 while preserving limit
+    router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
     // Refetch data without date filter
-    fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize);
+     console.log("fetch 4")
+    fetchCallLogs(filters.assistant, undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
   // Handle apply date filter from temp state
   const handleApplyDateFilter = async () => {
+    // Validate that end date is not earlier than start date
+    if (tempDateFilter.startDate && tempDateFilter.endDate) {
+      const startDate = new Date(tempDateFilter.startDate);
+      const endDate = new Date(tempDateFilter.endDate);
+      
+      if (endDate < startDate) {
+        toast.error("End date cannot be earlier than start date");
+        return;
+      }
+    }
+    
     setDateInputs(tempDateFilter);
     setShowDateFilter(false);
     try {
       setLoading(true);
       setError(null);
       setCurrentPage(1); // Reset to first page when filter changes
+      // Update URL to reset page to 1 while preserving limit
+      router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
+       console.log("fetch 5")
       await fetchCallLogs(
         filters.assistant,
         tempDateFilter.startDate,
         tempDateFilter.endDate,
         1,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error applying date filter:", err);
@@ -304,13 +449,85 @@ const CallLogs = () => {
     }
   };
 
+  // Single useEffect to handle all data fetching
+  const initialLoadRef = React.useRef(true);
+  const assistantChangeRef = React.useRef(false);
+  
   useEffect(() => {
-    fetchAllData();
-  }, []);
-
-  // Refetch call logs when assistant filter changes
+    // Only fetch data once on initial load
+    if (initialLoadRef.current) {
+      setLoading(true);
+      // Use the page and limit from URL parameters when component mounts
+      const initialPage = pageParam ? parseInt(pageParam) : 1;
+      const initialLimit = limitParam ? parseInt(limitParam) : 10;
+      // Set current page and page size from URL parameters
+      setCurrentPage(initialPage);
+      setPageSize(initialLimit);
+      // Fetch data with the correct page and limit
+      console.log("Initial fetch with page:", initialPage, "limit:", initialLimit);
+      
+      Promise.all([
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, initialPage, initialLimit, filters.status, filters.searchQuery),
+        fetchAgents()
+      ])
+      .catch(err => {
+        console.error("Error during initial data fetch:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+        initialLoadRef.current = false;
+      });
+      
+      return;
+    }
+    
+    // Handle URL parameter changes (when returning from call details)
+    if (!initialLoadRef.current && (pageParam || limitParam)) {
+      const newPage = pageParam ? parseInt(pageParam) : 1;
+      const newLimit = limitParam ? parseInt(limitParam) : 10;
+      
+      // Only refetch if page or limit has changed
+      if (newPage !== currentPage || newLimit !== pageSize) {
+        setLoading(true);
+        setCurrentPage(newPage);
+        setPageSize(newLimit);
+        console.log("URL params changed, fetching with page:", newPage, "limit:", newLimit);
+        fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, newPage, newLimit, filters.status, filters.searchQuery)
+          .catch(err => {
+            console.error("Error fetching with new URL params:", err);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      }
+    }
+    
+    // Handle assistant filter changes separately
+    if (!initialLoadRef.current && assistantChangeRef.current && filters.assistant) {
+      console.log("Assistant filter changed, fetching with assistant:", filters.assistant);
+      fetchCallLogsWithFilter(filters.assistant);
+      assistantChangeRef.current = false;
+    }
+  }, [pageParam, limitParam, assistantChangeRef.current]);
+  
+  // Track assistant filter changes and trigger API calls immediately
+  // Store the current assistant filter value to compare with future values
+  const prevAssistantRef = React.useRef(filters.assistant);
+  
   useEffect(() => {
-    if (filters.assistant) {
+    // Skip the initial render
+    if (initialLoadRef.current) {
+      return;
+    }
+    
+    // Only trigger if the value actually changed
+    if (filters.assistant !== prevAssistantRef.current) {
+      console.log("Assistant filter actually changed from", prevAssistantRef.current, "to", filters.assistant);
+      // Update the previous value reference
+      prevAssistantRef.current = filters.assistant;
+      
+      // Directly call fetchCallLogsWithFilter instead of setting a ref flag
+      console.log("Immediately fetching with new assistant filter:", filters.assistant);
       fetchCallLogsWithFilter(filters.assistant);
     }
   }, [filters.assistant]);
@@ -357,7 +574,7 @@ const CallLogs = () => {
       return {
         id: item._id || `temp-${index}`,
         contact: {
-          name: item.clientId?.name || `Customer ${index + 1}`,
+          name: `Customer\t\t(${item?.customer_phone_number})` || `Customer ${index + 1}`,
           identifier:
             item.customer_phone_number ||
             `+1 555-${String(index + 1).padStart(4, "0")}`,
@@ -369,10 +586,11 @@ const CallLogs = () => {
           avatar: "/placeholder.svg?height=32&width=32",
         },
         timestamp: getTimeAgo(callStartTime),
-        timestampDate: callStartTime,
-        duration: `${durationMinutes}m ${durationSeconds}s`,
+        timestampDate: callEndTime,
+        // duration: item.status !== "unanswered" ? `${durationMinutes}m ${durationSeconds}s`: "NA",
+        duration:`${durationMinutes}m ${durationSeconds}s`,
         durationSeconds: durationInSeconds,
-        status: item.hand_off ? "escalated" : "resolved", // Use hand_off to determine status
+         status: item.call_type === "inbound" ? (item.hand_off ? "escalated" : "resolved") : (item.status === "answered" ?"answered":"unanswered" ), // Use hand_off to determine status
         csat: Number((4.2 + Math.random() * 0.8).toFixed(2)), // Hardcoded CSAT score
         confidence: Number((75 + Math.random() * 20).toFixed(2)), // Hardcoded confidence score
         language: "english", // Hardcoded language
@@ -384,6 +602,7 @@ const CallLogs = () => {
         callEndTime: item.call_end_time,
         handOff: item.hand_off,
         cost: item.cost || undefined,
+        callEndedBy:item.callEndedBy ? item.callEndedBy : "N/A"
       };
     });
   };
@@ -408,37 +627,14 @@ const CallLogs = () => {
       // Assistant filter is now handled server-side via API
       // No need for client-side filtering
 
-      // Status filter
-      if (
-        filters.status !== "all-status" &&
-        conversation.status !== filters.status
-      ) {
-        return false;
-      }
+      // Status filter is now handled server-side via API
+      // No need for client-side filtering
 
-      // Language filter
-      if (
-        filters.language !== "all-languages" &&
-        conversation.language !== filters.language
-      ) {
-        return false;
-      }
+      // Language filter is now handled server-side via API
+      // No need for client-side filtering
 
-      // Search query filter
-      if (filters.searchQuery) {
-        const query = filters.searchQuery.toLowerCase();
-        const searchableText = [
-          conversation.contact.name,
-          conversation.contact.identifier,
-          conversation.assistant.name,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        if (!searchableText.includes(query)) {
-          return false;
-        }
-      }
+      // Search query is now handled server-side via API
+      // No need for client-side filtering
 
       // Quick filters
       if (
@@ -482,11 +678,12 @@ const CallLogs = () => {
       (c) => c.status === "escalated"
     ).length;
     const avgDuration =
-      filteredConversations.reduce((sum, c) => sum + c.durationSeconds, 0) /
-        filteredConversations.length || 0;
-    const avgCSAT =
-      filteredConversations.reduce((sum, c) => sum + c.csat, 0) /
-        filteredConversations.length || 0;
+    //   filteredConversations.reduce((sum, c) => sum + c.durationSeconds, 0) /
+    //     filteredConversations.length || 0;
+    // const avgCSAT =
+    //   filteredConversations.reduce((sum, c) => sum + c.csat, 0) /
+    //     filteredConversations.length || 0;
+    totalMinutes/totalCount;
 
     return [
       {
@@ -497,9 +694,11 @@ const CallLogs = () => {
       },
       {
         label: "Avg. Duration",
-        value: `${Math.floor(avgDuration / 60)}m ${Math.floor(
-          avgDuration % 60
-        )}s`,
+        // value: `${Math.floor(avgDuration / 60)}m ${Math.floor(
+        //   avgDuration % 60
+        // )}s`,
+        value:`${Math.floor(avgDuration)}m ${Math.round((avgDuration - Math.floor(avgDuration)) * 60)}s`,
+        
         change: "+2.1%",
         trend: "up" as const,
       },
@@ -523,13 +722,13 @@ const CallLogs = () => {
       // },
       {
         label: " Sentiment Score",
-        value:   sentimentMetrics.sentimentScore,
+        value:   sentimentMetrics?.sentimentScore,
         change: "N/A",
         trend: "up" as const,
       },
       {
         label: "Total Minutes",
-        value: `${totalMinutes.toFixed(2)} min`,
+        value: `${totalMinutes.toFixed(2)} mins`,
         change: "N/A",
         trend: "down" as const,
       },
@@ -538,10 +737,84 @@ const CallLogs = () => {
 
   const updateFilter = (key: keyof FilterState, value: any) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
-    setSelectedConversations([]); // Clear selections when filters change
   };
 
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (searchQuery: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        // For search, we still want to reset to page 1 as this is expected behavior
+        setCurrentPage(1); 
+        // Update URL to reset page to 1 while preserving limit
+        router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
+        console.log("fetch 7")
+        await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, 1, pageSize, filters.status, searchQuery);
+      } catch (err: any) {
+        console.error("Error fetching call logs with search:", err);
+        setError(err.message || "Failed to fetch call logs");
+      } finally {
+        setLoading(false);
+      }
+    }, 500), // 500ms delay
+    [filters.assistant, dateInputs.startDate, dateInputs.endDate, filters.status, pageSize]
+  );
+
+  // Handle search input change
+  const handleSearchChange = (value: string) => {
+    updateFilter("searchQuery", value);
+    debouncedSearch(value);
+  };
+
+
+    // Function to fetch transcript content from URL
+
+  const fetchTranscriptContent = async (transcriptUrl: string): Promise<string> => {
+  if (!transcriptUrl) return "";
+
+  try {
+    // Request transcript file (could be .txt, .json, or .vtt depending on how it's stored)
+    const response = await fetch(transcriptUrl, {
+      method: "GET",
+      headers: {
+        Accept: "text/plain,application/json,text/vtt",
+      },
+    });
+
+    if (response.ok) {
+      const contentType = response.headers.get("Content-Type") || "";
+
+      let content = "";
+      if (contentType.includes("application/json")) {
+        const jsonData = await response.json();
+        // Assuming transcript JSON has an array of items with "text"
+        if (Array.isArray(jsonData)) {
+          content = jsonData.map((line: any) => line.text || "").join(" ");
+        } else if (jsonData.transcript) {
+          content = jsonData.transcript;
+        } else {
+          content = JSON.stringify(jsonData, null, 2);
+        }
+      } else {
+        // For plain text, VTT, or SRT
+        content = await response.text();
+      }
+
+      return content.trim();
+    } else {
+      console.warn(`Failed to fetch transcript from ${transcriptUrl}: ${response.status} ${response.statusText}`);
+      return `[Failed to fetch transcript: ${response.status}]`;
+    }
+  } catch (error) {
+    console.error(`Error fetching transcript from ${transcriptUrl}:`, error);
+    return `[Error: ${error instanceof Error ? error.message : "Unknown error"}]`;
+  }
+};
+
+
   // Function to fetch summary content from URL
+
   const fetchSummaryContent = async (summaryUrl: string): Promise<string> => {
     if (!summaryUrl) return "";
     
@@ -567,6 +840,26 @@ const CallLogs = () => {
     }
   };
 
+  // Utility function to convert UTC to IST
+  const convertToIST = (utcTime: string) => {
+    if (!utcTime) return "";
+    try {
+      const date = new Date(utcTime);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn("Invalid date format:", utcTime);
+        return utcTime;
+      }
+      // IST is UTC + 5:30 (5.5 hours = 5.5 * 60 * 60 * 1000 milliseconds)
+      const istTime = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+      // Format as YYYY-MM-DD HH:mm:ss IST
+      return istTime.toISOString().replace('T', ' ').replace('Z', ' IST');
+    } catch (error) {
+      console.error("Error converting time to IST:", error);
+      return utcTime; // Return original if conversion fails
+    }
+  };
+
   const handleExportCallLogs = async (callLogs: any, format: 'csv' | 'xlsx') => {
     if (!callLogs || !Array.isArray(callLogs) || callLogs.length === 0) {
       console.warn("No call log data available to export");
@@ -580,7 +873,7 @@ const CallLogs = () => {
       // Fetch summary content for all logs
       const exportDataPromises = callLogs.map(async (log) => {
         const summaryContent = await fetchSummaryContent(log.summary_uri);
-        
+        const transcriptContent = await fetchTranscriptContent((log.transcript_uri))
         // Process entity_result data
         let entityResultData = "";
         if (log.entity_result) {
@@ -608,12 +901,17 @@ const CallLogs = () => {
           }
         }
         
-        return {
+        // Get user ID from auth context
+        const userId = user?.id;
+        
+        const baseData = {
           "Customer Number": log.customer_phone_number || "",
           "Customer Name": log.clientId?.name || "",
           "Agent Name": log.agentId?.agentName || "",
-          "Duration (ms)": log.call_duration || "",
+          "Duration (mins)": log.call_duration || "",
+          "Transcript Content":transcriptContent || "",
           "Summary Content": summaryContent || "",
+          "Transcript URL":log.transcript_uri ||"",
           "Summary URL": log.summary_uri || "",
           "Audio URL": log.recording_uri || "",
           "Agent Number": log.agent_phone_number || "",
@@ -622,8 +920,19 @@ const CallLogs = () => {
           "Sentiment": log.sentiment || "",
           "AI Analysis": log.ai_analysis || "",
           "Language": log.agentId?.languages?.join(",") || "",
-          "Entity Result": entityResultData || ""
+          "Entity Result": entityResultData || "",
         };
+
+        // Add start time and end time for specific user ID
+        if (userId === "68876c2876bc0fce0d9ea2a4") {
+          return {
+            ...baseData,
+            "Call Start Time": convertToIST(log.call_start_time),
+            "Call End Time": convertToIST(log.call_end_time)
+          };
+        }
+
+        return baseData;
       });
 
       const exportData = await Promise.all(exportDataPromises);
@@ -656,13 +965,25 @@ const CallLogs = () => {
         
         // Create separate sheet for entity results if any exist
         const entityResultsData: any[] = [];
+        const userId = user?.id;
+        
         callLogs.forEach((log, index) => {
           if (log.entity_result) {
+            const baseEntityData: any = {
+              "Call Log ID": log._id || `Call ${index + 1}`,
+              "Customer Number": log.customer_phone_number || "",
+              "Customer Name": log.clientId?.name || "",
+            };
+
+            // Add start time and end time for specific user ID
+            if (userId === "68876c2876bc0fce0d9ea2a4") {
+              baseEntityData["Call Start Time"] = convertToIST(log.call_start_time);
+              baseEntityData["Call End Time"] = convertToIST(log.call_end_time);
+            }
+
             if (typeof log.entity_result === 'object' && log.entity_result !== null) {
               entityResultsData.push({
-                "Call Log ID": log._id || `Call ${index + 1}`,
-                "Customer Number": log.customer_phone_number || "",
-                "Customer Name": log.clientId?.name || "",
+                ...baseEntityData,
                 ...Object.fromEntries(
                   Object.entries(log.entity_result).map(([key, value]) => [
                     key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
@@ -674,9 +995,7 @@ const CallLogs = () => {
               log.entity_result.forEach((item: any, itemIndex: number) => {
                 if (typeof item === 'object' && item !== null) {
                   entityResultsData.push({
-                    "Call Log ID": log._id || `Call ${index + 1}`,
-                    "Customer Number": log.customer_phone_number || "",
-                    "Customer Name": log.clientId?.name || "",
+                    ...baseEntityData,
                     "Entity Index": itemIndex + 1,
                     ...Object.fromEntries(
                       Object.entries(item).map(([key, value]) => [
@@ -714,7 +1033,6 @@ const CallLogs = () => {
         [filterName]: !prev.quickFilters[filterName],
       },
     }));
-    setSelectedConversations([]);
   };
 
   const clearAllFilters = () => {
@@ -735,7 +1053,10 @@ const CallLogs = () => {
     setTempDateFilter({ startDate: "", endDate: "" });
     setShowDateFilter(false);
     setCurrentPage(1); // Reset to first page when clearing filters
-    fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize);
+    // Update URL to reset page to 1 while preserving limit
+    router.push(`/call-logs?page=1&limit=${pageSize}`, { scroll: false });
+     console.log("fetch 8")
+    fetchCallLogs("all-assistants", undefined, undefined, 1, pageSize, filters.status, filters.searchQuery);
   };
 
   // Pagination functions
@@ -744,12 +1065,17 @@ const CallLogs = () => {
       setLoading(true);
       setError(null);
       setCurrentPage(page);
+      // Update URL with the new page parameter while preserving limit
+      router.push(`/call-logs?page=${page}&limit=${pageSize}`, { scroll: false });
+       console.log("fetch 9")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
         dateInputs.endDate,
         page,
-        pageSize
+        pageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error changing page:", err);
@@ -764,12 +1090,17 @@ const CallLogs = () => {
       setError(null);
       setPageSize(newPageSize);
       setCurrentPage(1); // Reset to first page when changing page size
+      // Update URL with the new limit parameter
+      router.push(`/call-logs?page=1&limit=${newPageSize}`, { scroll: false });
+       console.log("fetch 10")
       await fetchCallLogs(
         filters.assistant,
         dateInputs.startDate,
         dateInputs.endDate,
         1,
-        newPageSize
+        newPageSize,
+        filters.status,
+        filters.searchQuery
       );
     } catch (err: any) {
       console.error("Error changing page size:", err);
@@ -779,17 +1110,11 @@ const CallLogs = () => {
   };
 
   const toggleConversationSelection = (id: string) => {
-    setSelectedConversations((prev) =>
-      prev.includes(id) ? prev.filter((convId) => convId !== id) : [...prev, id]
-    );
+    // This function is no longer needed as there's no checkbox
   };
 
   const toggleAllConversations = () => {
-    setSelectedConversations((prev) =>
-      prev.length === filteredConversations.length
-        ? []
-        : filteredConversations.map((conv) => conv.id)
-    );
+    // This function is no longer needed as there's no checkbox
   };
 
   const getStatusBadge = (status: string) => {
@@ -806,10 +1131,16 @@ const CallLogs = () => {
             Escalated
           </div>
         );
-      case "pending":
+      case "answered":
         return (
-          <div className="bg-blue-100 text-blue-800 border-blue-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
-            Pending
+          <div className="bg-green-100 text-green-800 border-green-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
+            Answered
+          </div>
+        );
+         case "unanswered":
+        return (
+          <div className="bg-red-100 text-red-800 border-red-300 px-2 py-1 rounded-full w-fit font-semibold text-xs">
+            UnAnswered
           </div>
         );
       default:
@@ -1017,7 +1348,22 @@ const CallLogs = () => {
 
           <Select
             value={filters.status}
-            onValueChange={(value) => updateFilter("status", value)}
+            onValueChange={async (value) => {
+              try {
+                console.log('🔍 Status filter changed to:', value);
+                setLoading(true);
+                setError(null);
+                updateFilter("status", value);
+                // Trigger API call when status changes
+                 console.log("fetch 11")
+                await fetchCallLogs(filters.assistant, dateInputs.startDate, dateInputs.endDate, 1, pageSize, value, filters.searchQuery);
+              } catch (err: any) {
+                console.error("Error fetching call logs with status filter:", err);
+                setError(err.message || "Failed to fetch call logs");
+              } finally {
+                setLoading(false);
+              }
+            }}
           >
             <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder="All Status" />
@@ -1026,7 +1372,8 @@ const CallLogs = () => {
               <SelectItem value="all-status">All Status</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
               <SelectItem value="escalated">Escalated</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              {/* <SelectItem value="answered">Answered</SelectItem> */}
+              <SelectItem value="unanswered">Unanswered</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1050,13 +1397,13 @@ const CallLogs = () => {
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="Search by assistant"
+              placeholder="Search by assistant or contact"
               value={filters.searchQuery}
-              onChange={(e) => updateFilter("searchQuery", e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 w-full sm:w-64"
             />
           </div>
-          <button onClick={() => handleExportCallLogs(apiData, 'xlsx')} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
+          <button onClick={handleDownloadCallLogs} className="text-white bg-lime-600 rounded-md px-2 py-1 cursor-pointer">Export Data</button>
 
           {/* <div className="flex flex-row flex-wrap items-center gap-2">
             <Badge
@@ -1205,17 +1552,6 @@ const CallLogs = () => {
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12 bg-gray-50 sticky top-0">
-                    <Checkbox
-                      className="border-gray-300 border h-4 w-4 bg-white"
-                      checked={
-                        filteredConversations.length > 0 &&
-                        selectedConversations.length ===
-                          filteredConversations.length
-                      }
-                      onCheckedChange={toggleAllConversations}
-                    />
-                  </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Contact
                   </TableHead>
@@ -1226,10 +1562,13 @@ const CallLogs = () => {
                     Assistant
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
-                    Timestamp
+                   Call End Time
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Duration
+                  </TableHead>
+                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
+                    Call Ended By
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider bg-gray-50 sticky top-0">
                     Status
@@ -1247,7 +1586,7 @@ const CallLogs = () => {
                 {filteredConversations.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={10}
+                      colSpan={9}
                       className="p-8 text-center text-gray-500"
                     >
                       {apiData.length === 0
@@ -1261,17 +1600,6 @@ const CallLogs = () => {
                       key={conversation.id}
                       className="hover:bg-gray-50 border-gray-50"
                     >
-                      <TableCell className="p-2 sm:p-4">
-                        <Checkbox
-                          className="border-gray-300 border h-4 w-4 bg-white"
-                          checked={selectedConversations.includes(
-                            conversation.id
-                          )}
-                          onCheckedChange={() =>
-                            toggleConversationSelection(conversation.id)
-                          }
-                        />
-                      </TableCell>
                       <TableCell className="p-2 sm:p-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="w-8 h-8">
@@ -1323,10 +1651,14 @@ const CallLogs = () => {
                         </div>
                       </TableCell>
                       <TableCell className="p-2 sm:p-4 text-xs sm:text-sm text-gray-600">
-                        {conversation.timestamp}
+                        {formatToIST(conversation.callEndTime)}
+                        
                       </TableCell>
                       <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
                         {conversation.duration}
+                      </TableCell>
+                         <TableCell className="p-2 sm:p-4 text-xs sm:text-sm font-medium">
+                        {conversation.callEndedBy}
                       </TableCell>
                       <TableCell className="p-2 sm:p-4">
                         {getStatusBadge(conversation.status)}
@@ -1394,7 +1726,7 @@ const CallLogs = () => {
                           size="sm"
                           className="text-blue-600 hover:text-blue-800 p-0"
                           onClick={() =>
-                            router.push(`/call-logs/${conversation.id}`)
+                            router.push(`/call-logs/${conversation.id}?page=${currentPage}&limit=${pageSize}`)
                           }
                         >
                           <Play className="w-4 h-4 mr-1" />
@@ -1415,9 +1747,9 @@ const CallLogs = () => {
             <Table className="w-full min-w-[700px]">
               <TableHeader className="bg-gray-50">
                 <TableRow>
-                  <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
+                  {/* <TableHead className="text-left py-2 px-2 sm:px-4 w-12">
                     <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Contact
                   </TableHead>
@@ -1428,10 +1760,13 @@ const CallLogs = () => {
                     Assistant
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
-                    Timestamp
+                    Call End Time
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Duration
+                  </TableHead>
+                  <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
+                    Call Ended By
                   </TableHead>
                   <TableHead className="text-left py-2 px-2 sm:px-4 text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider">
                     Status
@@ -1456,9 +1791,9 @@ const CallLogs = () => {
                     key={index}
                     className="hover:bg-gray-50 border-gray-50"
                   >
-                    <TableCell className="p-2 sm:p-4">
+                    {/* <TableCell className="p-2 sm:p-4">
                       <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="p-2 sm:p-4">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>

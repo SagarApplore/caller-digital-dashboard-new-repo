@@ -162,6 +162,8 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
+    firstMessageMode: "AI_SPEAKS_FIRST",
   },
   {
     id: "chat",
@@ -176,6 +178,8 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
+    firstMessageMode: "AI_SPEAKS_FIRST", 
   },
   {
     id: "email",
@@ -190,5 +194,7 @@ export const initialChannels: Channel[] = [
       allowedCharacters: 2000,
     },
     firstMessage: "",
+    firstMessageError: "",
+    firstMessageMode: "AI_SPEAKS_FIRST", 
   },
 ];

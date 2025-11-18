@@ -5,7 +5,8 @@ import { ChatEmailInsights } from "../molecules/chat-email-insights";
 import { OmnichannelSnapshot } from "../molecules/omnichannel-snapshot";
 import apiRequest from "@/utils/api";
 import { useEffect, useState } from "react";
-import { Loader2, CreditCard } from "lucide-react";
+import { Loader2, CreditCard, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "../providers/auth-provider";
 
 interface CreditInfo {
@@ -64,6 +65,37 @@ export default function AnalyticsDashboard() {
 
   return (
     <div className="p-6 overflow-y-auto h-full">
+      {/* Global Date Range Selector */}
+      <div className="mb-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-2 text-gray-700">
+            <Calendar className="w-4 h-4" />
+            <span className="text-sm font-medium">Global Date Range</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              className={`text-xs cursor-pointer ${
+                days === 7
+                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  : "bg-transparent text-gray-700 border border-blue-200 hover:bg-blue-50"
+              }`}
+              onClick={() => handleDaysChange(7)}
+            >
+              Last 7 days
+            </Badge>
+            <Badge
+              className={`text-xs cursor-pointer ${
+                days === 30
+                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                  : "bg-transparent text-gray-700 border border-blue-200 hover:bg-blue-50"
+              }`}
+              onClick={() => handleDaysChange(30)}
+            >
+              Last 30 days
+            </Badge>
+          </div>
+        </div>
+      </div>
       {/* Credit Display Section */}
       {/* {creditInfo && (
         <div className="mb-6">

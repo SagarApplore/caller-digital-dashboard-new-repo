@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Building2, Crown, User, Upload } from "lucide-react";
 import apiRequest from "@/utils/api";
+import endpoints from "@/lib/endpoints";
 
 interface EditClientFormProps {
   clientId: string;
@@ -46,6 +47,8 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
   const [fetching, setFetching] = useState(true);
   const [pricingModels, setPricingModels] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
 
   const [formData, setFormData] = useState<FormDataType>({
     companyName: "",
@@ -74,15 +77,21 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     const fetchClient = async () => {
       try {
         setFetching(true);
-        const response = await apiRequest(`/our-clients/${clientId}`, "GET");
+        console.log("Fetching client with ID:", clientId);
+        
+        const response = await apiRequest(`/our-clients/user/${clientId}`, "GET");
+        console.log("Client fetch response:", response);
+        
         if (response.data?.success) {
           const client = response.data.data;
+          console.log("Client data:", client);
+          
           setFormData({
             companyName: client.companyName || "",
             websiteUrl: client.websiteUrl || "",
             industry: client.industry || "",
             companySize: client.companySize || "",
-            companyLogo: null,
+            companyLogo: client.companyLogo,
             billing: client.subscriptionPlan || "",
             contactFullName: client.contactFullName || "",
             contactEmail: client.contactEmail || "",
@@ -96,10 +105,27 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
             costPerMin: client.costPerMin || 0,
             totalCredits: client.totalCredits || 0
           });
-        }
-      } catch (error) {
+         if (client.companyLogo?.startsWith("s3://")) {
+  try {
+    const signedUrlRes = await apiRequest(
+      `/s3KeyExtraction?s3Uri=${encodeURIComponent(client.companyLogo)}`,
+      "GET"
+    );
+
+    if (signedUrlRes?.data?.url) {
+      setPreviewUrl(signedUrlRes.data.url);
+    }
+  } catch (err) {
+    console.error("Failed to load logo preview", err);
+  }
+}
+// Assuming this is the logo URL from backend
+}
+
+       
+      } catch (error: any) {
         console.error("Error fetching client:", error);
-        setErrors({ fetch: "Failed to fetch client data" });
+        setErrors({ fetch: error.message || "Failed to fetch client data" });
       } finally {
         setFetching(false);
       }
@@ -124,14 +150,46 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, companyLogo: file }));
+    
+    // Real-time validation for website URL
+    if (field === "websiteUrl" && typeof value === "string") {
+      if (value.trim()) {
+        try {
+          const url = new URL(value);
+          if (!url.protocol || !url.hostname) {
+            setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+          } else {
+            // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+            const hostnameParts = url.hostname.split('.');
+            if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+              setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL with proper domain (e.g., https://example.com)" }));
+            } else {
+              setErrors(prev => ({ ...prev, websiteUrl: "" }));
+            }
+          }
+        } catch (error) {
+          setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+        }
+      } else {
+        setErrors(prev => ({ ...prev, websiteUrl: "" }));
+      }
     }
   };
+
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     setFormData(prev => ({ ...prev, companyLogo: file }));
+  //   }
+  // };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    setFormData(prev => ({ ...prev, companyLogo: file }));
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+};
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -152,6 +210,24 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
       newErrors.contactEmail = "Contact email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contactEmail)) {
       newErrors.contactEmail = "Please enter a valid email address";
+    }
+
+    // Validate website URL if provided
+    if (formData.websiteUrl.trim()) {
+      try {
+        const url = new URL(formData.websiteUrl);
+        if (!url.protocol || !url.hostname) {
+          newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+        } else {
+          // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+          const hostnameParts = url.hostname.split('.');
+          if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+            newErrors.websiteUrl = "Please enter a valid website URL with proper domain (e.g., https://example.com)";
+          }
+        }
+      } catch (error) {
+        newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+      }
     }
 
     if (formData.costPerMin < 0) {
@@ -176,25 +252,36 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
     setLoading(true);
 
     try {
+      console.log("Submitting client update for ID:", clientId);
+      console.log("Form data:", formData);
+      
       // Create FormData for file upload
       const submitData = new FormData();
       
       // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (key === 'companyLogo' && formData[key as keyof FormDataType]) {
-          submitData.append(key, formData[key as keyof FormDataType] as File);
-        } else if (key !== 'companyLogo') {
-          submitData.append(key, String(formData[key as keyof FormDataType]));
-        }
-      });
+    Object.keys(formData).forEach(key => {
+  // Skip sending costPerMin and totalCredits
+  if (key === "costPerMin" || key === "totalCredits") {
+    return;
+  }
 
-      await apiRequest(`/our-clients/${clientId}`, "PUT", submitData);
+  if (key === "companyLogo" && formData[key as keyof FormDataType]) {
+    submitData.append(key, formData[key as keyof FormDataType] as File);
+  } else if (key !== "companyLogo") {
+    submitData.append(key, String(formData[key as keyof FormDataType]));
+  }
+});
+
+
+      console.log("Submitting to endpoint:", `/our-clients/user/${clientId}`);
+      const response = await apiRequest(`/our-clients/user/${clientId}`, "PUT", submitData);
+      console.log("Update response:", response);
       
       setErrors({});
       onSuccess?.();
     } catch (error: any) {
       console.error("Error updating client:", error);
-      setErrors({ submit: error?.response?.data?.message || "Failed to update client" });
+      setErrors({ submit: error?.message || "Failed to update client" });
     } finally {
       setLoading(false);
     }
@@ -242,7 +329,11 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
                 value={formData.websiteUrl}
                 onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
                 placeholder="https://example.com"
+                className={errors.websiteUrl ? "border-red-500" : ""}
               />
+              {errors.websiteUrl && (
+                <p className="text-red-500 text-sm mt-1">{errors.websiteUrl}</p>
+              )}
             </div>
 
             <div>
@@ -287,16 +378,32 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
 
             <div>
               <Label htmlFor="companyLogo">Company Logo</Label>
-              <div className="flex items-center space-x-4">
-                <Input
-                  id="companyLogo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="flex-1"
-                />
-                <Upload className="w-5 h-5 text-gray-400" />
-              </div>
+            <div>
+
+  <div className="flex items-center space-x-4">
+    <Input
+      id="companyLogo"
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+      className="flex-1"
+    />
+    <Upload className="w-5 h-5 text-gray-400" />
+  </div>
+
+  {/* Logo preview */}
+  {previewUrl && (
+    <div className="mt-2">
+      <p className="text-sm text-gray-600 mb-1">Logo Preview:</p>
+      <img
+        src={previewUrl}
+        alt="Company Logo Preview"
+        className="w-24 h-24 object-cover border rounded-md"
+      />
+    </div>
+  )}
+</div>
+
             </div>
           </CardContent>
         </Card>
@@ -321,6 +428,7 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
                   value={formData.costPerMin}
                   onChange={(e) => handleInputChange("costPerMin", parseFloat(e.target.value) || 0)}
                   placeholder="0.00"
+                  disabled
                   className={errors.costPerMin ? "border-red-500" : ""}
                 />
                 {errors.costPerMin && (
@@ -337,6 +445,7 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
                   value={formData.totalCredits}
                   onChange={(e) => handleInputChange("totalCredits", parseInt(e.target.value) || 0)}
                   placeholder="0"
+                   disabled
                   className={errors.totalCredits ? "border-red-500" : ""}
                 />
                 {errors.totalCredits && (
@@ -523,7 +632,13 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
         </CardContent>
       </Card>
 
-      {/* Error Message */}
+      {/* Error Messages */}
+      {errors.fetch && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600 text-sm">{errors.fetch}</p>
+        </div>
+      )}
+      
       {errors.submit && (
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <p className="text-red-600 text-sm">{errors.submit}</p>
@@ -550,4 +665,4 @@ export const EditClientForm: React.FC<EditClientFormProps> = ({ clientId, onSucc
       </div>
     </form>
   );
-}; 
+};

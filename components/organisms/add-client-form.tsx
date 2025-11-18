@@ -29,6 +29,7 @@ interface FormDataType {
   billing: string;
   contactFullName: string;
   contactEmail: string;
+  countryCode: string;
   contactPhone: string;
   contactJobTitle: string;
   timeZone: string;
@@ -45,6 +46,8 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
   const [loading, setLoading] = useState(false);
   const [pricingModels, setPricingModels] = useState<any[]>([]);
   const [pricingLoading, setPricingLoading] = useState(true);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
 
   useEffect(() => {
     setPricingLoading(true);
@@ -65,6 +68,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     billing: "",
     contactFullName: "",
     contactEmail: "",
+    countryCode: "+1",
     contactPhone: "",
     contactJobTitle: "",
     timeZone: "",
@@ -84,20 +88,75 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, companyLogo: file }));
+    
+    // Real-time validation for website URL
+    if (field === "websiteUrl" && typeof value === "string") {
+      if (value.trim()) {
+        try {
+          const url = new URL(value);
+          if (!url.protocol || !url.hostname) {
+            setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+          } else {
+            // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+            const hostnameParts = url.hostname.split('.');
+            if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+              setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL with proper domain (e.g., https://example.com)" }));
+            } else {
+              setErrors(prev => ({ ...prev, websiteUrl: "" }));
+            }
+          }
+        } catch (error) {
+          setErrors(prev => ({ ...prev, websiteUrl: "Please enter a valid website URL (e.g., https://example.com)" }));
+        }
+      } else {
+        setErrors(prev => ({ ...prev, websiteUrl: "" }));
+      }
     }
   };
+
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (file) {
+  //     setFormData(prev => ({ ...prev, companyLogo: file }));
+  //   }
+  // };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    setFormData(prev => ({ ...prev, companyLogo: file }));
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+  }
+};
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.companyName.trim()) {
       newErrors.companyName = "Company name is required";
+    }
+
+    // Website URL validation (only if provided)
+    if (formData.websiteUrl.trim()) {
+      try {
+        // Basic URL validation - must have protocol and valid format
+        const url = new URL(formData.websiteUrl);
+        if (!url.protocol || !url.hostname) {
+          newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+        } else {
+          // Check if hostname has a valid TLD (at least 2 characters after the last dot)
+          const hostnameParts = url.hostname.split('.');
+          if (hostnameParts.length < 2 || hostnameParts[hostnameParts.length - 1].length < 2) {
+            newErrors.websiteUrl = "Please enter a valid website URL with proper domain (e.g., https://example.com)";
+          }
+        }
+      } catch (error) {
+        newErrors.websiteUrl = "Please enter a valid website URL (e.g., https://example.com)";
+      }
     }
 
     if (!formData.industry) {
@@ -114,8 +173,20 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       newErrors.contactEmail = "Please enter a valid email address";
     }
 
+    // Phone number validation
+    if (formData.contactPhone.trim()) {
+      // Remove all non-digit characters for validation
+      const phoneDigits = formData.contactPhone.replace(/\D/g, '');
+      if (phoneDigits.length !== 10) {
+        newErrors.contactPhone = "Phone number must be 10 digits long";
+      } 
+    }
+
     if (!formData.password.trim()) {
       newErrors.password = "Password is required";
+    }
+    if (formData.password.length<6) {
+      newErrors.password = "Password should be at least 6 characters long";
     }
 
     if (formData.costPerMin < 0) {
@@ -125,6 +196,15 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
     if (formData.totalCredits < 0) {
       newErrors.totalCredits = "Total credits must be a positive number";
     }
+
+    if (!formData.timeZone ) {
+      newErrors.timeZone = "Please enter timeZone";
+    }
+
+       if (!formData.companySize ) {
+      newErrors.companySize = "Please enter companySize";
+    }
+    
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -147,7 +227,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
       Object.keys(formData).forEach(key => {
         if (key === 'companyLogo' && formData[key as keyof FormDataType]) {
           submitData.append(key, formData[key as keyof FormDataType] as File);
-        } else if (key !== 'companyLogo') {
+        } else if (key === 'contactPhone') {
+          // Combine country code and phone number
+          const fullPhoneNumber = formData.countryCode + formData.contactPhone;
+          submitData.append(key, fullPhoneNumber);
+        } else if (key !== 'companyLogo' && key !== 'countryCode') {
           submitData.append(key, String(formData[key as keyof FormDataType]));
         }
       });
@@ -164,6 +248,7 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
         billing: "",
         contactFullName: "",
         contactEmail: "",
+        countryCode: "+1",
         contactPhone: "",
         contactJobTitle: "",
         timeZone: "",
@@ -187,7 +272,8 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+   <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Company Information */}
         <Card>
@@ -219,7 +305,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                 value={formData.websiteUrl}
                 onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
                 placeholder="https://example.com"
+                className={errors.websiteUrl ? "border-red-500" : ""}
               />
+              {errors.websiteUrl && (
+                <p className="text-red-500 text-sm mt-1">{errors.websiteUrl}</p>
+              )}
             </div>
 
             <div>
@@ -247,9 +337,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="companySize">Company Size</Label>
+              <Label htmlFor="companySize">Company Size *</Label>
               <Select value={formData.companySize} onValueChange={(value) => handleInputChange("companySize", value)}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.companySize ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select Size" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,31 +350,49 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   <SelectItem value="1000+">1000+</SelectItem>
                 </SelectContent>
               </Select>
+                {errors.companySize && (
+                <p className="text-red-500 text-sm mt-1">{errors.companySize}</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="companyLogo">Company Logo</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
-                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-sm text-gray-600 mb-1">Drop logo here or click to upload</p>
-                <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
-                <input
-                  type="file"
-                  id="companyLogo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => document.getElementById('companyLogo')?.click()}
-                >
-                  Choose File
-                </Button>
-              </div>
+             <Label htmlFor="companyLogo">Company Logo</Label>
+<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+  <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+  <p className="text-sm text-gray-600 mb-1">Drop logo here or click to upload</p>
+  <p className="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+
+  <input
+    type="file"
+    id="companyLogo"
+    accept="image/*"
+    onChange={handleFileChange}
+    className="hidden"
+  />
+
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    className="mt-2"
+    onClick={() => document.getElementById('companyLogo')?.click()}
+  >
+    Choose File
+  </Button>
+
+  {/* Logo Preview */}
+  {logoPreview && (
+    <div className="mt-4">
+      <p className="text-sm font-medium mb-2">Preview:</p>
+      <img
+        src={logoPreview}
+        alt="Logo Preview"
+        className="mx-auto h-20 object-contain"
+      />
+    </div>
+  )}
+</div>
+
             </div>
           </CardContent>
         </Card>
@@ -431,12 +539,47 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
 
             <div>
               <Label htmlFor="contactPhone">Phone Number</Label>
-              <Input
-                id="contactPhone"
-                value={formData.contactPhone}
-                onChange={(e) => handleInputChange("contactPhone", e.target.value)}
-                placeholder="+1 (555) 000-0000"
-              />
+              <div className="flex gap-2">
+                <Select 
+                  value={formData.countryCode} 
+                  onValueChange={(value) => handleInputChange("countryCode", value)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="+1">+1 (US)</SelectItem>
+                    {/* <SelectItem value="+44">+44 (UK)</SelectItem> */}
+                    <SelectItem value="+91">+91 (IN)</SelectItem>
+                    <SelectItem value="+61">+63 (PH)</SelectItem>
+                    {/* <SelectItem value="+86">+86 (CN)</SelectItem> */}
+                    {/* <SelectItem value="+81">+81 (JP)</SelectItem> */}
+                    {/* <SelectItem value="+49">+49 (DE)</SelectItem> */}
+                    {/* <SelectItem value="+33">+33 (FR)</SelectItem> */}
+                    {/* <SelectItem value="+39">+39 (IT)</SelectItem> */}
+                    {/* <SelectItem value="+34">+34 (ES)</SelectItem> */}
+                    {/* <SelectItem value="+7">+7 (RU)</SelectItem> */}
+                    {/* <SelectItem value="+55">+55 (BR)</SelectItem> */}
+                    <SelectItem value="+52">+52 (MX)</SelectItem>
+                    {/* <SelectItem value="+27">+27 (ZA)</SelectItem> */}
+                    {/* <SelectItem value="+971">+971 (AE)</SelectItem> */}
+                    {/* <SelectItem value="+966">+966 (SA)</SelectItem> */}
+                    <SelectItem value="+65">+977 (NEP)</SelectItem>
+                    <SelectItem value="+852">+880 (BAN)</SelectItem>
+                    <SelectItem value="+82">+234 (NIG)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  id="contactPhone"
+                  value={formData.contactPhone}
+                  onChange={(e) => handleInputChange("contactPhone", e.target.value)}
+                  placeholder="(555) 000-0000"
+                  className={errors.contactPhone ? "border-red-500" : ""}
+                />
+              </div>
+              {errors.contactPhone && (
+                <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
+              )}
             </div>
 
             <div>
@@ -450,9 +593,9 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
             </div>
 
             <div>
-              <Label htmlFor="timeZone">Time Zone</Label>
+              <Label htmlFor="timeZone">Time Zone *</Label>
               <Select value={formData.timeZone} onValueChange={(value) => handleInputChange("timeZone", value)}>
-                <SelectTrigger>
+                <SelectTrigger className={errors.timeZone ? "border-red-500" : ""}>
                   <SelectValue placeholder="Select Time Zone" />
                 </SelectTrigger>
                 <SelectContent>
@@ -467,7 +610,11 @@ export const AddClientForm: React.FC<AddClientFormProps> = ({ onSuccess, onCance
                   <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
                   <SelectItem value="Australia/Sydney">Sydney (AEST)</SelectItem>
                 </SelectContent>
+                  {errors.timeZone && (
+                <p className="text-red-500 text-sm mt-1">{errors.timeZone}</p>
+              )}
               </Select>
+              
             </div>
 
             <div>

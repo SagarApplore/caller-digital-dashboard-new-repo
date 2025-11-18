@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/organisms/card';
-import { Building2, CheckCircle, XCircle, Pause, TrendingUp } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Pause, TrendingUp ,CircleOff} from 'lucide-react';
 
 interface BrandStats {
   totalBrands: number;
@@ -42,7 +42,18 @@ export default function BrandStats({ stats }: BrandStatsProps) {
       bgColor: 'bg-gray-50',
       borderColor: 'border-gray-200',
       gradient: 'from-gray-500 to-gray-600'
-    }
+    },
+
+     {
+      title: 'Suspended Brands',
+      value: stats.suspendedBrands,
+      icon: CircleOff,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-gray-200',
+      gradient: 'from-red-500 to-red-600'
+    },
+    
   ];
 
   return (

@@ -8,7 +8,7 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   // Update routes with active state based on current path
-  const activeRoutes = updateActiveRoute(pathname || "/");
+  const activeRoutes = updateActiveRoute(pathname);
 
   const handleNavigation = (path: string) => {
     router.push(path);

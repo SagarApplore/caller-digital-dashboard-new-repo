@@ -84,16 +84,17 @@ export const CreditDisplay: React.FC = () => {
       });
 
       if (orderResponse.data?.success) {
-        const { orderId, amount, creditsToPurchase } = orderResponse.data.data;
+        const { order } = orderResponse.data;
+        const creditsToPurchase = parseFloat(purchaseAmount) * 100; // 1 Rupee = 100 credits
         
         // Initialize Razorpay
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: amount,
-          currency: 'INR',
+          key: order.key, // Use key from backend response
+          amount: order.amount,
+          currency: order.currency,
           name: 'Caller Digital',
           description: `Purchase ${creditsToPurchase} credits`,
-          order_id: orderId,
+          order_id: order.id,
           handler: async function (response: any) {
             try {
               // Verify payment

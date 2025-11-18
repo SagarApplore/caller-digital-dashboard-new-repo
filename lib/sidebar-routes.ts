@@ -8,6 +8,9 @@ import {
   Hash,
   PhoneCall,
   CodeXml,
+  Users,
+  Mic,
+  Link
 } from "lucide-react";
 
 export interface SidebarRouteItem {
@@ -42,13 +45,14 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     isActive: false,
     roles: ["SUPER_ADMIN"], // Only show for SUPER_ADMIN
   },
-  // {
-  //   id: "team-members",
-  //   name: "Team Members",
-  //   path: "/team-members",
-  //   icon: Users,
-  //   isActive: false,
-  // },
+  {
+    id: "team-members",
+    name: "Team Members",
+    path: "/team-members",
+    icon: Users,
+    isActive: false,
+    roles: ["CLIENT_ADMIN"], // Only show for CLIENT_ADMIN
+  },
   {
     id: "agents",
     name: "Agents",
@@ -99,23 +103,40 @@ export const sidebarRoutes: SidebarRouteItem[] = [
     path: "/function-tools",
     icon: CodeXml,
   },
-  // {
-  //   id: "llm-config",
-  //   name: "LLM Config",
-  //   path: "/llm-provider-config",
-  //   icon: Settings,
-  // },
+  {
+    id: "llm-config",
+    name: "LLM Config",
+    path: "/llm-provider-config",
+    icon: Users,
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    id: "voices",
+    name: "Voices",
+    path: "/voices",
+    icon: Mic,
+    roles:["SUPER_ADMIN"]
+  },
+  {
+    id: "integrations",
+    name: "Integrations",
+    path: "/integrations",
+    icon: Link,
+    // roles:["SUPER_ADMIN"]
+  },
 ];
 
 // Helper function to update active state
-export const updateActiveRoute = (currentPath: string) => {
+export const updateActiveRoute = (currentPath: string | null | undefined) => {
+  const path = currentPath || "/";
   return sidebarRoutes.map((route) => ({
     ...route,
-    isActive: route.path === currentPath,
+    isActive: route.path === path,
   }));
 };
 
 // Get active route
-export const getActiveRoute = (currentPath: string) => {
-  return sidebarRoutes.find((route) => route.path === currentPath);
+export const getActiveRoute = (currentPath: string | null | undefined) => {
+  const path = currentPath || "/";
+  return sidebarRoutes.find((route) => route.path === path);
 };

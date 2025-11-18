@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { LogoutConfirmation } from '@/components/logout-confirmation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreditCard, AlertTriangle, Clock, Plus, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -75,16 +76,17 @@ export default function PaymentRequiredComponent() {
       });
 
       if (orderResponse.data?.success) {
-        const { orderId, amount, creditsToPurchase } = orderResponse.data.data;
+        const { order } = orderResponse.data;
+        const creditsToPurchase = parseFloat(purchaseAmount) * 100; // 1 Rupee = 100 credits
         
         // Initialize Razorpay
         const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: amount,
-          currency: 'INR',
+          key: order.key, // Use key from backend response
+          amount: order.amount,
+          currency: order.currency,
           name: 'Caller Digital',
           description: `Purchase ${creditsToPurchase} credits`,
-          order_id: orderId,
+          order_id: order.id,
           handler: async function (response: any) {
             try {
               // Verify payment
@@ -99,7 +101,7 @@ export default function PaymentRequiredComponent() {
                 setShowPurchaseModal(false);
                 setPurchaseAmount('');
                 // Redirect back to dashboard after successful purchase
-                router.push('/dashboard');
+                router.push('/');
               } else {
                 toast.error('Payment verification failed');
               }
@@ -135,12 +137,22 @@ export default function PaymentRequiredComponent() {
     router.push('/billing');
   };
 
-  const handleLogout = () => {
-    // Simple logout - clear localStorage and redirect to login
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirmation(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Proper logout - clear localStorage and redirect to login
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('userData');
-      router.push('/login');
+      // Clear all auth-related localStorage items
+      localStorage.clear()
+      // localStorage.removeItem('authToken');
+      // localStorage.removeItem('userData');
+      
+      // Use window.location.href for a full page reload to ensure clean state
+      window.location.href = '/login';
     }
   };
 
@@ -307,7 +319,7 @@ export default function PaymentRequiredComponent() {
             </Button> */}
             
             <Button 
-              onClick={handleLogout} 
+              onClick={handleLogoutClick} 
               variant="outline" 
               className="w-full"
             >
@@ -321,6 +333,13 @@ export default function PaymentRequiredComponent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Logout Confirmation */}
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
-} 
+}

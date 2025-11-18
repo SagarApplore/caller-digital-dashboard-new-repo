@@ -201,9 +201,9 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
           <Building2 className="h-12 w-12 text-blue-600" />
         </div>
         <h3 className="text-2xl font-semibold text-gray-900 mb-3">
-          No brands yet
+          No brands Found
         </h3>
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">
+        {/* <p className="text-gray-600 mb-8 max-w-md mx-auto">
           Create your first brand to start organizing your agents and phone numbers
         </p>
         <Button 
@@ -212,7 +212,7 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
         >
           <Plus className="h-5 w-5 mr-2" />
           Create Your First Brand
-        </Button>
+        </Button> */}
       </div>
     );
   }
@@ -227,7 +227,8 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
           status: brand.status,
           brandUser: brand.brandUser,
           agentCount: brand.agentCount,
-          createdAt: brand.createdAt
+          createdAt: brand.createdAt,
+           updatedAt: brand.updatedAt
         });
         
         return (
@@ -285,7 +286,7 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                  {/* <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
                       <Globe className="h-4 w-4 text-purple-600" />
                     </div>
@@ -295,16 +296,28 @@ export default function BrandsList({ brands, onEdit, onDelete, onCreateBrand, is
                         {brand.brandUser?.role || 'Unknown'}
                       </p>
                     </div>
-                  </div>
+                  </div> */}
                   
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
                       <Calendar className="h-4 w-4 text-orange-600" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 font-medium">Created</p>
+                      <p className="text-xs text-gray-500 font-medium">CreatedAt</p>
                       <p className="text-sm text-gray-900 font-medium">
                         {formatDate(brand.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="h-8 w-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">UpdatedAt</p>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {formatDate(brand.updatedAt)}
                       </p>
                     </div>
                   </div>

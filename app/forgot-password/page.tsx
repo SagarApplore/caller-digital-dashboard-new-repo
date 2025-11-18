@@ -25,10 +25,12 @@ export default function ForgotPasswordPage() {
           router.push(`/reset-password?email=${encodeURIComponent(email)}`);
         }, 1000);
       } else {
+       
         setError(res.data?.message || "Failed to send OTP");
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to send OTP");
+   
+      setError(err?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function ForgotPasswordPage() {
         />
         {error && <div className="text-red-600 text-sm">{error}</div>}
         {success && <div className="text-green-600 text-sm">{success}</div>}
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button type="submit"  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-2.5 rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled={loading}>
           {loading ? "Sending..." : "Send OTP"}
         </Button>
       </form>

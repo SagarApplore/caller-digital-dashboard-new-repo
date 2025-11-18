@@ -36,10 +36,7 @@ export default function Clients() {
           },
           children: (
             <div className="flex items-center justify-between gap-4">
-              <Input
-                placeholder="Search by name or email"
-                className="w-full max-w-[400px] bg-white"
-              />
+              
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                   <Button
@@ -60,10 +57,10 @@ export default function Clients() {
                   />
                 </DialogContent>
               </Dialog>
-              <Button className="bg-gray-100 hover:bg-gray-200">
+              {/* <Button className="bg-gray-100 hover:bg-gray-200">
                 <Download className="w-4 h-4 text-gray-700" />
                 <span className="text-sm text-gray-700">Export CSV</span>
-              </Button>
+              </Button> */}
             </div>
           ),
         }}

@@ -2,17 +2,30 @@ const endpoints = {
   auth: {
     login: "/auth/login",
     me: "/auth/me",
+    changePassword: "/auth/change-password",
   },
   outboundCampaign: {
     getAll: "/outbound-campaigns",
     getById: "/outbound-campaigns/:id",
     create: "/outbound-campaigns",
+    exportAll: "/outbound-campaigns/export/all",
+    retryUnanswered: "/outbound-campaigns/retry-unanswered",
+
   },
   assistants: {
     list: "/agents",
     create: "/agents/createAgents",
     get: "/agents",
     update: "/agents",
+  },
+  clients: {
+    list: "/users/getClients",
+    create: "/our-clients/create",
+    get: "/our-clients/:id",
+    getByUserId: "/our-clients/user/:userId",
+    update: "/our-clients/:id",
+    updateByUserId: "/our-clients/user/:userId",
+    delete: "/users/deactivate/:id",
   },
   knowledgeBase: {
     getAll: "/knowledgeBase",

@@ -110,28 +110,7 @@ export function ChatEmailInsights({
             <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
             Chat & Email Insights
           </CardTitle>
-          <div className="flex space-x-2">
-            <Badge
-              className={`text-xs ${
-                days === 7
-                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                  : "bg-transparent text-gray-700 border border-purple-200 hover:bg-purple-200"
-              }`}
-              onClick={() => handleDaysChange(7)}
-            >
-              7 Days
-            </Badge>
-            <Badge
-              className={`text-xs ${
-                days === 30
-                  ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                  : "bg-transparent text-gray-700 border border-purple-200 hover:bg-purple-200"
-              }`}
-              onClick={() => handleDaysChange(30)}
-            >
-              30 Days
-            </Badge>
-          </div>
+          {/* Global date range is controlled from dashboard header */}
         </div>
       </CardHeader>
       <CardContent className="space-y-4 p-0">

@@ -5,6 +5,10 @@ export interface User {
   name?: string;
   role?: string;
   DIY?: boolean;
+  teamMemberOf?: string;
+  companyName:string,
+  companyLogo?:string
+
 }
 
 export interface AuthToken {
