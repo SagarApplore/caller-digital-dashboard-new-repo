@@ -96,7 +96,7 @@ export default function Login() {
           <div className="flex flex-col items-center justify-center gap-2 pointer-events-none select-none">
             <div className="p-2 bg-white/90 backdrop-blur-sm w-fit rounded-xl border border-white/30 shadow-lg">
               <div className="w-12 h-12">
-                <img src="/caller-digital-logo.svg" alt="Caller Digital Logo" />
+                <img src="/kalyan_logo.svg" alt="Kalyan Logo" />
               </div>
             </div>
             <h2 className="text-2xl font-bold">Welcome Back</h2>
@@ -287,19 +287,19 @@ export default function Login() {
               <img src="/call.svg" alt="Call" />
               <span>Voice AI</span>
             </div>
-            <div className="flex items-center space-x-1 text-xs text-gray-500">
+            {/* <div className="flex items-center space-x-1 text-xs text-gray-500">
               <img src="/chat.svg" alt="Chat" />
               <span>Chat Automation</span>
             </div>
             <div className="flex items-center space-x-1 text-xs text-gray-500">
               <img src="/mail.svg" alt="Email" />
               <span>Email Intelligence</span>
-            </div>
+            </div> */}
           </div>
         </div>
 
         {/* Footer */}
-        {/* <div className="text-center text-xs text-gray-500">
+        <div className="text-center text-xs text-gray-500 invisible">
           <p>
             © 2024 Caller.Digital. All rights reserved. |{" "}
             <Button variant="link" className="text-xs text-gray-500 p-0 h-auto">
@@ -310,7 +310,7 @@ export default function Login() {
               Terms of Service
             </Button>
           </p>
-        </div> */}
+        </div> 
       </div>
     </div>
   );
