@@ -19,6 +19,8 @@ import { LogoutConfirmation } from "@/components/logout-confirmation";
 import { AddConfigurationModal } from "@/components/add-configuration-modal"; 
 import apiRequest from "@/utils/api";
 
+import Image from "next/image";
+
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -131,17 +133,18 @@ export function Sidebar() {
                   <span className="text-xs text-gray-500">{user?.email || 'No email'}</span>
                 </div> */}
                 <div className="flex items-center space-x-3 border-b border-gray-100 pb-3">
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt="Company Logo"
-                      className="w-8 h-8 rounded-md object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-xs font-bold text-gray-600">
-                      {user?.companyName?.charAt(0) || "C"}
-                    </div>
-                  )}
+                  {/* {logoUrl ? ( */}
+                   <img
+  src="/kalyan_logo.svg"
+  alt="Company Logo"
+  className="w-8 h-8 p-1 rounded-md border border-gray-300 object-contain bg-white"
+  />
+
+                  {/* // ) : (
+                  //   <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-xs font-bold text-gray-600">
+                  //     {user?.companyName?.charAt(0) || "C"}
+                  //   </div>
+                  // )} */}
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-gray-900">
                       {user?.name || "User"}
