@@ -299,7 +299,7 @@ export default function Login() {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-500">
+        {/* <div className="text-center text-xs text-gray-500">
           <p>
             © 2024 Caller.Digital. All rights reserved. |{" "}
             <Button variant="link" className="text-xs text-gray-500 p-0 h-auto">
@@ -310,7 +310,7 @@ export default function Login() {
               Terms of Service
             </Button>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
